@@ -1,0 +1,39 @@
+name: Claude Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Get diff
+        id: diff
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            git diff origin/${{ github.base_ref }}...HEAD > /tmp/diff.txt
+          else
+            git diff HEAD~1...HEAD > /tmp/diff.txt 2>/dev/null || echo "" > /tmp/diff.txt
+          fi
+          echo "diff_size=$(wc -c < /tmp/diff.txt)" >> $GITHUB_OUTPUT
+
+      - name: Call Claude API
+        if: steps.diff.outputs.diff_size > 0
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          DIFF: ${{ steps.diff.outputs.diff_size }}
+        run: |
+          echo "Triggered Claude review (diff: ${DIFF}b)"
+          echo "Requires ANTHROPIC_API_KEY secret to be set"

@@ -1,0 +1,20 @@
+{
+  "name": "Tee Tang Art",
+  "short_name": "Tee Tang Art",
+  "description": "Free Khmer map poster creator — export as PNG, PDF, or SVG.",
+  "id": "/",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#1c1c1e",
+  "theme_color": "#1c1c1e",
+  "icons": [
+    {
+      "src": "/assets/logo.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}

@@ -1,0 +1,165 @@
+/* ── Self-hosted Noto Sans Khmer (bypasses CDN, works on all devices) ── */
+
+@font-face {
+  font-family: "Noto Sans Khmer";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(/fonts/NotoSansKhmer-Regular.woff2) format("woff2");
+  unicode-range:
+    U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329,
+    U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Noto Sans Khmer";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(/fonts/NotoSansKhmer-Khmer.woff2) format("woff2");
+  unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
+}
+
+:root {
+  --ink: #f5f5fa;
+  --text-secondary: #94a3b8;
+  --text-muted: #cbd5e1;
+  --panel: #111827;
+  --panel-glass: rgba(17, 24, 39, 0.85);
+  --line: rgba(255, 255, 255, 0.06);
+  --border: #262f45;
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --strong-line: rgba(255, 255, 255, 0.18);
+  --positive: #22c55e;
+  --negative: #ef4444;
+  --warning: #f59e0b;
+  --accent: #c0392b;
+  --accent-hover: #e74c3c;
+  --accent-blue: #3b82f6;
+  --accent-purple: #a855f7;
+  --accent-pink: #ec4899;
+  --accent-cyan: #10b981;
+  --accent-gold: #d4af37;
+  --focus-ring: rgba(192, 57, 43, 0.35);
+  --item-bg: rgba(255, 255, 255, 0.04);
+  --sheet-bg: rgba(11, 15, 25, 0.95);
+  --overlay-bg: rgba(0, 0, 0, 0.85);
+  --glow-orange: rgba(192, 57, 43, 0.25);
+  --surface: #0b0f19;
+}
+
+.light-theme {
+  --ink: #0f172a;
+  --text-secondary: #475569;
+  --text-muted: #64748b;
+  --panel: #ffffff;
+  --panel-glass: rgba(255, 255, 255, 0.85);
+  --line: rgba(0, 0, 0, 0.06);
+  --border: #cbd5e1;
+  --border-subtle: rgba(0, 0, 0, 0.08);
+  --strong-line: rgba(0, 0, 0, 0.18);
+  --accent: #c0392b;
+  --accent-hover: #c0392b;
+  --item-bg: rgba(0, 0, 0, 0.03);
+  --sheet-bg: rgba(248, 250, 252, 0.98);
+  --overlay-bg: rgba(255, 255, 255, 0.9);
+  --surface: #f8fafc;
+}
+
+.compact-ui {
+  --mobile-nav-height: 52px;
+}
+
+.compact-ui .mobile-nav-tab {
+  padding: 4px 0;
+  width: 64px;
+}
+
+.compact-ui .mobile-nav-icon {
+  width: 17px;
+  height: 17px;
+}
+
+.compact-ui .mobile-nav-label {
+  font-size: 0.52rem;
+}
+
+.compact-ui .panel-block {
+  padding: 12px;
+}
+
+.compact-ui .ios-toggle-row {
+  padding: 2px 4px;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+@keyframes bg-drift {
+  0% {
+    background-position:
+      0% 0%,
+      0% 0%,
+      0% 0%;
+  }
+  33% {
+    background-position:
+      2% 1%,
+      -1% -1%,
+      1% 2%;
+  }
+  66% {
+    background-position:
+      -1% -1%,
+      2% 1%,
+      -2% 0%;
+  }
+  100% {
+    background-position:
+      0% 0%,
+      0% 0%,
+      0% 0%;
+  }
+}
+
+@keyframes bg-pulse {
+  0%,
+  100% {
+    opacity: 0.4;
+  }
+  50% {
+    opacity: 0.7;
+  }
+}
+
+html,
+body {
+  margin: 0;
+  color: var(--ink);
+  font-family: "Kantumruy Pro", "Noto Sans Khmer", "Inter", "Space Grotesk", sans-serif;
+  background-color: var(--surface);
+  background-image:
+    radial-gradient(ellipse 60% 40% at 15% 20%, rgba(192, 57, 43, 0.04), transparent),
+    radial-gradient(ellipse 50% 35% at 85% 30%, rgba(59, 130, 246, 0.03), transparent),
+    radial-gradient(ellipse 40% 30% at 50% 80%, rgba(168, 85, 247, 0.03), transparent);
+  background-size:
+    100% 100%,
+    100% 100%,
+    100% 100%;
+  animation: bg-drift 30s ease-in-out infinite;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+  overflow-x: hidden;
+}
+
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: transparent;
+}

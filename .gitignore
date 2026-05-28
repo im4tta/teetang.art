@@ -1,0 +1,64 @@
+# Dependencies
+node_modules/
+package-lock.json
+
+# Build output
+dist/
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+bun-debug.log*
+
+# Test and coverage output
+coverage/
+*.lcov
+
+# Caches
+.vite/
+.cache/
+.eslintcache
+*.tsbuildinfo
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Editor and OS files
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/*
+!.vscode/settings.json
+!.vscode/commit-instructions.md
+
+# Local updates announcement file for development
+updates.json
+
+# ignore agent setting files
+.claude/
+
+# Archives and large design artifacts
+*.zip
+*.tar.gz
+
+# Temporary design docs (keep in repo only if needed)
+tee-tang-art.html
+
+# Reference fork (not part of this project)
+map-to-poster-reference/
+
+# Extracted v2 reference archive
+teetangart-v2/
+
+# Design docs (not needed in published repo)
+REDESIGN_ROADMAP.md
+tee-tang-art-redesign.md
+tmeta.blog-DESIGN.md
+
+# Empty uploads placeholder
+.uploads/

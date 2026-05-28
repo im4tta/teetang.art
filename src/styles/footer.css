@@ -1,0 +1,51 @@
+.app-footer {
+  margin-top: 14px;
+  padding: 0 2px;
+  display: grid;
+  gap: 8px;
+  justify-items: center;
+  text-align: center;
+}
+
+.source-note {
+  margin: 0;
+  font-size: 0.8rem;
+  font-family: "JetBrains Mono", "Space Grotesk", monospace;
+  opacity: 0.74;
+  color: #94a3b8;
+}
+
+.source-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  background: none;
+  border: none;
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+}
+
+.source-link:hover,
+.source-link:focus-visible {
+  color: #ffffff;
+}
+
+.source-note,
+.made-note {
+  display: flex;
+  align-items: center;
+  font-family: "Noto Sans Khmer", "Battambang", "Inter", sans-serif;
+  font-size: 0.66rem;
+  color: rgba(155, 179, 197, 0.9);
+  margin: 0;
+}
+
+.made-note {
+  text-align: center;
+}
+
+.heart {
+  margin: 0 2px;
+  color: #ec4899;
+}

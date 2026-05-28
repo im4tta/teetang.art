@@ -1,0 +1,289 @@
+{
+  "defaultLayoutId": "print_a4_portrait",
+  "categories": [
+    {
+      "id": "print",
+      "name": "Print",
+      "layouts": [
+        {
+          "id": "print_a3_portrait",
+          "name": "A3 Portrait",
+          "description": "ISO A3 portrait format.",
+          "width": 29.7,
+          "height": 42,
+          "unit": "cm",
+          "posterWidthCm": 29.7,
+          "posterHeightCm": 42
+        },
+        {
+          "id": "print_a4_portrait",
+          "name": "A4 Portrait",
+          "description": "Default print ratio based on A4 portrait.",
+          "width": 21,
+          "height": 29.7,
+          "unit": "cm",
+          "posterWidthCm": 21,
+          "posterHeightCm": 29.7
+        },
+        {
+          "id": "print_a5_portrait",
+          "name": "A5 Portrait",
+          "description": "ISO A5 portrait format.",
+          "width": 14.8,
+          "height": 21,
+          "unit": "cm",
+          "posterWidthCm": 14.8,
+          "posterHeightCm": 21
+        },
+        {
+          "id": "print_letter_us_portrait",
+          "name": "Letter (US) Portrait",
+          "description": "US Letter portrait format.",
+          "width": 21.6,
+          "height": 27.9,
+          "unit": "cm",
+          "posterWidthCm": 21.6,
+          "posterHeightCm": 27.9
+        }
+      ]
+    },
+    {
+      "id": "social_media",
+      "name": "Social Media",
+      "layouts": [
+        {
+          "id": "social_instagram_square",
+          "name": "Instagram Square",
+          "description": "1:1 post format for Instagram feed.",
+          "width": 1080,
+          "height": 1080,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "social_instagram_portrait",
+          "name": "Instagram Portrait",
+          "description": "4:5 portrait post format for Instagram.",
+          "width": 1080,
+          "height": 1350,
+          "unit": "px",
+          "posterWidthCm": 24,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "social_instagram_story_tiktok",
+          "name": "Story (9:16)",
+          "description": "9:16 vertical short-form format.",
+          "width": 1080,
+          "height": 1920,
+          "unit": "px",
+          "posterWidthCm": 16.88,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "social_linkedin_post",
+          "name": "LinkedIn Post",
+          "description": "Standard LinkedIn post image format.",
+          "width": 1200,
+          "height": 627,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 15.68
+        },
+        {
+          "id": "social_linkedin_cover",
+          "name": "LinkedIn Cover",
+          "description": "LinkedIn profile or company cover format.",
+          "width": 1584,
+          "height": 396,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 7.5
+        },
+        {
+          "id": "social_pinterest_pin",
+          "name": "Pinterest Pin",
+          "description": "2:3 vertical format for Pinterest pins.",
+          "width": 1000,
+          "height": 1500,
+          "unit": "px",
+          "posterWidthCm": 20,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "social_reddit_post_16_9",
+          "name": "Reddit Post (16:9)",
+          "description": "Widescreen format for Reddit posts.",
+          "width": 1200,
+          "height": 675,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 16.88
+        },
+        {
+          "id": "social_reddit_banner",
+          "name": "Reddit Banner",
+          "description": "Ultra-wide subreddit header format.",
+          "width": 1920,
+          "height": 256,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 4
+        },
+        {
+          "id": "social_twitter_header",
+          "name": "Twitter Header",
+          "description": "Twitter/X profile header format.",
+          "width": 1500,
+          "height": 500,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 10
+        },
+        {
+          "id": "social_youtube_thumbnail",
+          "name": "YouTube Thumbnail",
+          "description": "16:9 thumbnail format for YouTube videos.",
+          "width": 1280,
+          "height": 720,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 16.88
+        }
+      ]
+    },
+    {
+      "id": "wallpaper",
+      "name": "Wallpaper",
+      "layouts": [
+        {
+          "id": "wallpaper_desktop_full_hd",
+          "name": "Desktop Full HD",
+          "description": "16:9 desktop wallpaper for standard monitors.",
+          "width": 1920,
+          "height": 1080,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 16.88
+        },
+        {
+          "id": "wallpaper_desktop_4k",
+          "name": "Desktop 4K",
+          "description": "4K UHD wallpaper with 16:9 ratio.",
+          "width": 3840,
+          "height": 2160,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 16.88
+        },
+        {
+          "id": "wallpaper_ultrawide",
+          "name": "Desktop Ultrawide",
+          "description": "Ultrawide wallpaper for 21:9 style monitors.",
+          "width": 3440,
+          "height": 1440,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 12.56
+        },
+        {
+          "id": "wallpaper_iphone_15_pro",
+          "name": "iPhone 15 Pro",
+          "description": "Vertical wallpaper format for iPhone 15 Pro.",
+          "width": 1179,
+          "height": 2556,
+          "unit": "px",
+          "posterWidthCm": 13.84,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "wallpaper_iphone_15_pro_max",
+          "name": "iPhone 15 Pro Max",
+          "description": "Vertical wallpaper format for iPhone 15 Pro Max.",
+          "width": 1290,
+          "height": 2796,
+          "unit": "px",
+          "posterWidthCm": 13.84,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "wallpaper_samsung_galaxy_s24_ultra",
+          "name": "Galaxy S24 Ultra",
+          "description": "Vertical wallpaper format for Samsung Galaxy S24 Ultra.",
+          "width": 1440,
+          "height": 3120,
+          "unit": "px",
+          "posterWidthCm": 13.85,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "wallpaper_ipad_pro_11",
+          "name": "iPad Pro 11\"",
+          "description": "Wallpaper format for iPad Pro 11-inch display.",
+          "width": 1668,
+          "height": 2388,
+          "unit": "px",
+          "posterWidthCm": 20.95,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "wallpaper_ipad_pro_12_9",
+          "name": "iPad Pro 12.9\"",
+          "description": "Wallpaper format for iPad Pro 12.9-inch display.",
+          "width": 2048,
+          "height": 2732,
+          "unit": "px",
+          "posterWidthCm": 22.49,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "wallpaper_xteink_x4",
+          "name": "Xteink X4 (E-Ink)",
+          "description": "Native Xteink X4 format (480x800). Exports exactly at this resolution when using 300 DPI.",
+          "width": 480,
+          "height": 800,
+          "unit": "px",
+          "posterWidthCm": 4.06,
+          "posterHeightCm": 6.77
+        }
+      ]
+    },
+    {
+      "id": "web",
+      "name": "Web",
+      "layouts": [
+        {
+          "id": "web_hero_banner",
+          "name": "Hero Banner",
+          "description": "Wide hero section ratio for modern landing pages.",
+          "width": 1440,
+          "height": 600,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 12.5
+        },
+        {
+          "id": "web_blog_featured",
+          "name": "Blog Featured",
+          "description": "Typical Open Graph/blog cover card format.",
+          "width": 1200,
+          "height": 630,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 15.75
+        },
+        {
+          "id": "web_dashboard_card",
+          "name": "Dashboard Card",
+          "description": "Balanced 4:3 frame useful for app dashboard visuals.",
+          "width": 1280,
+          "height": 960,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 22.5
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,888 @@
+{
+  "themes": {
+    "midnight": {
+      "name": "Midnight",
+      "description": "Deep dark blue — elegant night-time atlas aesthetic",
+      "ui": {
+        "bg": "#0d1b2a",
+        "text": "#e8f4ff"
+      },
+      "map": {
+        "land": "#0d1b2a",
+        "landcover": "#12243a",
+        "water": "#081420",
+        "waterway": "#081420",
+        "parks": "#142c42",
+        "buildings": "#4a6a8a",
+        "aeroway": "#142c42",
+        "rail": "#78afe6",
+        "roads": {
+          "major": "#d8eefa",
+          "path": "#2a4a68",
+          "outline": "#2a4a68",
+          "minor_high": "#7aaed0",
+          "minor_mid": "#3a5e80",
+          "minor_low": "#2a4a68"
+        }
+      }
+    },
+    "minimal": {
+      "name": "Minimal",
+      "description": "Clean light base with charcoal roads — modern gallery aesthetic",
+      "ui": {
+        "bg": "#e8e4dc",
+        "text": "#2a2a2a"
+      },
+      "map": {
+        "land": "#e8e4dc",
+        "landcover": "#e0dcd4",
+        "water": "#cdc8c0",
+        "waterway": "#cdc8c0",
+        "parks": "#d8d4cc",
+        "buildings": "#888888",
+        "aeroway": "#d8d4cc",
+        "rail": "#2a2a2a",
+        "roads": {
+          "major": "#1a1a1a",
+          "path": "#b8b4ac",
+          "outline": "#c8c4bc",
+          "minor_high": "#484848",
+          "minor_mid": "#888888",
+          "minor_low": "#a8a49c"
+        }
+      }
+    },
+    "angkor": {
+      "name": "Angkor",
+      "description": "Warm earthy tones inspired by ancient Angkor temples",
+      "ui": {
+        "bg": "#2a1a0a",
+        "text": "#f0d090"
+      },
+      "map": {
+        "land": "#2a1a0a",
+        "landcover": "#382610",
+        "water": "#1a1008",
+        "waterway": "#1a1008",
+        "parks": "#3a2818",
+        "buildings": "#c8a06a",
+        "aeroway": "#3a2818",
+        "rail": "#f0d090",
+        "roads": {
+          "major": "#c8a06a",
+          "path": "#685030",
+          "outline": "#685030",
+          "minor_high": "#8b5e2a",
+          "minor_mid": "#584020",
+          "minor_low": "#483818"
+        }
+      }
+    },
+    "rose": {
+      "name": "Rose",
+      "description": "Dark romantic palette with deep rose and pink accents",
+      "ui": {
+        "bg": "#1a0a10",
+        "text": "#fce8f0"
+      },
+      "map": {
+        "land": "#1a0a10",
+        "landcover": "#281018",
+        "water": "#140810",
+        "waterway": "#140810",
+        "parks": "#301020",
+        "buildings": "#d2789b",
+        "aeroway": "#301020",
+        "rail": "#fce8f0",
+        "roads": {
+          "major": "#c06080",
+          "path": "#482838",
+          "outline": "#482838",
+          "minor_high": "#6b1a2a",
+          "minor_mid": "#402030",
+          "minor_low": "#301828"
+        }
+      }
+    },
+    "forest": {
+      "name": "Forest",
+      "description": "Deep botanical greens with vibrant plant-toned roads",
+      "ui": {
+        "bg": "#0a1a0a",
+        "text": "#d0f0d0"
+      },
+      "map": {
+        "land": "#0a1a0a",
+        "landcover": "#102810",
+        "water": "#081808",
+        "waterway": "#081808",
+        "parks": "#183a18",
+        "buildings": "#4a8a3a",
+        "aeroway": "#183a18",
+        "rail": "#d0f0d0",
+        "roads": {
+          "major": "#4a8a3a",
+          "path": "#2a4a2a",
+          "outline": "#2a4a2a",
+          "minor_high": "#1a4a1a",
+          "minor_mid": "#183018",
+          "minor_low": "#122412"
+        }
+      }
+    },
+    "mono": {
+      "name": "Mono",
+      "description": "Pure grayscale — classic monochrome map aesthetic",
+      "ui": {
+        "bg": "#111111",
+        "text": "#f0f0f0"
+      },
+      "map": {
+        "land": "#111111",
+        "landcover": "#1a1a1a",
+        "water": "#0a0a0a",
+        "waterway": "#0a0a0a",
+        "parks": "#222222",
+        "buildings": "#666666",
+        "aeroway": "#222222",
+        "rail": "#f0f0f0",
+        "roads": {
+          "major": "#e8e8e8",
+          "path": "#444444",
+          "outline": "#444444",
+          "minor_high": "#888888",
+          "minor_mid": "#333333",
+          "minor_low": "#252525"
+        }
+      }
+    },
+    "coral": {
+      "name": "Coral",
+      "description": "Soft ivory base with warm coral roads and muted pink-blue features.",
+      "ui": {
+        "bg": "#F3E1DA",
+        "text": "#6E2F28"
+      },
+      "map": {
+        "land": "#F3E1DA",
+        "landcover": "#EFD8D0",
+        "water": "#DFC0B5",
+        "waterway": "#DFC0B5",
+        "parks": "#EACFC6",
+        "buildings": "#E39B89",
+        "aeroway": "#EACFC6",
+        "rail": "#6e2f28",
+        "roads": {
+          "major": "#B9473A",
+          "path": "#E8C4B8",
+          "outline": "#EDD2C8",
+          "minor_high": "#C86050",
+          "minor_mid": "#E09888",
+          "minor_low": "#DDAA9A"
+        }
+      }
+    },
+    "heatwave": {
+      "name": "Heatwave",
+      "description": "Charred dark base with glowing orange roads and sunlit highlights.",
+      "ui": {
+        "bg": "#1C0E09",
+        "text": "#FFD78A"
+      },
+      "map": {
+        "land": "#1C0E09",
+        "landcover": "#28140C",
+        "water": "#2C140C",
+        "waterway": "#2C140C",
+        "parks": "#381A10",
+        "buildings": "#D2A55E",
+        "aeroway": "#381A10",
+        "rail": "#ffd78a",
+        "roads": {
+          "major": "#FF5F1F",
+          "path": "#59442c",
+          "outline": "#695235",
+          "minor_high": "#B04010",
+          "minor_mid": "#493623",
+          "minor_low": "#3c2a1b"
+        }
+      }
+    },
+    "ruby": {
+      "name": "Ruby",
+      "description": "Garnet-inspired palette with rich reds over deep plum city blocks.",
+      "ui": {
+        "bg": "#1A070F",
+        "text": "#F6D7BC"
+      },
+      "map": {
+        "land": "#1A070F",
+        "landcover": "#280C18",
+        "water": "#2A0D17",
+        "waterway": "#2A0D17",
+        "parks": "#351021",
+        "buildings": "#EE8EA4",
+        "aeroway": "#351021",
+        "rail": "#f6d7bc",
+        "roads": {
+          "major": "#C0103C",
+          "path": "#553f3e",
+          "outline": "#654e4a",
+          "minor_high": "#780C2C",
+          "minor_mid": "#463132",
+          "minor_low": "#392427"
+        }
+      }
+    },
+    "sage": {
+      "name": "Sage",
+      "description": "Muted botanical tones with cool green roads and gentle contrast.",
+      "ui": {
+        "bg": "#DDE8DD",
+        "text": "#2D4739"
+      },
+      "map": {
+        "land": "#DDE8DD",
+        "landcover": "#D8E4DA",
+        "water": "#C5D4CB",
+        "waterway": "#C5D4CB",
+        "parks": "#D3DFD7",
+        "buildings": "#8BAD9B",
+        "aeroway": "#D3DFD7",
+        "rail": "#2d4739",
+        "roads": {
+          "major": "#3F624F",
+          "path": "#BECCBF",
+          "outline": "#C8D8CC",
+          "minor_high": "#587A68",
+          "minor_mid": "#92B4A2",
+          "minor_low": "#AABFB4"
+        }
+      }
+    },
+    "copper": {
+      "name": "Copper",
+      "description": "Oxidized cream and copper tones with warm metallic road accents.",
+      "ui": {
+        "bg": "#E1D2C6",
+        "text": "#4E2F22"
+      },
+      "map": {
+        "land": "#E1D2C6",
+        "landcover": "#DCCCBE",
+        "water": "#CBB5A1",
+        "waterway": "#CBB5A1",
+        "parks": "#D8C6B5",
+        "buildings": "#C88B72",
+        "aeroway": "#D8C6B5",
+        "rail": "#4e2f22",
+        "roads": {
+          "major": "#7C452E",
+          "path": "#CEBAA6",
+          "outline": "#D4C2AE",
+          "minor_high": "#9E5A3C",
+          "minor_mid": "#C49078",
+          "minor_low": "#C8A890"
+        }
+      }
+    },
+    "rustic": {
+      "name": "Rustic",
+      "description": "Earthy paper-like base with wood and clay road tones.",
+      "ui": {
+        "bg": "#DFD5C8",
+        "text": "#44362C"
+      },
+      "map": {
+        "land": "#DFD5C8",
+        "landcover": "#D9CEC0",
+        "water": "#C4B8A8",
+        "waterway": "#C4B8A8",
+        "parks": "#D2C6B7",
+        "buildings": "#9E7A62",
+        "aeroway": "#D2C6B7",
+        "rail": "#44362c",
+        "roads": {
+          "major": "#563A2A",
+          "path": "#C6A898",
+          "outline": "#CCB0A0",
+          "minor_high": "#7A5040",
+          "minor_mid": "#A68070",
+          "minor_low": "#B89080"
+        }
+      }
+    },
+    "midnight_blue": {
+      "name": "Midnight Blue",
+      "description": "Deep navy background with gold/copper roads - luxury atlas aesthetic",
+      "ui": {
+        "bg": "#0A1628",
+        "text": "#D6B352"
+      },
+      "map": {
+        "land": "#0A1628",
+        "landcover": "#0D1C2F",
+        "water": "#061020",
+        "waterway": "#061020",
+        "parks": "#0F2235",
+        "buildings": "#6E5A45",
+        "aeroway": "#0F2235",
+        "rail": "#d6b352",
+        "roads": {
+          "major": "#C99C37",
+          "path": "#414033",
+          "outline": "#4f4b36",
+          "minor_high": "#8A6820",
+          "minor_mid": "#333530",
+          "minor_low": "#272c2e"
+        }
+      }
+    },
+    "neon": {
+      "name": "Neon",
+      "description": "Neon-drenched high-contrast palette with magenta and cyan accents.",
+      "ui": {
+        "bg": "#0B0F1A",
+        "text": "#00F5FF"
+      },
+      "map": {
+        "land": "#0B0F1A",
+        "landcover": "#130D22",
+        "water": "#001433",
+        "waterway": "#002044",
+        "parks": "#1A0B2A",
+        "buildings": "#FF2D95",
+        "aeroway": "#1A0B2A",
+        "rail": "#00F5FF",
+        "roads": {
+          "major": "#FF2D95",
+          "path": "#21203A",
+          "outline": "#0B0F1A",
+          "minor_high": "#FF6EB4",
+          "minor_mid": "#8A33FF",
+          "minor_low": "#4A0099"
+        }
+      }
+    },
+    "terracotta": {
+      "name": "Terracotta",
+      "description": "Mediterranean warmth - burnt orange and clay tones on cream",
+      "ui": {
+        "bg": "#F5EDE4",
+        "text": "#8B4513"
+      },
+      "map": {
+        "land": "#F5EDE4",
+        "landcover": "#EFE7DA",
+        "water": "#A8C4C4",
+        "waterway": "#A8C4C4",
+        "parks": "#E8E0D0",
+        "buildings": "#D9A08A",
+        "aeroway": "#E8E0D0",
+        "rail": "#8b4513",
+        "roads": {
+          "major": "#A0522D",
+          "path": "#E4C8B0",
+          "outline": "#EAD4C0",
+          "minor_high": "#C07048",
+          "minor_mid": "#DCA882",
+          "minor_low": "#D8B898"
+        }
+      }
+    },
+    "blueprint": {
+      "name": "Blueprint",
+      "description": "Classic architectural blueprint - technical drawing aesthetic",
+      "ui": {
+        "bg": "#1A3A5C",
+        "text": "#E8F4FF"
+      },
+      "map": {
+        "land": "#1A3A5C",
+        "landcover": "#1D4066",
+        "water": "#0E2740",
+        "waterway": "#0E2740",
+        "parks": "#1F466F",
+        "buildings": "#6EA4CC",
+        "aeroway": "#1F466F",
+        "rail": "#e8f4ff",
+        "roads": {
+          "major": "#D8EEFA",
+          "path": "#526c88",
+          "outline": "#607993",
+          "minor_high": "#7AAED0",
+          "minor_mid": "#435f7d",
+          "minor_low": "#375473"
+        }
+      }
+    },
+    "contrast_zones": {
+      "name": "Contrast",
+      "description": "Strong contrast showing urban density - darker in center, lighter at edges",
+      "ui": {
+        "bg": "#FFFFFF",
+        "text": "#111111"
+      },
+      "map": {
+        "land": "#FFFFFF",
+        "landcover": "#F6F6F6",
+        "water": "#B0B0B0",
+        "waterway": "#B0B0B0",
+        "parks": "#ECECEC",
+        "buildings": "#6C6C6C",
+        "aeroway": "#ECECEC",
+        "rail": "#111111",
+        "roads": {
+          "major": "#1A1A1A",
+          "path": "#CCCCCC",
+          "outline": "#D8D8D8",
+          "minor_high": "#484848",
+          "minor_mid": "#989898",
+          "minor_low": "#B8B8B8"
+        }
+      }
+    },
+    "copper_patina": {
+      "name": "Copper Patina",
+      "description": "Oxidized copper aesthetic - teal-green patina with copper accents",
+      "ui": {
+        "bg": "#E8F0F0",
+        "text": "#2A5A5A"
+      },
+      "map": {
+        "land": "#E8F0F0",
+        "landcover": "#E0ECE8",
+        "water": "#C0D8D8",
+        "waterway": "#C0D8D8",
+        "parks": "#D8E8E0",
+        "buildings": "#8AB6B6",
+        "aeroway": "#D8E8E0",
+        "rail": "#2a5a5a",
+        "roads": {
+          "major": "#B87333",
+          "path": "#C8DEDE",
+          "outline": "#D2E6E6",
+          "minor_high": "#629898",
+          "minor_mid": "#A8CACA",
+          "minor_low": "#B8D4D4"
+        }
+      }
+    },
+    "emerald": {
+      "name": "Emerald City",
+      "description": "Lush dark green aesthetic with mint accents",
+      "ui": {
+        "bg": "#062C22",
+        "text": "#E3F9F1"
+      },
+      "map": {
+        "land": "#062C22",
+        "landcover": "#0B3F30",
+        "water": "#0D4536",
+        "waterway": "#0D4536",
+        "parks": "#0F523E",
+        "buildings": "#1A785B",
+        "aeroway": "#0F523E",
+        "rail": "#e3f9f1",
+        "roads": {
+          "major": "#4ADEB0",
+          "path": "#42635a",
+          "outline": "#517268",
+          "minor_high": "#18A070",
+          "minor_mid": "#32554b",
+          "minor_low": "#25493f"
+        }
+      }
+    },
+    "forest_light": {
+      "name": "Forest Light",
+      "description": "Light greens and sage tones - organic botanical aesthetic",
+      "ui": {
+        "bg": "#F0F4F0",
+        "text": "#2D4A3E"
+      },
+      "map": {
+        "land": "#F0F4F0",
+        "landcover": "#E2EEE2",
+        "water": "#B8D4D4",
+        "waterway": "#B8D4D4",
+        "parks": "#D4E8D4",
+        "buildings": "#8AB19A",
+        "aeroway": "#D4E8D4",
+        "rail": "#2d4a3e",
+        "roads": {
+          "major": "#3A5E4D",
+          "path": "#C2D4CA",
+          "outline": "#CEDBD2",
+          "minor_high": "#527A66",
+          "minor_mid": "#90B4A0",
+          "minor_low": "#A8C4B4"
+        }
+      }
+    },
+    "japanese_ink": {
+      "name": "Japanese Ink",
+      "description": "Traditional ink wash inspired - minimalist with subtle red accent",
+      "ui": {
+        "bg": "#FAF8F5",
+        "text": "#2C2C2C"
+      },
+      "map": {
+        "land": "#FAF8F5",
+        "landcover": "#F5F3EE",
+        "water": "#E8E4E0",
+        "waterway": "#E8E4E0",
+        "parks": "#F0EDE8",
+        "buildings": "#959595",
+        "aeroway": "#F0EDE8",
+        "rail": "#2c2c2c",
+        "roads": {
+          "major": "#8B2500",
+          "path": "#D0CECA",
+          "outline": "#DDDBD8",
+          "minor_high": "#505050",
+          "minor_mid": "#A8A8A8",
+          "minor_low": "#BCBAB6"
+        }
+      }
+    },
+    "noir": {
+      "name": "Noir",
+      "description": "Pure black background with white/gray roads - modern gallery aesthetic",
+      "ui": {
+        "bg": "#000000",
+        "text": "#FFFFFF"
+      },
+      "map": {
+        "land": "#000000",
+        "landcover": "#0E0E0E",
+        "water": "#0B0B0B",
+        "waterway": "#0B0B0B",
+        "parks": "#171717",
+        "buildings": "#6F6F6F",
+        "aeroway": "#171717",
+        "rail": "#ffffff",
+        "roads": {
+          "major": "#E8E8E8",
+          "path": "#454545",
+          "outline": "#575757",
+          "minor_high": "#A0A0A0",
+          "minor_mid": "#333333",
+          "minor_low": "#242424"
+        }
+      }
+    },
+    "ocean": {
+      "name": "Ocean",
+      "description": "Various blues and teals - perfect for coastal cities",
+      "ui": {
+        "bg": "#F0F8FA",
+        "text": "#1A5F7A"
+      },
+      "map": {
+        "land": "#F0F8FA",
+        "landcover": "#E4F1F1",
+        "water": "#B8D8E8",
+        "waterway": "#B8D8E8",
+        "parks": "#D8EAE8",
+        "buildings": "#67AED0",
+        "aeroway": "#D8EAE8",
+        "rail": "#1a5f7a",
+        "roads": {
+          "major": "#14536A",
+          "path": "#BCD8E8",
+          "outline": "#CCE4F0",
+          "minor_high": "#2878A0",
+          "minor_mid": "#7ABCD4",
+          "minor_low": "#AACCE0"
+        }
+      }
+    },
+    "pastel_dream": {
+      "name": "Pastel Dream",
+      "description": "Soft muted pastels with dusty blues and mauves - dreamy artistic aesthetic",
+      "ui": {
+        "bg": "#FAF7F2",
+        "text": "#5D5A6D"
+      },
+      "map": {
+        "land": "#FAF7F2",
+        "landcover": "#F1F2EB",
+        "water": "#D4E4ED",
+        "waterway": "#D4E4ED",
+        "parks": "#E8EDE4",
+        "buildings": "#CEC3CB",
+        "aeroway": "#E8EDE4",
+        "rail": "#5d5a6d",
+        "roads": {
+          "major": "#6870A0",
+          "path": "#D8D8E2",
+          "outline": "#E0E0E8",
+          "minor_high": "#9898B8",
+          "minor_mid": "#C4C2D0",
+          "minor_low": "#CCCCDA"
+        }
+      }
+    },
+    "linen": {
+      "name": "Linen",
+      "description": "Warm linen cream with brown map lines - wedding and premium print aesthetic",
+      "ui": {
+        "bg": "#f5f0e8",
+        "text": "#2c2c2a"
+      },
+      "map": {
+        "land": "#f5f0e8",
+        "landcover": "#efe8dc",
+        "water": "#e0d8cc",
+        "waterway": "#e0d8cc",
+        "parks": "#e8e0d4",
+        "buildings": "#a89880",
+        "aeroway": "#e8e0d4",
+        "rail": "#2c2c2a",
+        "roads": {
+          "major": "#8b7355",
+          "path": "#d8d0c4",
+          "outline": "#ddd5c8",
+          "minor_high": "#6a5a44",
+          "minor_mid": "#b0a494",
+          "minor_low": "#c8bfb0"
+        }
+      }
+    },
+    "gold_ink": {
+      "name": "Gold Ink",
+      "description": "Luxury dark base with gold map lines - real estate and high-end prints",
+      "ui": {
+        "bg": "#1a1a1a",
+        "text": "#c8a96e"
+      },
+      "map": {
+        "land": "#1a1a1a",
+        "landcover": "#222222",
+        "water": "#0d0d0d",
+        "waterway": "#0d0d0d",
+        "parks": "#1f2b1a",
+        "buildings": "#8a7040",
+        "aeroway": "#1f2b1a",
+        "rail": "#c8a96e",
+        "roads": {
+          "major": "#c8a96e",
+          "path": "#3a3020",
+          "outline": "#454030",
+          "minor_high": "#8a7040",
+          "minor_mid": "#4a3a28",
+          "minor_low": "#352a1c"
+        }
+      }
+    },
+    "dusk": {
+      "name": "Dusk",
+      "description": "Deep purple dusk with lavender map lines - creative and boutique aesthetic",
+      "ui": {
+        "bg": "#2d1f3d",
+        "text": "#e8b4f8"
+      },
+      "map": {
+        "land": "#2d1f3d",
+        "landcover": "#3a2850",
+        "water": "#1a1028",
+        "waterway": "#1a1028",
+        "parks": "#382850",
+        "buildings": "#8a60a8",
+        "aeroway": "#382850",
+        "rail": "#e8b4f8",
+        "roads": {
+          "major": "#e8b4f8",
+          "path": "#4a3860",
+          "outline": "#554070",
+          "minor_high": "#a070c0",
+          "minor_mid": "#503868",
+          "minor_low": "#3a2850"
+        }
+      }
+    },
+    "ember": {
+      "name": "Ember",
+      "description": "Deep ember base with warm coral map lines - bold and statement aesthetic",
+      "ui": {
+        "bg": "#1a0a0a",
+        "text": "#e87070"
+      },
+      "map": {
+        "land": "#1a0a0a",
+        "landcover": "#281010",
+        "water": "#0f0505",
+        "waterway": "#0f0505",
+        "parks": "#301818",
+        "buildings": "#a05050",
+        "aeroway": "#301818",
+        "rail": "#e87070",
+        "roads": {
+          "major": "#e87070",
+          "path": "#4a2828",
+          "outline": "#583030",
+          "minor_high": "#a85050",
+          "minor_mid": "#502828",
+          "minor_low": "#3a1c1c"
+        }
+      }
+    },
+    "paper_white": {
+      "name": "Paper White",
+      "description": "Clean white base with charcoal map lines - editorial and minimal aesthetic",
+      "ui": {
+        "bg": "#ffffff",
+        "text": "#2c2c2a"
+      },
+      "map": {
+        "land": "#ffffff",
+        "landcover": "#f8f8f8",
+        "water": "#e8e8e8",
+        "waterway": "#e8e8e8",
+        "parks": "#f0f0f0",
+        "buildings": "#999999",
+        "aeroway": "#f0f0f0",
+        "rail": "#2c2c2a",
+        "roads": {
+          "major": "#2c2c2a",
+          "path": "#d8d8d8",
+          "outline": "#e0e0e0",
+          "minor_high": "#5a5a58",
+          "minor_mid": "#a0a0a0",
+          "minor_low": "#c0c0c0"
+        }
+      }
+    },
+    "handmap": {
+      "name": "Handmap",
+      "description": "Warm paper cream with bold screenprint colors — vintage atlas aesthetic",
+      "ui": {
+        "bg": "#F5E6C8",
+        "text": "#2C1810"
+      },
+      "map": {
+        "land": "#F5E6C8",
+        "landcover": "#EBD8A0",
+        "water": "#90C8E8",
+        "waterway": "#90C8E8",
+        "parks": "#90D8B0",
+        "buildings": "#E06050",
+        "aeroway": "#90D8B0",
+        "rail": "#2C1810",
+        "roads": {
+          "major": "#2C1810",
+          "path": "#D8C0A0",
+          "outline": "#E0C8A8",
+          "minor_high": "#8B6914",
+          "minor_mid": "#A67C52",
+          "minor_low": "#C8A882"
+        }
+      }
+    },
+    "khmer_royal": {
+      "name": "Khmer Royal",
+      "description": "Deep crimson and burnished gold — inspired by Khmer royalty and ceremonial silk",
+      "ui": {
+        "bg": "#1A0808",
+        "text": "#D4AF37"
+      },
+      "map": {
+        "land": "#1A0808",
+        "landcover": "#281010",
+        "water": "#140808",
+        "waterway": "#140808",
+        "parks": "#2A1810",
+        "buildings": "#C8A060",
+        "aeroway": "#2A1810",
+        "rail": "#D4AF37",
+        "roads": {
+          "major": "#B8963A",
+          "path": "#5C3A2A",
+          "outline": "#683E2E",
+          "minor_high": "#8B2020",
+          "minor_mid": "#4A2820",
+          "minor_low": "#3A2018"
+        }
+      }
+    },
+    "tonle_sap": {
+      "name": "Tonle Sap",
+      "description": "Mekong water blues and lotus greens — inspired by Cambodia's great lake",
+      "ui": {
+        "bg": "#0A1A1A",
+        "text": "#A8E8D8"
+      },
+      "map": {
+        "land": "#0A1A1A",
+        "landcover": "#102820",
+        "water": "#081828",
+        "waterway": "#081828",
+        "parks": "#123820",
+        "buildings": "#60A898",
+        "aeroway": "#123820",
+        "rail": "#A8E8D8",
+        "roads": {
+          "major": "#48B8A0",
+          "path": "#2A5048",
+          "outline": "#325C50",
+          "minor_high": "#208878",
+          "minor_mid": "#284840",
+          "minor_low": "#1E3830"
+        }
+      }
+    },
+    "bakong": {
+      "name": "Bakong",
+      "description": "Warm terracotta and sun-bleached sandstone — inspired by ancient temple brick",
+      "ui": {
+        "bg": "#2A2018",
+        "text": "#F0D8B0"
+      },
+      "map": {
+        "land": "#2A2018",
+        "landcover": "#382C20",
+        "water": "#1A1810",
+        "waterway": "#1A1810",
+        "parks": "#3A3020",
+        "buildings": "#C89868",
+        "aeroway": "#3A3020",
+        "rail": "#F0D8B0",
+        "roads": {
+          "major": "#B88858",
+          "path": "#5C4A38",
+          "outline": "#685240",
+          "minor_high": "#8B6A40",
+          "minor_mid": "#504030",
+          "minor_low": "#403428"
+        }
+      }
+    },
+    "apsara": {
+      "name": "Apsara",
+      "description": "Soft sandstone with elegant gold accents — inspired by celestial dancer bas-reliefs",
+      "ui": {
+        "bg": "#F5EDE0",
+        "text": "#8B4513"
+      },
+      "map": {
+        "land": "#F5EDE0",
+        "landcover": "#EFE5D4",
+        "water": "#D0C8B8",
+        "waterway": "#D0C8B8",
+        "parks": "#E8E0D0",
+        "buildings": "#C8A880",
+        "aeroway": "#E8E0D0",
+        "rail": "#8B4513",
+        "roads": {
+          "major": "#B08040",
+          "path": "#E0D4C0",
+          "outline": "#E8DCC8",
+          "minor_high": "#A07848",
+          "minor_mid": "#C8B898",
+          "minor_low": "#D8C8A8"
+        }
+      }
+    }
+  }
+}
