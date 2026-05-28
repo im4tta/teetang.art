@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/im4tta/teetang.art/main/assets/logo.png" width="80" alt="Tee Tang Art">
+  <img src="https://github.com/im4tta/teetang.art/blob/main/public/assets/logo.png?raw=true" width="80" alt="Tee Tang Art">
 </p>
 
 <h1 align="center">Tee Tang Art — ទីតាំង</h1>
@@ -80,8 +80,9 @@ MIT — see [LICENSE](./LICENSE). Free to use, modify, and distribute.
 <p align="center">
   <a href="https://star-history.com/#im4tta/teetang.art&Date">
     <picture>
-      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=im4tta/teetang.art&type=Date&theme=dark">
-      <img src="https://api.star-history.com/svg?repos=im4tta/teetang.art&type=Date" width="600" alt="Star History Chart">
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=im4tta/teetang.art&type=Date&theme=dark" />
+      <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=im4tta/teetang.art&type=Date" />
+      <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=im4tta/teetang.art&type=Date" width="600" />
     </picture>
   </a>
 </p>
