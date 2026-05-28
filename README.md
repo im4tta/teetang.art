@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/im4tta/teetang.art/main/assets/logo.svg" width="80" alt="Tee Tang Art">
+  <img src="https://raw.githubusercontent.com/im4tta/teetang.art/main/assets/logo.png" width="80" alt="Tee Tang Art">
 </p>
 
 <h1 align="center">Tee Tang Art — ទីតាំង</h1>
@@ -23,10 +23,11 @@
 </p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React 18">
-  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5">
-  <img src="https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white" alt="Vite 7">
-  <img src="https://img.shields.io/badge/MapLibre_GL-3-7CB342?logo=maplibre&logoColor=white" alt="MapLibre GL 3">
+  <img src="https://img.shields.io/badge/React-19.2.6-61DAFB?logo=react&logoColor=white" alt="React 19">
+  <img src="https://img.shields.io/badge/TypeScript-6.0.3-3178C6?logo=typescript&logoColor=white" alt="TypeScript 6">
+  <img src="https://img.shields.io/badge/Vite-8.0.14-646CFF?logo=vite&logoColor=white" alt="Vite 8">
+  <img src="https://img.shields.io/badge/MapLibre_GL-5.24.0-7CB342?logo=maplibre&logoColor=white" alt="MapLibre GL 5">
+  <img src="https://img.shields.io/badge/ESLint-10.4.0-4B32C3?logo=eslint&logoColor=white" alt="ESLint 10">
   <img src="https://img.shields.io/badge/PWA-ready-8A2BE2" alt="PWA Ready">
 </p>
 
@@ -56,13 +57,15 @@ npm run typecheck  # run TypeScript type-check
 
 ## Tech Stack
 
-| Layer | Library |
+| Package | Version |
 |---|---|
-| Framework | React 18 + TypeScript 5 |
-| Build tool | Vite 7 |
-| Map engine | MapLibre GL 3 |
-| Styling | CSS / Tailwind |
-| PWA | Vite PWA Plugin |
+| `react` + `react-dom` | 19.2.6 |
+| `typescript` | 6.0.3 |
+| `vite` | 8.0.14 |
+| `@vitejs/plugin-react` | 6.0.2 |
+| `maplibre-gl` | 5.24.0 |
+| `eslint` | 10.4.0 |
+| `vite-plugin-pwa` | 1.3.0 |
 
 ## Contributing
 
