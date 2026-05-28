@@ -1,8 +1,5 @@
 <p align="center">
-  <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="/assets/logo.svg">
-    <img src="/assets/logo.svg" width="80" alt="Tee Tang Art">
-  </picture>
+  <img src="https://raw.githubusercontent.com/im4tta/teetang.art/main/assets/logo.svg" width="80" alt="Tee Tang Art">
 </p>
 
 <h1 align="center">Tee Tang Art — ទីតាំង</h1>
@@ -14,111 +11,77 @@
 </p>
 
 <p align="center">
+  <a href="https://github.com/im4tta/teetang.art/stargazers">
+    <img src="https://img.shields.io/github/stars/im4tta/teetang.art?style=for-the-badge&logo=github&color=FFD700" alt="GitHub Stars">
+  </a>
+  <a href="https://github.com/im4tta/teetang.art/issues">
+    <img src="https://img.shields.io/github/issues/im4tta/teetang.art?style=for-the-badge&logo=github&color=FF6B6B" alt="GitHub Issues">
+  </a>
+  <a href="https://github.com/im4tta/teetang.art/blob/main/LICENSE">
+    <img src="https://img.shields.io/badge/license-MIT-blue?style=for-the-badge" alt="MIT License">
+  </a>
+</p>
+
+<p align="center">
   <img src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white" alt="React 18">
-  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript">
+  <img src="https://img.shields.io/badge/TypeScript-5-3178C6?logo=typescript&logoColor=white" alt="TypeScript 5">
   <img src="https://img.shields.io/badge/Vite-7-646CFF?logo=vite&logoColor=white" alt="Vite 7">
-  <img src="https://img.shields.io/badge/MapLibre_GL-3-7CB342?logo=maplibre&logoColor=white" alt="MapLibre GL">
-  <img src="https://img.shields.io/badge/license-MIT-green" alt="MIT License">
+  <img src="https://img.shields.io/badge/MapLibre_GL-3-7CB342?logo=maplibre&logoColor=white" alt="MapLibre GL 3">
+  <img src="https://img.shields.io/badge/PWA-ready-8A2BE2" alt="PWA Ready">
 </p>
 
 ---
 
+**Tee Tang Art** (ទីតាំង — "location" in Khmer) is a free, open-source web app for creating custom map posters. Pick any location, style the colors, add markers and routes, and export a print-ready poster. No sign-up, no watermarks, no nonsense.
+
+Built for travelers, real estate agents, wedding invitations, and anyone who wants a beautiful map of a meaningful place.
+
 ## Features
 
-- **Interactive Map Editor** — Pan, zoom, rotate, and style your map in real time using MapLibre GL with OpenStreetMap data
-- **8 Poster Shapes** — Rectangle, rounded, circle, diamond, hexagon, star, triangle, heart
-- **Color Themes** — Curated light, dark, and vintage palettes with per-layer customization
-- **Dual-City Mode** — Split-layout posters with independent themes and locations for each half
-- **Typography Controls** — Google Fonts picker, dynamic title/subtitle layout, letter spacing, alignment, footer text
-- **Khmer Language Support** — Full UI translation with native Khmer font support
-- **Marker Overlays** — Customizable pin markers with drag-and-drop positioning and custom icon uploads
-- **Route Drawing** — Click two points or search location names A → B with OSRM road snapping
-- **POI Highlights** — Toggle schools, hospitals, markets, banks, restaurants on the map
-- **QR Code** — Configurable QR overlay linking to Google Maps, Apple Maps, WhatsApp, Telegram, or custom URL
-- **Logo Overlay** — Upload custom logo with position, size, opacity, and padding controls
-- **Export Formats** — PNG, PDF (via print), and layered SVG with high-resolution support
-- **Desktop & Mobile** — Responsive accordion settings panel + swipe gestures on mobile
-
-## Tech Stack
-
-| Layer | Technology |
-|-------|-----------|
-| Framework | React 18 + TypeScript |
-| Bundler | Vite 7 |
-| Map Engine | MapLibre GL JS |
-| Tiles | OpenFreeMap, Carto (Voyager/Light/Dark), Esri Satellite |
-| Routing | OSRM (public API) |
-| Geocoding | Nominatim |
-| Export | Canvas 2D + SVG (layered) |
-| Fonts | Google Fonts (dynamic load) |
-| i18n | English, Khmer |
+- 🗺️ **Any place on Earth** — search by name or drop a pin anywhere
+- 🎨 **Custom styles** — full color control over land, water, roads, and labels
+- 📍 **Markers & routes** — annotate your map with custom pins and paths
+- 🖨️ **Print-ready export** — high-resolution output ready for print or framing
+- 📱 **PWA** — installable on desktop and mobile, works offline
+- 🔒 **No account required** — no sign-up, no watermarks, fully free
 
 ## Quick Start
 
 ```bash
 npm install
-npm run dev      # Start dev server
-npm run build    # Build for production
-npm run typecheck
+npm run dev        # starts dev server at localhost:5173
+npm run build      # production build
+npm run typecheck  # run TypeScript type-check
 ```
 
-## Project Structure
+## Tech Stack
 
-```
-src/
-├── core/                  # Config, constants, global types, services
-├── data/                  # Static data (themes.json, layouts.json)
-├── features/
-│   ├── export/            # PNG/PDF/SVG export engine
-│   ├── install/           # PWA install prompt
-│   ├── layout/            # Poster dimensions & aspect ratio
-│   ├── location/          # Nominatim search + location parser
-│   ├── map/               # Map preview, controls, POI overlay
-│   ├── markers/           # Pin markers, custom icons, drag overlay
-│   ├── poster/            # Poster state, reducer, preview panel, dual-city, text overlays
-│   ├── routes/            # Route drawing, OSRM integration, endpoint markers
-│   ├── theme/             # Color theme definitions & repository
-│   └── updates/           # Changelog / update notifications
-├── pages/                 # Home page, Create page
-├── shared/
-│   ├── geo/               # Math utilities (haversine, clamp, etc.)
-│   ├── hooks/             # Swipe gestures, mobile viewport, etc.
-│   ├── i18n/              # English + Khmer translation keys
-│   ├── ui/                # App shell, modals, icons, user guides
-│   └── utils/             # Storage, URL builders, search history
-├── styles/                # CSS: desktop, mobile, forms, preview
-└── types/                 # Global type declarations
-```
+| Layer | Library |
+|---|---|
+| Framework | React 18 + TypeScript 5 |
+| Build tool | Vite 7 |
+| Map engine | MapLibre GL 3 |
+| Styling | CSS / Tailwind |
+| PWA | Vite PWA Plugin |
 
-## Roadmap
+## Contributing
 
-- [x] Interactive map with multiple tile providers
-- [x] 8+ poster shapes with clip-path rendering
-- [x] Custom markers with drag-and-drop
-- [x] Route drawing with OSRM road snapping
-- [x] Named route creation via location autocomplete (A → B)
-- [x] Draggable route endpoints and via points
-- [x] Dual-city split-layout posters with per-city themes
-- [x] POI overlay (schools, hospitals, markets, banks, restaurants)
-- [x] QR code with multi-destination support
-- [x] Logo upload with position/size/opacity controls
-- [x] Property card and shop signage layouts
-- [x] Khmer language support
-- [ ] Print-at-home templates with crop marks
-- [ ] Custom GeoJSON / shape import
-- [ ] Turn-by-turn navigation directions on poster
-
-## Credits
-
-- Inspired by [originalankur/maptoposter](https://github.com/originalankur/maptoposter)
-- © [OpenStreetMap](https://openstreetmap.org/copyright) contributors
-- Powered by MapLibre GL, OpenFreeMap, Nominatim, and OSRM
+Pull requests are welcome! Please open an issue first to discuss larger changes. Make sure `npm run typecheck` passes before submitting.
 
 ## License
 
-MIT — see [LICENSE](./LICENSE) for details.
+MIT — see [LICENSE](./LICENSE). Free to use, modify, and distribute.
 
 ---
+
+<p align="center">
+  <a href="https://star-history.com/#im4tta/teetang.art&Date">
+    <picture>
+      <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=im4tta/teetang.art&type=Date&theme=dark">
+      <img src="https://api.star-history.com/svg?repos=im4tta/teetang.art&type=Date" width="600" alt="Star History Chart">
+    </picture>
+  </a>
+</p>
 
 <p align="center">
   <em>Built with love from Cambodia</em> ❤️
