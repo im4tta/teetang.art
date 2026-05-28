@@ -1,0 +1,972 @@
+/* ── Home Page Design System (matches home.html) ── */
+
+.home-page {
+  --home-bg-primary: #0b0f19;
+  --home-bg-secondary: #131a2c;
+  --home-bg-tertiary: #1e293b;
+  --home-text-primary: #f8fafc;
+  --home-text-secondary: #94a3b8;
+  --home-color-accent: #c0392b;
+  --home-color-accent-light: #e74c3c;
+  --home-color-gold: #d4af37;
+  --home-border-color: #262f45;
+  --home-card-bg: #111827;
+  --home-accent-glow: rgba(192, 57, 43, 0.25);
+
+  font-family: "Kantumruy Pro", "Noto Sans Khmer", "Inter", sans-serif;
+  background: var(--home-bg-primary);
+  color: var(--home-text-primary);
+  min-height: 100vh;
+  overflow-y: auto;
+}
+
+/* PWA safe-area: push content below status bar */
+html[data-display-mode="standalone"] .home-page {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.light-theme .home-page {
+  --home-bg-primary: #f8fafc;
+  --home-bg-secondary: #f1f5f9;
+  --home-bg-tertiary: #e2e8f0;
+  --home-text-primary: #0f172a;
+  --home-text-secondary: #475569;
+  --home-color-accent: #c0392b;
+  --home-color-accent-light: #c0392b;
+  --home-color-gold: #b58900;
+  --home-border-color: #cbd5e1;
+  --home-card-bg: #ffffff;
+  --home-accent-glow: rgba(192, 57, 43, 0.1);
+}
+
+/* ── Container ── */
+.home-page .container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+/* ── Navigation ── */
+.home-nav {
+  border-bottom: 1px solid var(--home-border-color);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  position: sticky;
+  top: 0;
+  z-index: 99;
+  background: rgba(11, 15, 25, 0.85);
+}
+
+.light-theme .home-nav {
+  background: rgba(248, 250, 252, 0.85);
+}
+
+.home-nav-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  height: 75px;
+}
+
+.home-logo-area {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+}
+
+.home-logo-icon {
+  width: 38px;
+  height: 38px;
+  background: var(--home-color-accent);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 20px;
+  box-shadow: 0 4px 12px var(--home-accent-glow);
+}
+
+.home-logo-text {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 24px;
+  letter-spacing: 0.05em;
+  color: var(--home-text-primary);
+  font-weight: bold;
+}
+
+.home-logo-text span {
+  color: var(--home-color-accent);
+}
+
+.home-logo-kh {
+  font-size: 11px;
+  background: var(--home-color-gold);
+  color: #000;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-weight: 700;
+  margin-left: 8px;
+  letter-spacing: 0;
+  font-family: "Kantumruy Pro", "Noto Sans Khmer", sans-serif;
+}
+
+.home-nav-menu {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+}
+
+.home-nav-item {
+  color: var(--home-text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+  font-family: inherit;
+}
+
+.home-nav-item:hover {
+  color: var(--home-color-accent-light);
+}
+
+.home-theme-toggle {
+  background: none;
+  border: 1px solid var(--home-border-color);
+  color: var(--home-text-primary);
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-theme-toggle:hover {
+  border-color: var(--home-color-accent);
+  color: var(--home-color-accent);
+}
+
+.home-cta-button {
+  background: var(--home-color-accent);
+  color: white !important;
+  border: none;
+  border-radius: 8px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 15px var(--home-accent-glow);
+}
+
+.home-cta-button:hover {
+  background: var(--home-color-accent-light);
+  transform: translateY(-1px);
+}
+
+.home-mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  color: var(--home-text-primary);
+  cursor: pointer;
+  padding: 6px;
+}
+
+/* ── Hero ── */
+.home-hero {
+  padding: 70px 0 40px;
+  text-align: center;
+  background: radial-gradient(circle at top, rgba(192, 57, 43, 0.08) 0%, transparent 60%);
+  position: relative;
+  overflow: hidden;
+}
+
+.home-hero::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image: radial-gradient(circle, var(--home-color-accent-light) 1.5px, transparent 1.5px);
+  background-size: 28px 28px;
+  opacity: 0.25;
+  animation: home-dot-drift 30s linear infinite;
+  pointer-events: none;
+}
+
+@keyframes home-dot-drift {
+  0% { transform: translate(0, 0); }
+  25% { transform: translate(16px, -8px); }
+  50% { transform: translate(8px, 16px); }
+  75% { transform: translate(-12px, -4px); }
+  100% { transform: translate(0, 0); }
+}
+
+.home-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--home-bg-secondary);
+  border: 1px solid var(--home-border-color);
+  padding: 6px 16px;
+  border-radius: 50px;
+  font-size: 13px;
+  color: var(--home-text-primary);
+  font-weight: 500;
+  margin-bottom: 24px;
+}
+
+.home-badge-dot {
+  width: 8px;
+  height: 8px;
+  background-color: var(--home-color-accent-light);
+  border-radius: 50%;
+  box-shadow: 0 0 10px var(--home-color-accent-light);
+  animation: home-pulse 2s infinite;
+}
+
+/* ── Toast ── */
+.home-toast {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  background: var(--home-bg-secondary);
+  border: 1.5px solid var(--home-color-accent);
+  color: var(--home-text-primary);
+  padding: 14px 24px;
+  border-radius: 10px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  animation: home-fade-in-up 0.4s ease;
+}
+
+.home-toast-icon {
+  width: 20px;
+  height: 20px;
+  color: var(--home-color-gold);
+  flex-shrink: 0;
+}
+
+@keyframes home-fade-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes home-pulse {
+  0% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+  50% {
+    transform: scale(1.1);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(0.9);
+    opacity: 0.6;
+  }
+}
+
+@keyframes home-badge-pop {
+  0% {
+    transform: scale(0) translateY(14px) rotate(-8deg);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.25) translateY(-3px) rotate(4deg);
+    opacity: 1;
+  }
+  75% {
+    transform: scale(0.92) translateY(1px) rotate(-2deg);
+  }
+  100% {
+    transform: scale(1) translateY(0) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+@keyframes home-badge-beat {
+  0% {
+    transform: scale(1);
+  }
+  15% {
+    transform: scale(1.18);
+  }
+  30% {
+    transform: scale(1);
+  }
+  45% {
+    transform: scale(1.12);
+  }
+  60% {
+    transform: scale(1);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes home-section-reveal {
+  from {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.home-section-reveal {
+  opacity: 0;
+  animation: home-section-reveal 0.7s ease-out forwards;
+}
+
+.home-section-reveal--1 {
+  animation-delay: 0.1s;
+}
+.home-section-reveal--2 {
+  animation-delay: 0.2s;
+}
+.home-section-reveal--3 {
+  animation-delay: 0.3s;
+}
+.home-section-reveal--4 {
+  animation-delay: 0.4s;
+}
+.home-section-reveal--5 {
+  animation-delay: 0.5s;
+}
+
+/* Scroll-triggered reveals */
+[data-reveal] {
+  opacity: 0;
+  transform: translateY(32px);
+  transition:
+    opacity 0.7s ease-out,
+    transform 0.7s ease-out;
+}
+
+.home-section-reveal-active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.home-hero-title {
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 80px;
+  line-height: 0.95;
+  letter-spacing: 0.01em;
+  margin-bottom: 12px;
+  text-transform: uppercase;
+  color: var(--home-text-primary);
+}
+
+.home-hero-title em {
+  color: var(--home-color-accent);
+  font-style: normal;
+  background: linear-gradient(to right, var(--home-color-accent), var(--home-color-gold));
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.home-hero-subtitle-kh {
+  font-family: "Kantumruy Pro", sans-serif;
+  font-size: 28px;
+  font-weight: 700;
+  color: var(--home-color-gold);
+  margin-bottom: 18px;
+}
+
+.home-hero-desc {
+  font-size: 16px;
+  color: var(--home-text-secondary);
+  max-width: 600px;
+  margin: 0 auto 32px;
+  line-height: 1.6;
+}
+
+.home-hero-actions {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 48px;
+}
+
+/* ── Buttons ── */
+.home-btn {
+  padding: 14px 28px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 600;
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  border: none;
+  font-family: inherit;
+  transition: all 0.2s ease;
+}
+
+.home-btn-primary {
+  background: var(--home-color-accent);
+  color: white;
+  box-shadow: 0 6px 20px var(--home-accent-glow);
+}
+
+.home-btn-primary:hover {
+  background: var(--home-color-accent-light);
+  transform: translateY(-2px);
+}
+
+.home-btn-secondary {
+  background: transparent;
+  color: var(--home-text-primary);
+  border: 1px solid var(--home-border-color);
+}
+
+.home-btn-secondary:hover {
+  background: var(--home-bg-secondary);
+  border-color: var(--home-text-secondary);
+}
+
+/* ── Stats bar ── */
+.home-stats-bar {
+  display: grid;
+  grid-template-columns: 1fr;
+  border-bottom: 1px solid var(--home-border-color);
+  background: var(--home-bg-primary);
+}
+
+.home-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.home-stat-cell {
+  padding: 24px 20px;
+  border-right: 1px solid var(--home-border-color);
+  text-align: center;
+}
+
+.home-stat-cell:last-child {
+  border-right: none;
+}
+
+.home-stat-num {
+  font-family: "Noto Sans Khmer", "Bebas Neue", sans-serif;
+  font-size: 48px;
+  color: var(--home-color-accent-light);
+  line-height: 1;
+  display: block;
+  letter-spacing: 0.05em;
+}
+
+.home-stat-label {
+  font-family: "Noto Sans Khmer", sans-serif;
+  font-size: 13px;
+  color: var(--home-text-secondary);
+  margin-top: 6px;
+  display: block;
+  font-weight: 500;
+}
+
+/* ── Section Headers ── */
+.home-section-header {
+  text-align: center;
+  margin-bottom: 50px;
+}
+
+.home-section-tag {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--home-color-accent-light);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  margin-bottom: 10px;
+  display: block;
+}
+
+.home-section-h {
+  font-family: "Noto Sans Khmer", "Bebas Neue", sans-serif;
+  font-size: 52px;
+  line-height: 1;
+  letter-spacing: 0.01em;
+  color: var(--home-text-primary);
+  margin-bottom: 12px;
+}
+
+.home-section-sub {
+  font-size: 16px;
+  color: var(--home-text-secondary);
+  max-width: 600px;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+
+/* ── Features ── */
+.home-features {
+  padding: 80px 0;
+}
+
+.home-carousel {
+  overflow: hidden;
+  position: relative;
+}
+
+.home-carousel-track {
+  display: flex;
+  transition: transform 0.5s ease;
+}
+
+.home-carousel-track > .home-carousel-card {
+  min-width: 100%;
+  box-sizing: border-box;
+}
+
+.home-carousel-dots {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.home-carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  border: none;
+  background: var(--home-border-color);
+  cursor: pointer;
+  padding: 0;
+  transition: background 0.3s;
+}
+
+.home-carousel-dot.active {
+  background: var(--home-color-accent-light);
+  width: 24px;
+  border-radius: 4px;
+}
+
+.home-carousel-card {
+  background: var(--home-card-bg);
+  border: 1px solid var(--home-border-color);
+  border-radius: 12px;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.home-carousel-icon-box {
+  width: 40px;
+  height: 40px;
+  background: rgba(192, 57, 43, 0.1);
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--home-color-accent-light);
+}
+
+.home-carousel-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--home-text-primary);
+}
+
+.home-carousel-title span {
+  display: block;
+  font-size: 11px;
+  color: var(--home-color-gold);
+  font-family: "Kantumruy Pro", sans-serif;
+  margin-top: 2px;
+  font-weight: 500;
+}
+
+.home-carousel-desc {
+  font-size: 13px;
+  color: var(--home-text-secondary);
+  line-height: 1.5;
+}
+
+/* ── Steps ── */
+.home-steps-section {
+  padding: 80px 0;
+  background: var(--home-bg-secondary);
+  border-top: 1px solid var(--home-border-color);
+  border-bottom: 1px solid var(--home-border-color);
+}
+
+.home-steps-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 30px;
+  margin-top: 40px;
+}
+
+.home-step-card {
+  background: var(--home-card-bg);
+  border: 1px solid var(--home-border-color);
+  border-radius: 16px;
+  padding: 32px;
+  text-align: center;
+  position: relative;
+}
+
+.home-step-num {
+  width: 40px;
+  height: 40px;
+  background: var(--home-color-accent);
+  color: #fff;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 20px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 16px;
+  box-shadow: 0 4px 10px var(--home-accent-glow);
+}
+
+.home-step-h {
+  font-size: 18px;
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: var(--home-text-primary);
+}
+
+.home-step-desc {
+  font-size: 13.5px;
+  color: var(--home-text-secondary);
+  line-height: 1.6;
+}
+
+/* ── Use Cases ── */
+.home-usecase-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 20px;
+  margin-top: 40px;
+}
+
+.home-uc-card {
+  background: var(--home-card-bg);
+  border: 1px solid var(--home-border-color);
+  border-radius: 12px;
+  padding: 24px;
+}
+
+.home-uc-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.home-uc-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.home-uc-tag {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--home-text-primary);
+}
+
+.home-uc-kh {
+  font-size: 12px;
+  color: var(--home-color-gold);
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+
+.home-uc-desc {
+  font-size: 13px;
+  color: var(--home-text-secondary);
+  line-height: 1.6;
+}
+
+/* ── Provinces ── */
+.home-provinces-section {
+  padding: 80px 0;
+  text-align: center;
+  background: radial-gradient(circle at bottom, rgba(212, 175, 55, 0.05) 0%, transparent 60%);
+}
+
+.home-provinces-container {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+  max-width: 800px;
+  margin: 30px auto 0;
+}
+
+.home-province-chip {
+  background: var(--home-card-bg);
+  border: 1px solid var(--home-border-color);
+  color: var(--home-text-primary);
+  padding: 8px 16px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.home-province-chip:hover,
+.home-province-chip.active {
+  border-color: var(--home-color-accent);
+  background: rgba(192, 57, 43, 0.1);
+  color: var(--home-color-accent-light);
+}
+
+/* ── Testimonials ── */
+.home-testimonials {
+  padding: 80px 0;
+  background: var(--home-bg-secondary);
+  border-top: 1px solid var(--home-border-color);
+}
+
+.home-testi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 24px;
+  margin-top: 40px;
+}
+
+.home-testi-card {
+  background: var(--home-card-bg);
+  border: 1px solid var(--home-border-color);
+  border-radius: 12px;
+  padding: 28px;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.home-testi-stars {
+  color: var(--home-color-gold);
+  font-size: 16px;
+  margin-bottom: 12px;
+}
+
+.home-testi-text {
+  font-size: 13.5px;
+  color: var(--home-text-primary);
+  font-style: italic;
+  margin-bottom: 20px;
+  line-height: 1.7;
+}
+
+.home-testi-footer {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.home-testi-avatar {
+  width: 40px;
+  height: 40px;
+  background: var(--home-bg-tertiary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: 14px;
+  color: var(--home-color-accent-light);
+  border: 1px solid var(--home-border-color);
+}
+
+.home-testi-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--home-text-primary);
+}
+
+.home-testi-role {
+  font-size: 11px;
+  color: var(--home-text-secondary);
+}
+
+/* ── Community Banner ── */
+.home-community-banner {
+  padding: 80px 0;
+  text-align: center;
+  background: linear-gradient(135deg, rgba(192, 57, 43, 0.15) 0%, rgba(11, 15, 25, 0) 100%);
+}
+
+.home-banner-h {
+  font-family: "Noto Sans Khmer", "Bebas Neue", sans-serif;
+  font-size: 56px;
+  margin-bottom: 12px;
+  color: var(--home-text-primary);
+}
+
+.home-banner-sub {
+  font-size: 15px;
+  color: var(--home-text-secondary);
+  max-width: 600px;
+  margin: 0 auto 32px;
+  line-height: 1.6;
+}
+
+/* ── Footer ── */
+.home-footer {
+  background: var(--home-bg-primary);
+  border-top: 1px solid var(--home-border-color);
+  padding: 40px 0;
+}
+
+.home-footer-container {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.home-footer-left {
+  font-size: 13px;
+  color: var(--home-text-secondary);
+}
+
+.home-footer-left a {
+  color: var(--home-color-accent-light);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.home-footer-right {
+  font-size: 12px;
+  color: var(--home-text-secondary);
+}
+
+/* ── Vertical Artistic Theme Tag ── */
+.home-vertical-tag {
+  position: fixed;
+  right: -70px;
+  top: 50%;
+  transform: translateY(-50%) rotate(90deg);
+  transform-origin: center center;
+  white-space: nowrap;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 1em;
+  color: rgba(212, 175, 55, 0.4);
+  z-index: 40;
+  pointer-events: none;
+  font-family: "Kantumruy Pro", "Noto Sans Khmer", serif;
+  transition: color 0.3s ease;
+}
+
+.home-vertical-tag:hover {
+  color: rgba(212, 175, 55, 0.7);
+}
+
+@media (max-width: 1024px) {
+  .home-vertical-tag {
+    display: none;
+  }
+}
+
+/* ── Responsive ── */
+@media (max-width: 768px) {
+  .home-hero-title {
+    font-size: 55px;
+  }
+
+  .home-nav-menu {
+    display: none;
+    position: absolute;
+    top: 75px;
+    left: 0;
+    right: 0;
+    background: var(--home-bg-secondary);
+    border-bottom: 1px solid var(--home-border-color);
+    flex-direction: column;
+    padding: 20px;
+    gap: 16px;
+    align-items: stretch;
+  }
+
+  .home-nav-menu.is-open {
+    display: flex;
+  }
+
+  .home-mobile-menu-btn {
+    display: block;
+  }
+
+  .home-stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-stat-cell {
+    border-right: none;
+    border-bottom: 1px solid var(--home-border-color);
+  }
+
+  .home-stat-cell:last-child {
+    border-bottom: none;
+  }
+
+  .home-steps-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .home-footer-container {
+    flex-direction: column;
+    text-align: center;
+  }
+}
+
+.home-gotop {
+  position: fixed;
+  bottom: 24px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 1px solid var(--home-border-color);
+  background: var(--home-card-bg);
+  color: var(--home-text-primary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 100;
+  transition: opacity 0.3s, transform 0.3s;
+  opacity: 0.85;
+}
+
+.home-gotop:hover {
+  opacity: 1;
+  transform: translateY(-2px);
+  border-color: var(--home-color-accent-light);
+}
