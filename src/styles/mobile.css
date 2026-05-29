@@ -1356,6 +1356,7 @@
     padding: 14px 0 10px;
     background: #080f18;
     position: relative;
+    align-items: start;
   }
 
   .poster-ghost-layer {
@@ -1552,6 +1553,11 @@
 
   /* Style tab: show only the style/typography section */
   [data-mobile-tab="style"] .mobile-section:not(.mobile-section--style) {
+    display: none;
+  }
+
+  /* DualCity tab: show only the dual-city section */
+  [data-mobile-tab="dualCity"] .mobile-section:not(.mobile-section--dualCity) {
     display: none;
   }
 
