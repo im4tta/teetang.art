@@ -207,7 +207,7 @@ export default function HomePage() {
           </p>
 
           <div className="home-hero-actions">
-            <a href="#studio" className="home-btn home-btn-primary">
+            <a href="https://www.teetang.art/create" className="home-btn home-btn-primary">
               <MousePointer2 size={20} /> សាកល្បងរចនាឥឡូវនេះ
             </a>
             <a
