@@ -17,6 +17,7 @@ import {
   getShapeTextYOffset,
   getShapeAttributionX,
 } from "@/features/poster/domain/textLayout";
+import { containsKhmer, KHMER_OPTICAL_LIFT_EM } from "@/features/poster/domain/textLayout";
 import type { PosterShape } from "@/features/poster/domain/clipShapes";
 
 interface PosterTextOverlayProps {
@@ -65,7 +66,7 @@ export default function PosterTextOverlay({
 }: PosterTextOverlayProps) {
   const toCqMin = (px: number) => (px / TEXT_DIMENSION_REFERENCE_PX) * 100;
 
-  const khmerFallback = '"Battambang", "Suwannaphum", serif';
+  const khmerFallback = '"Battambang", "Noto Sans Khmer", "Suwannaphum", serif';
   const titleFont = fontFamily
     ? `"${fontFamily}", ${khmerFallback}, "DM Sans", sans-serif`
     : `"DM Sans", ${khmerFallback}, sans-serif`;
@@ -83,6 +84,11 @@ export default function PosterTextOverlay({
   const attributionOpacity = showOverlay ? 0.55 : 0.9;
   const yOffset = getShapeTextYOffset(shape);
   const LIVE_ATTR_EXTRA_MARGIN_RATIO = 0.005;
+
+  const khmerLift = (text: string): number => (containsKhmer(text) ? -KHMER_OPTICAL_LIFT_EM : 0);
+
+  const cityLift = khmerLift(cityLabel);
+  const countryLift = khmerLift(countryLabel);
 
   const alignmentStyle: React.CSSProperties = {
     textAlign: titleAlign as any,
@@ -104,6 +110,7 @@ export default function PosterTextOverlay({
               fontSize: cityFontSize,
               letterSpacing: ls,
               ...alignmentStyle,
+              ...(cityLift ? { transform: `translateY(calc(-50% + ${cityLift}em))` } : {}),
             }}
           >
             {cityLabel}
@@ -125,6 +132,7 @@ export default function PosterTextOverlay({
               fontSize: countryFontSize,
               letterSpacing: ls,
               ...alignmentStyle,
+              ...(countryLift ? { transform: `translateY(calc(-50% + ${countryLift}em))` } : {}),
             }}
           >
             {countryLabel}

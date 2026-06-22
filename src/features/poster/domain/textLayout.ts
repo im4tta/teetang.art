@@ -51,6 +51,30 @@ export function formatCityLabel(city: string): string {
 }
 
 /**
+ * Khmer script range: U+1780-17FF (Khmer), U+19E0-19FF (Khmer Symbols),
+ * plus ZWJ/ZWNJ/U+25CC which participate in coeng/roboreang clusters.
+ */
+const KHMER_CHAR_RE = /[\u1780-\u17FF\u19E0-\u19FF]/;
+
+/** True if the string contains any Khmer (or Khmer Symbols) codepoint. */
+export function containsKhmer(text: string | undefined | null): boolean {
+  if (!text) {
+    return false;
+  }
+  return KHMER_CHAR_RE.test(text);
+}
+
+/**
+ * Optical lift (em) applied to Khmer text so its visual midline matches
+ * Latin cap-height text under the same font-size. Khmer glyphs use
+ * subscript coeng/roboreang clusters that sit in the lower half of the
+ * em-box, so without this lift Khmer text appears below English text
+ * that shares the same `text-align: center` line. Em-based so it scales
+ * with font-size automatically.
+ */
+export const KHMER_OPTICAL_LIFT_EM = 0.12;
+
+/**
  * Returns a multiplier (≤1) to shrink the city font for long names.
  * Callers apply it to their own base font size.
  */

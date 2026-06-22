@@ -13,6 +13,8 @@ import {
   computeCityFontScale,
   computeDualCityFontScale,
   computeAttributionColor,
+  containsKhmer,
+  KHMER_OPTICAL_LIFT_EM,
 } from "@/features/poster/domain/textLayout";
 
 interface DualPosterTextOverlayProps {
@@ -62,7 +64,7 @@ export default function DualPosterTextOverlay({
 }: DualPosterTextOverlayProps) {
   const toCqMin = (px: number) => (px / TEXT_DIMENSION_REFERENCE_PX) * 100;
 
-  const khmerFallback = '"Battambang", "Suwannaphum", serif';
+  const khmerFallback = '"Battambang", "Noto Sans Khmer", "Suwannaphum", serif';
   const titleFont = fontFamily
     ? `"${fontFamily}", ${khmerFallback}, "DM Sans", sans-serif`
     : `"DM Sans", ${khmerFallback}, sans-serif`;
@@ -84,6 +86,11 @@ export default function DualPosterTextOverlay({
 
   const ls = `${letterSpacing}px`;
 
+  const khmerLift = (text: string): string =>
+    containsKhmer(text)
+      ? `translate(-50%, calc(-50% + ${-KHMER_OPTICAL_LIFT_EM}em))`
+      : "translateX(-50%)";
+
   return (
     <div className="poster-text-overlay" style={{ color: textColor }}>
       {showPosterText && (
@@ -98,7 +105,7 @@ export default function DualPosterTextOverlay({
               letterSpacing: ls,
               left: "25%",
               right: "auto",
-              transform: "translateX(-50%)",
+              transform: khmerLift(cityLabel1),
               margin: 0,
             }}
           >
@@ -127,7 +134,7 @@ export default function DualPosterTextOverlay({
               letterSpacing: ls,
               left: "25%",
               right: "auto",
-              transform: "translateX(-50%)",
+              transform: khmerLift(countryLabel1),
               margin: 0,
             }}
           >
@@ -181,7 +188,7 @@ export default function DualPosterTextOverlay({
               letterSpacing: ls,
               left: "75%",
               right: "auto",
-              transform: "translateX(-50%)",
+              transform: khmerLift(cityLabel2),
               margin: 0,
               color: textColor2 ?? textColor,
             }}
@@ -211,7 +218,7 @@ export default function DualPosterTextOverlay({
               letterSpacing: ls,
               left: "75%",
               right: "auto",
-              transform: "translateX(-50%)",
+              transform: khmerLift(countryLabel2),
               margin: 0,
               color: textColor2 ?? textColor,
             }}

@@ -166,7 +166,7 @@ export async function compositeExport(
   }
 
   const dimScale = Math.min(width, height) / 1000;
-  const khmerFallback = '"Battambang", "Suwannaphum", serif';
+  const khmerFallback = '"Battambang", "Noto Sans Khmer", "Suwannaphum", serif';
   const resolvedFontFamily = fontFamily
     ? `"${fontFamily}", ${khmerFallback}, sans-serif`
     : `${khmerFallback}, sans-serif`;

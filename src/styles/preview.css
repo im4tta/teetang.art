@@ -384,6 +384,12 @@
   overflow: hidden;
   z-index: 6;
   container-type: size;
+  /* iOS WebKit bidi quirks: Khmer is LTR but iOS occasionally
+     applies RTL paragraph direction to mixed-script lines, which
+     visibly shifts the centered text off-axis. Force LTR + plaintext
+     bidi so the browser uses the first strong character per run. */
+  direction: ltr;
+  unicode-bidi: plaintext;
 }
 
 /* ── Media overlay (QR + Logo) ── */

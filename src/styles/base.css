@@ -22,6 +22,24 @@
   unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
 }
 
+/*
+ * Self-hosted Battambang (preferred Khmer fallback on iOS).
+ * The iOS system Khmer font ("Khmer Sangam MN") has very different
+ * advance widths from the rest of our font stack, which makes centered
+ * Khmer text look left/right-shifted compared to Latin text. Serving
+ * Battambang locally ensures the fallback matches our title font.
+ * NOTE: place Battambang-Regular.woff2 at public/fonts/.
+ */
+@font-face {
+  font-family: "Battambang";
+  font-style: normal;
+  font-weight: 100 900;
+  font-stretch: 100%;
+  font-display: swap;
+  src: url(/fonts/Battambang-Regular.woff2) format("woff2");
+  unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
+}
+
 :root {
   --ink: #f5f5fa;
   --text-secondary: #94a3b8;
