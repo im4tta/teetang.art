@@ -20,6 +20,7 @@ import {
   getShapeAttributionX,
   containsKhmer,
   KHMER_OPTICAL_LIFT_EM,
+  KHMER_OPTICAL_SHIFT_X_EM,
 } from "@/features/poster/domain/textLayout";
 import type { PosterShape } from "@/features/poster/domain/clipShapes";
 
@@ -74,7 +75,13 @@ export function drawDualPosterText(
     ctx.textBaseline = "middle";
     ctx.letterSpacing = `${letterSpacing}px`;
 
-    const drawCenteredText = (text: string, cx: number, y: number, font: string) => {
+    const drawCenteredText = (
+      text: string,
+      cx: number,
+      y: number,
+      font: string,
+      fontSize: number,
+    ) => {
       ctx.font = font;
       ctx.textAlign = "center";
       const metrics = ctx.measureText(text);
@@ -84,7 +91,8 @@ export function drawDualPosterText(
         const xAdjusted = cx - (right - left) / 2;
         ctx.fillText(text, xAdjusted, y);
       } else {
-        ctx.fillText(text, cx, y);
+        const xShift = containsKhmer(text) ? fontSize * KHMER_OPTICAL_SHIFT_X_EM : 0;
+        ctx.fillText(text, cx + xShift, y);
       }
     };
 
@@ -100,6 +108,7 @@ export function drawDualPosterText(
       width * 0.25,
       khmerY(cityLabel1, cityY, cityFontSize1),
       `700 ${cityFontSize1}px ${titleFontFamily}`,
+      cityFontSize1,
     );
 
     if (showUnderline) {
@@ -117,6 +126,7 @@ export function drawDualPosterText(
       width * 0.25,
       khmerY(city1.country, countryY, countryFontSize),
       `300 ${countryFontSize}px ${titleFontFamily}`,
+      countryFontSize,
     );
 
     // Coords 1
@@ -130,12 +140,19 @@ export function drawDualPosterText(
       width * 0.25,
       coordinatesY,
       `400 ${coordinateFontSize}px ${bodyFontFamily}`,
+      coordinateFontSize,
     );
     ctx.globalAlpha = 1;
 
     // Ampersand in center
     const ampersandFontSize = COUNTRY_FONT_BASE_PX * dimScale * 1.5;
-    drawCenteredText("&", width * 0.5, countryY, `300 ${ampersandFontSize}px ${titleFontFamily}`);
+    drawCenteredText(
+      "&",
+      width * 0.5,
+      countryY,
+      `300 ${ampersandFontSize}px ${titleFontFamily}`,
+      ampersandFontSize,
+    );
 
     // City 2 (right quarter at 75%)
     const cityLabel2 = formatCityLabel(city2.city);
@@ -145,6 +162,7 @@ export function drawDualPosterText(
       width * 0.75,
       khmerY(cityLabel2, cityY, cityFontSize2),
       `700 ${cityFontSize2}px ${titleFontFamily}`,
+      cityFontSize2,
     );
 
     if (showUnderline) {
@@ -162,6 +180,7 @@ export function drawDualPosterText(
       width * 0.75,
       khmerY(city2.country, countryY, countryFontSize),
       `300 ${countryFontSize}px ${titleFontFamily}`,
+      countryFontSize,
     );
 
     // Coords 2
@@ -175,6 +194,7 @@ export function drawDualPosterText(
       width * 0.75,
       coordinatesY,
       `400 ${coordinateFontSize}px ${bodyFontFamily}`,
+      coordinateFontSize,
     );
     ctx.globalAlpha = 1;
   }
@@ -253,7 +273,8 @@ export function drawPosterText(
         const xAdjusted = x - (right - left) / 2;
         ctx.fillText(text, xAdjusted, y);
       } else {
-        ctx.fillText(text, x, y);
+        const xShift = containsKhmer(text) ? fontSize * KHMER_OPTICAL_SHIFT_X_EM : 0;
+        ctx.fillText(text, x + xShift, y);
       }
     } else {
       ctx.fillText(text, x, y);

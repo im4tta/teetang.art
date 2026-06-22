@@ -75,6 +75,15 @@ export function containsKhmer(text: string | undefined | null): boolean {
 export const KHMER_OPTICAL_LIFT_EM = 0.12;
 
 /**
+ * Horizontal "nudge" (em) to counteract asymmetric glyph bearings in
+ * Khmer fonts — especially on iOS where the system Khmer font ("Khmer
+ * Sangam MN") has larger left-side bearings that make centered text
+ * appear right-shifted. Negative = move text slightly left.
+ * Kept separate from the vertical lift so each can be tuned independently.
+ */
+export const KHMER_OPTICAL_SHIFT_X_EM = -0.12;
+
+/**
  * Returns a multiplier (≤1) to shrink the city font for long names.
  * Callers apply it to their own base font size.
  */

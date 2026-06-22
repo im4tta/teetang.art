@@ -15,6 +15,7 @@ import {
   computeAttributionColor,
   containsKhmer,
   KHMER_OPTICAL_LIFT_EM,
+  KHMER_OPTICAL_SHIFT_X_EM,
 } from "@/features/poster/domain/textLayout";
 
 interface DualPosterTextOverlayProps {
@@ -88,7 +89,7 @@ export default function DualPosterTextOverlay({
 
   const khmerLift = (text: string): string =>
     containsKhmer(text)
-      ? `translate(-50%, calc(-50% + ${-KHMER_OPTICAL_LIFT_EM}em))`
+      ? `translate(calc(-50% + ${KHMER_OPTICAL_SHIFT_X_EM}em), calc(-50% + ${-KHMER_OPTICAL_LIFT_EM}em))`
       : "translateX(-50%)";
 
   return (

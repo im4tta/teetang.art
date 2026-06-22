@@ -17,7 +17,11 @@ import {
   getShapeTextYOffset,
   getShapeAttributionX,
 } from "@/features/poster/domain/textLayout";
-import { containsKhmer, KHMER_OPTICAL_LIFT_EM } from "@/features/poster/domain/textLayout";
+import {
+  containsKhmer,
+  KHMER_OPTICAL_LIFT_EM,
+  KHMER_OPTICAL_SHIFT_X_EM,
+} from "@/features/poster/domain/textLayout";
 import type { PosterShape } from "@/features/poster/domain/clipShapes";
 
 interface PosterTextOverlayProps {
@@ -90,6 +94,10 @@ export default function PosterTextOverlay({
   const cityLift = khmerLift(cityLabel);
   const countryLift = khmerLift(countryLabel);
 
+  /** Full optical transform for Khmer — combines horizontal bearing fix + vertical coeng lift. */
+  const khmerTransform = (lift: number) =>
+    `translate(${KHMER_OPTICAL_SHIFT_X_EM}em, calc(-50% + ${lift}em))`;
+
   const alignmentStyle: React.CSSProperties = {
     textAlign: titleAlign as any,
     paddingLeft: titleAlign === "left" ? "8%" : "0",
@@ -110,7 +118,7 @@ export default function PosterTextOverlay({
               fontSize: cityFontSize,
               letterSpacing: ls,
               ...alignmentStyle,
-              ...(cityLift ? { transform: `translateY(calc(-50% + ${cityLift}em))` } : {}),
+              ...(cityLift ? { transform: khmerTransform(cityLift) } : {}),
             }}
           >
             {cityLabel}
@@ -132,7 +140,7 @@ export default function PosterTextOverlay({
               fontSize: countryFontSize,
               letterSpacing: ls,
               ...alignmentStyle,
-              ...(countryLift ? { transform: `translateY(calc(-50% + ${countryLift}em))` } : {}),
+              ...(countryLift ? { transform: khmerTransform(countryLift) } : {}),
             }}
           >
             {countryLabel}
