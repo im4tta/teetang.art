@@ -883,6 +883,292 @@
           "minor_low": "#D8C8A8"
         }
       }
+    },
+    "vintage_plan": {
+      "name": "Vintage Plan",
+      "description": "Hand-drawn urban planning map — solid black urban mass, light blue water, red ink axes on off-white paper",
+      "ui": {
+        "bg": "#F5F0E6",
+        "text": "#2C1810"
+      },
+      "map": {
+        "land": "#F5F0E6",
+        "landcover": "#EDE6D6",
+        "water": "#A8C8E0",
+        "waterway": "#A8C8E0",
+        "parks": "#C8D8B8",
+        "buildings": "#1a1a1a",
+        "aeroway": "#E0D8C8",
+        "rail": "#2C1810",
+        "roads": {
+          "major": "#C01020",
+          "path": "#C8B898",
+          "outline": "#D8C8A8",
+          "minor_high": "#3a3a3a",
+          "minor_mid": "#6a6a6a",
+          "minor_low": "#9a9a9a"
+        }
+      }
+    },
+    "urban_mosaic": {
+      "name": "Urban Mosaic",
+      "description": "Vibrant data-driven mosaic — jewel-toned building tiles and an azure river on pure white paper",
+      "ui": {
+        "bg": "#FFFFFF",
+        "text": "#1a1a1a"
+      },
+      "map": {
+        "land": "#FFFFFF",
+        "landcover": "#F8F8F8",
+        "water": "#3A8DE0",
+        "waterway": "#3A8DE0",
+        "parks": "#9AD19A",
+        "buildings": "#2A4FCC",
+        "aeroway": "#F0F0F0",
+        "rail": "#1a1a1a",
+        "roads": {
+          "major": "#1a1a1a",
+          "path": "#E0E0E0",
+          "outline": "#ECECEC",
+          "minor_high": "#4A4A4A",
+          "minor_mid": "#8A8A8A",
+          "minor_low": "#B8B8B8"
+        }
+      }
+    },
+    "archipelago": {
+      "name": "Archipelago",
+      "description": "Deep sea blue base with turquoise water and coral road accents — island cartography aesthetic",
+      "ui": {
+        "bg": "#0A2540",
+        "text": "#7FE8D8"
+      },
+      "map": {
+        "land": "#0A2540",
+        "landcover": "#0E2E50",
+        "water": "#1A8AAA",
+        "waterway": "#1A8AAA",
+        "parks": "#1A6A5A",
+        "buildings": "#3A9080",
+        "aeroway": "#0E2E50",
+        "rail": "#7FE8D8",
+        "roads": {
+          "major": "#FF8A5C",
+          "path": "#1A4060",
+          "outline": "#225575",
+          "minor_high": "#E07050",
+          "minor_mid": "#2A6080",
+          "minor_low": "#1E4868"
+        }
+      }
+    },
+    "cyanotype": {
+      "name": "Cyanotype",
+      "description": "Prussian blue photographic print — white line work on deep blueprint blue",
+      "ui": {
+        "bg": "#0D3B66",
+        "text": "#F0F4F8"
+      },
+      "map": {
+        "land": "#0D3B66",
+        "landcover": "#104780",
+        "water": "#1A5A9A",
+        "waterway": "#1A5A9A",
+        "parks": "#125275",
+        "buildings": "#7AB8E0",
+        "aeroway": "#125275",
+        "rail": "#F0F4F8",
+        "roads": {
+          "major": "#F0F4F8",
+          "path": "#2A6890",
+          "outline": "#357AA0",
+          "minor_high": "#A8D0E8",
+          "minor_mid": "#4A85A8",
+          "minor_low": "#2E7095"
+        }
+      }
+    },
+    "sandstone": {
+      "name": "Sandstone",
+      "description": "Warm desert sandstone with deep sepia roads — arid landscape cartography",
+      "ui": {
+        "bg": "#E8D8B8",
+        "text": "#5C3A1E"
+      },
+      "map": {
+        "land": "#E8D8B8",
+        "landcover": "#E0D0A8",
+        "water": "#B8C8C0",
+        "waterway": "#B8C8C0",
+        "parks": "#D8C8A0",
+        "buildings": "#A0703C",
+        "aeroway": "#D8C8A0",
+        "rail": "#5C3A1E",
+        "roads": {
+          "major": "#5C3A1E",
+          "path": "#D0BE98",
+          "outline": "#D8C8A8",
+          "minor_high": "#7A4A28",
+          "minor_mid": "#B08858",
+          "minor_low": "#C8A878"
+        }
+      }
+    },
+    "iceberg": {
+      "name": "Iceberg",
+      "description": "Glacial whites and pale blues — arctic and Nordic city aesthetic",
+      "ui": {
+        "bg": "#EEF4F8",
+        "text": "#2A4A60"
+      },
+      "map": {
+        "land": "#EEF4F8",
+        "landcover": "#E4EDF2",
+        "water": "#A8C8D8",
+        "waterway": "#A8C8D8",
+        "parks": "#C8D8D0",
+        "buildings": "#6A8AA0",
+        "aeroway": "#D8E4EC",
+        "rail": "#2A4A60",
+        "roads": {
+          "major": "#2A4A60",
+          "path": "#C0D4E0",
+          "outline": "#D0E0EC",
+          "minor_high": "#4A7090",
+          "minor_mid": "#88A8C0",
+          "minor_low": "#B0C8D8"
+        }
+      }
+    },
+    "volcanic": {
+      "name": "Volcanic",
+      "description": "Charred volcanic black with magma orange and ash gray — dramatic geological aesthetic",
+      "ui": {
+        "bg": "#1A1208",
+        "text": "#FF8030"
+      },
+      "map": {
+        "land": "#1A1208",
+        "landcover": "#241808",
+        "water": "#0E0A04",
+        "waterway": "#0E0A04",
+        "parks": "#2E2010",
+        "buildings": "#4A3020",
+        "aeroway": "#2E2010",
+        "rail": "#FF8030",
+        "roads": {
+          "major": "#FF6020",
+          "path": "#3A2818",
+          "outline": "#4A3525",
+          "minor_high": "#D04A20",
+          "minor_mid": "#403020",
+          "minor_low": "#332218"
+        }
+      }
+    },
+    "mint": {
+      "name": "Mint",
+      "description": "Fresh mint cream with cool teal roads — clean and refreshing aesthetic",
+      "ui": {
+        "bg": "#E8F5F0",
+        "text": "#1A5A4A"
+      },
+      "map": {
+        "land": "#E8F5F0",
+        "landcover": "#DFF0EA",
+        "water": "#A0D8D0",
+        "waterway": "#A0D8D0",
+        "parks": "#C8E8D8",
+        "buildings": "#5AA898",
+        "aeroway": "#C8E8D8",
+        "rail": "#1A5A4A",
+        "roads": {
+          "major": "#1A8A7A",
+          "path": "#B8D8D0",
+          "outline": "#C8E0D8",
+          "minor_high": "#2A9888",
+          "minor_mid": "#80B8A8",
+          "minor_low": "#A8C8C0"
+        }
+      }
+    },
+    "wine": {
+      "name": "Wine",
+      "description": "Deep burgundy base with champagne gold roads — vineyard and wine country aesthetic",
+      "ui": {
+        "bg": "#2A0A18",
+        "text": "#E8C870"
+      },
+      "map": {
+        "land": "#2A0A18",
+        "landcover": "#380E1E",
+        "water": "#1A0810",
+        "waterway": "#1A0810",
+        "parks": "#401828",
+        "buildings": "#8A4A3A",
+        "aeroway": "#401828",
+        "rail": "#E8C870",
+        "roads": {
+          "major": "#D4A050",
+          "path": "#5A2828",
+          "outline": "#683434",
+          "minor_high": "#B08840",
+          "minor_mid": "#4A2828",
+          "minor_low": "#3A2020"
+        }
+      }
+    },
+    "nordic": {
+      "name": "Nordic",
+      "description": "Cool slate gray with crisp white roads — Scandinavian minimalism",
+      "ui": {
+        "bg": "#3A4A5C",
+        "text": "#E8EDF0"
+      },
+      "map": {
+        "land": "#3A4A5C",
+        "landcover": "#445268",
+        "water": "#2A3848",
+        "waterway": "#2A3848",
+        "parks": "#4A5A6C",
+        "buildings": "#80A0B8",
+        "aeroway": "#4A5A6C",
+        "rail": "#E8EDF0",
+        "roads": {
+          "major": "#E8EDF0",
+          "path": "#5A6A7C",
+          "outline": "#687888",
+          "minor_high": "#B0C8D8",
+          "minor_mid": "#687890",
+          "minor_low": "#4A5C70"
+        }
+      }
+    },
+    "mangrove": {
+      "name": "Mangrove",
+      "description": "Tropical brackish greens and muddy water — coastal wetland cartography",
+      "ui": {
+        "bg": "#1A2A18",
+        "text": "#A8D890"
+      },
+      "map": {
+        "land": "#1A2A18",
+        "landcover": "#243820",
+        "water": "#3A4A28",
+        "waterway": "#3A4A28",
+        "parks": "#2E4828",
+        "buildings": "#6A9050",
+        "aeroway": "#2E4828",
+        "rail": "#A8D890",
+        "roads": {
+          "major": "#A8D890",
+          "path": "#385038",
+          "outline": "#445C44",
+          "minor_high": "#7AB068",
+          "minor_mid": "#3A5840",
+          "minor_low": "#2E4830"
+        }
+      }
     }
   }
 }

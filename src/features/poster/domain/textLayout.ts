@@ -76,12 +76,33 @@ export const KHMER_OPTICAL_LIFT_EM = 0.12;
 
 /**
  * Horizontal "nudge" (em) to counteract asymmetric glyph bearings in
- * Khmer fonts — especially on iOS where the system Khmer font ("Khmer
- * Sangam MN") has larger left-side bearings that make centered text
- * appear right-shifted. Negative = move text slightly left.
- * Kept separate from the vertical lift so each can be tuned independently.
+ * Khmer fonts — e.g. on iOS, where the system Khmer font ("Khmer Sangam
+ * MN") has noticeably larger left-side bearings than the rest of our
+ * font stack, which makes centered text look right-shifted. Negative =
+ * move text left.
+ *
+ * IMPORTANT: until now this constant had no real effect anywhere it
+ * mattered:
+ *  - In the canvas exporter (typography.ts) it only applied inside an
+ *    `else` branch that runs when `ctx.measureText()` doesn't return
+ *    `actualBoundingBoxLeft`/`actualBoundingBoxRight` — but every current
+ *    browser returns those, so that branch never ran. That's why editing
+ *    this value never changed the exported poster.
+ *  - The "Khmer Sangam MN" scenario it was tuned for never actually
+ *    occurred either: the CSS Khmer stack tried to self-host "Battambang"
+ *    as an iOS-safe fallback, but that font file was never added to the
+ *    project (404 on every load), so the stack always fell through to
+ *    our self-hosted Noto Sans Khmer on every platform anyway.
+ * Measuring Noto Sans Khmer directly (ink bounding box vs. advance width,
+ * with real Khmer place names, including coeng/subscript clusters, at
+ * regular and bold weight) shows under 0.5px of asymmetry on text
+ * 300-650px wide — i.e. no real bearing skew to correct for. Defaulting
+ * to 0 accordingly. The canvas-side dead-code bug above is now fixed, so
+ * if you add a different Khmer font later (or still spot a shift on a
+ * specific device) this value will actually move the text — tune it by
+ * eye and it'll show up in both the live preview and the export.
  */
-export const KHMER_OPTICAL_SHIFT_X_EM = -0.12;
+export const KHMER_OPTICAL_SHIFT_X_EM = 0;
 
 /**
  * Returns a multiplier (≤1) to shrink the city font for long names.

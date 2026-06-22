@@ -5,6 +5,7 @@ import { drawRoutesOnCanvas } from "@/features/routes/infrastructure/rendering";
 import { routeEndpointMarkerItems } from "@/features/routes/infrastructure/helpers";
 import type { ExportOptions, CanvasSize } from "../../domain/types";
 import { applyCanvasClip } from "@/features/poster/domain/clipShapes";
+import { getContrastBorderColor } from "@/shared/utils/color";
 
 function loadImage(url: string): Promise<HTMLImageElement> {
   return new Promise((resolve, reject) => {
@@ -106,6 +107,7 @@ export async function compositeExport(
     titleAlign = "center",
     showUnderline = true,
     coordsFormat = "decimal",
+    showBorder = true,
   } = options;
 
   const width = mapCanvas.width;
@@ -248,6 +250,14 @@ export async function compositeExport(
   }
 
   ctx.restore();
+
+  // 9. Outer border — theme-aware contrast, scaled to canvas size for visibility
+  if (showBorder) {
+    const inset = Math.max(10, Math.round(Math.min(width, height) * 0.01));
+    ctx.strokeStyle = getContrastBorderColor(theme.ui.bg, 0.35);
+    ctx.lineWidth = Math.max(3, Math.round(Math.min(width, height) * 0.002));
+    ctx.strokeRect(inset, inset, width - inset * 2, height - inset * 2);
+  }
 
   return {
     canvas,
@@ -443,11 +453,11 @@ export async function compositeDualExport(
     }
   }
 
-  // 9. Outer border (match preview .poster-border: inset 10px, 1px solid rgba(255,255,255,0.1))
+  // 9. Outer border — theme-aware contrast, scaled to canvas size for visibility
   if (showBorder) {
     const inset = Math.max(10, Math.round(Math.min(width, height) * 0.01));
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.1)";
-    ctx.lineWidth = 1;
+    ctx.strokeStyle = getContrastBorderColor(theme.ui.bg, 0.35);
+    ctx.lineWidth = Math.max(3, Math.round(Math.min(width, height) * 0.002));
     ctx.strokeRect(inset, inset, width - inset * 2, height - inset * 2);
   }
 

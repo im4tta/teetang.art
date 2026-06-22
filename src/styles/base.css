@@ -23,22 +23,18 @@
 }
 
 /*
- * Self-hosted Battambang (preferred Khmer fallback on iOS).
- * The iOS system Khmer font ("Khmer Sangam MN") has very different
- * advance widths from the rest of our font stack, which makes centered
- * Khmer text look left/right-shifted compared to Latin text. Serving
- * Battambang locally ensures the fallback matches our title font.
- * NOTE: place Battambang-Regular.woff2 at public/fonts/.
+ * NOTE: we previously tried to self-host "Battambang" as a Khmer fallback
+ * (to avoid iOS falling back to its system "Khmer Sangam MN" font, whose
+ * bearings differ from the rest of our stack). That @font-face pointed at
+ * /fonts/Battambang-Regular.woff2, which was never actually added to this
+ * project, so every request for it 404'd and every browser silently moved
+ * on to the next font in the stack. Removed — self-hosted Noto Sans Khmer
+ * (below) already covers the Khmer range on every platform, with no
+ * network round-trip wasted on a file that doesn't exist. If you want
+ * Battambang specifically, add public/fonts/Battambang-Regular.woff2 and
+ * re-add an @font-face block for it (matching the unicode-range used by
+ * the Khmer Noto Sans Khmer face below).
  */
-@font-face {
-  font-family: "Battambang";
-  font-style: normal;
-  font-weight: 100 900;
-  font-stretch: 100%;
-  font-display: swap;
-  src: url(/fonts/Battambang-Regular.woff2) format("woff2");
-  unicode-range: U+1780-17FF, U+19E0-19FF, U+200C-200D, U+25CC;
-}
 
 :root {
   --ink: #f5f5fa;

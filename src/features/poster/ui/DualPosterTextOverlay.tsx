@@ -65,7 +65,7 @@ export default function DualPosterTextOverlay({
 }: DualPosterTextOverlayProps) {
   const toCqMin = (px: number) => (px / TEXT_DIMENSION_REFERENCE_PX) * 100;
 
-  const khmerFallback = '"Battambang", "Noto Sans Khmer", "Suwannaphum", serif';
+  const khmerFallback = '"Noto Sans Khmer", "Suwannaphum", serif';
   const titleFont = fontFamily
     ? `"${fontFamily}", ${khmerFallback}, "DM Sans", sans-serif`
     : `"DM Sans", ${khmerFallback}, sans-serif`;

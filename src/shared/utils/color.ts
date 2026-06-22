@@ -210,3 +210,24 @@ export function blendHex(hexA: string, hexB: string, weight = 0.5): string {
 
   return `#${r}${g}${bChannel}`;
 }
+
+export function relativeLuminance(hex: string): number {
+  const rgb = parseHex(hex);
+  if (!rgb) return 0;
+  const channel = (v: number) => {
+    const s = v / 255;
+    return s <= 0.03928 ? s / 12.92 : ((s + 0.055) / 1.055) ** 2.4;
+  };
+  return 0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b);
+}
+
+export function isLightHex(hex: string): boolean {
+  return relativeLuminance(hex) > 0.45;
+}
+
+export function getContrastBorderColor(hex: string, alpha = 0.35): string {
+  const rgb = parseHex(hex);
+  if (!rgb) return `rgba(255, 255, 255, ${alpha})`;
+  const c = isLightHex(hex) ? "0, 0, 0" : "255, 255, 255";
+  return `rgba(${c}, ${alpha})`;
+}
