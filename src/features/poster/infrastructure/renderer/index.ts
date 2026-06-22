@@ -169,8 +169,8 @@ export async function compositeExport(
 
   const dimScale = Math.min(width, height) / 1000;
   const resolvedFontFamily = fontFamily
-    ? `"${fontFamily}", "Noto Sans Khmer", "Suwannaphum", serif, sans-serif`
-    : `"Noto Sans Khmer", "Suwannaphum", serif, sans-serif`;
+    ? `"${fontFamily}", "Space Grotesk", sans-serif`
+    : '"Space Grotesk", sans-serif';
 
   // 6. Poster text
   drawPosterText(

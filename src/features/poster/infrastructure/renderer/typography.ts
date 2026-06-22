@@ -18,15 +18,11 @@ import {
   computeAttributionColor,
   getShapeTextYOffset,
   getShapeAttributionX,
-  containsKhmer,
-  KHMER_OPTICAL_LIFT_EM,
-  KHMER_OPTICAL_SHIFT_X_EM,
 } from "@/features/poster/domain/textLayout";
 import type { PosterShape } from "@/features/poster/domain/clipShapes";
 
-/** Self-hosted Noto Sans Khmer so the canvas export matches the DOM preview
- *  (and so iOS doesn't fall back to its system "Khmer Sangam MN" font). */
-const KHMER_FALLBACK = '"Noto Sans Khmer", "Suwannaphum", serif';
+const TITLE_FONT_FAMILY = '"Space Grotesk", sans-serif';
+const BODY_FONT_FAMILY = '"IBM Plex Mono", monospace';
 
 interface DualCityData {
   city: string;
@@ -54,11 +50,11 @@ export function drawDualPosterText(
   const attributionColor = computeAttributionColor(textColor, landColor, showOverlay);
   const attributionAlpha = showOverlay ? 0.55 : 0.9;
   const titleFontFamily = fontFamily
-    ? `"${fontFamily}", ${KHMER_FALLBACK}, "Space Grotesk", sans-serif`
-    : `${KHMER_FALLBACK}, "Space Grotesk", sans-serif`;
+    ? `"${fontFamily}", "Space Grotesk", sans-serif`
+    : TITLE_FONT_FAMILY;
   const bodyFontFamily = fontFamily
-    ? `"${fontFamily}", ${KHMER_FALLBACK}, "IBM Plex Mono", monospace`
-    : `${KHMER_FALLBACK}, "IBM Plex Mono", monospace`;
+    ? `"${fontFamily}", "IBM Plex Mono", monospace`
+    : BODY_FONT_FAMILY;
 
   const dimScale = Math.max(0.45, Math.min(width, height) / TEXT_DIMENSION_REFERENCE_PX);
   const attributionFontSize = ATTRIBUTION_FONT_BASE_PX * dimScale;
@@ -75,47 +71,21 @@ export function drawDualPosterText(
     ctx.textBaseline = "middle";
     ctx.letterSpacing = `${letterSpacing}px`;
 
-    const drawCenteredText = (
-      text: string,
-      cx: number,
-      y: number,
-      font: string,
-      fontSize: number,
-    ) => {
+    const drawCenteredText = (text: string, cx: number, y: number, font: string) => {
       ctx.font = font;
       ctx.textAlign = "center";
-      const khmerXShift = containsKhmer(text) ? fontSize * KHMER_OPTICAL_SHIFT_X_EM : 0;
-
-      if (containsKhmer(text)) {
-        // iOS WebKit returns unreliable actualBoundingBoxLeft/Right for
-        // complex Khmer clusters (coeng subscripts, etc.), so ink-box
-        // centering produces a wrong position. Use advance-width centering
-        // (textAlign "center" at cx) and apply a manual nudge instead.
-        ctx.fillText(text, cx + khmerXShift, y);
-      } else {
-        const metrics = ctx.measureText(text);
-        const left = (metrics as any).actualBoundingBoxLeft;
-        const right = (metrics as any).actualBoundingBoxRight;
-        const baseX =
-          typeof left === "number" && typeof right === "number" ? cx - (right - left) / 2 : cx;
-        ctx.fillText(text, baseX, y);
-      }
+      const metrics = ctx.measureText(text);
+      const left = (metrics as any).actualBoundingBoxLeft;
+      const right = (metrics as any).actualBoundingBoxRight;
+      const baseX =
+        typeof left === "number" && typeof right === "number" ? cx - (right - left) / 2 : cx;
+      ctx.fillText(text, baseX, y);
     };
-
-    /** Optical lift for Khmer so its visual midline matches Latin text. */
-    const khmerY = (text: string, baseY: number, fontSize: number) =>
-      containsKhmer(text) ? baseY - fontSize * KHMER_OPTICAL_LIFT_EM : baseY;
 
     // City 1 (left quarter at 25%)
     const cityLabel1 = formatCityLabel(city1.city);
     const cityFontSize1 = CITY_FONT_BASE_PX * dimScale * computeDualCityFontScale(city1.city);
-    drawCenteredText(
-      cityLabel1,
-      width * 0.25,
-      khmerY(cityLabel1, cityY, cityFontSize1),
-      `700 ${cityFontSize1}px ${titleFontFamily}`,
-      cityFontSize1,
-    );
+    drawCenteredText(cityLabel1, width * 0.25, cityY, `700 ${cityFontSize1}px ${titleFontFamily}`);
 
     if (showUnderline) {
       ctx.strokeStyle = textColor;
@@ -130,9 +100,8 @@ export function drawDualPosterText(
     drawCenteredText(
       city1.country.toUpperCase(),
       width * 0.25,
-      khmerY(city1.country, countryY, countryFontSize),
+      countryY,
       `300 ${countryFontSize}px ${titleFontFamily}`,
-      countryFontSize,
     );
 
     // Coords 1
@@ -146,30 +115,17 @@ export function drawDualPosterText(
       width * 0.25,
       coordinatesY,
       `400 ${coordinateFontSize}px ${bodyFontFamily}`,
-      coordinateFontSize,
     );
     ctx.globalAlpha = 1;
 
     // Ampersand in center
     const ampersandFontSize = COUNTRY_FONT_BASE_PX * dimScale * 1.5;
-    drawCenteredText(
-      "&",
-      width * 0.5,
-      countryY,
-      `300 ${ampersandFontSize}px ${titleFontFamily}`,
-      ampersandFontSize,
-    );
+    drawCenteredText("&", width * 0.5, countryY, `300 ${ampersandFontSize}px ${titleFontFamily}`);
 
     // City 2 (right quarter at 75%)
     const cityLabel2 = formatCityLabel(city2.city);
     const cityFontSize2 = CITY_FONT_BASE_PX * dimScale * computeDualCityFontScale(city2.city);
-    drawCenteredText(
-      cityLabel2,
-      width * 0.75,
-      khmerY(cityLabel2, cityY, cityFontSize2),
-      `700 ${cityFontSize2}px ${titleFontFamily}`,
-      cityFontSize2,
-    );
+    drawCenteredText(cityLabel2, width * 0.75, cityY, `700 ${cityFontSize2}px ${titleFontFamily}`);
 
     if (showUnderline) {
       ctx.strokeStyle = textColor;
@@ -184,9 +140,8 @@ export function drawDualPosterText(
     drawCenteredText(
       city2.country.toUpperCase(),
       width * 0.75,
-      khmerY(city2.country, countryY, countryFontSize),
+      countryY,
       `300 ${countryFontSize}px ${titleFontFamily}`,
-      countryFontSize,
     );
 
     // Coords 2
@@ -200,7 +155,6 @@ export function drawDualPosterText(
       width * 0.75,
       coordinatesY,
       `400 ${coordinateFontSize}px ${bodyFontFamily}`,
-      coordinateFontSize,
     );
     ctx.globalAlpha = 1;
   }
@@ -252,7 +206,7 @@ export function drawPosterText(
     text: string,
     xCenter: number,
     y: number,
-    fontSize: number,
+    _fontSize: number,
     font: string,
   ) => {
     ctx.font = font;
@@ -270,25 +224,16 @@ export function drawPosterText(
     }
 
     ctx.textAlign = align;
-    const khmerXShift = containsKhmer(text) ? fontSize * KHMER_OPTICAL_SHIFT_X_EM : 0;
 
     if (align === "center") {
-      if (containsKhmer(text)) {
-        // iOS WebKit returns unreliable actualBoundingBoxLeft/Right for
-        // complex Khmer clusters (coeng subscripts, etc.), so ink-box
-        // centering produces a wrong position. Use advance-width centering
-        // (textAlign "center" at cx) and apply a manual nudge instead.
-        ctx.fillText(text, x + khmerXShift, y);
-      } else {
-        const metrics = ctx.measureText(text);
-        const left = (metrics as any).actualBoundingBoxLeft;
-        const right = (metrics as any).actualBoundingBoxRight;
-        const baseX =
-          typeof left === "number" && typeof right === "number" ? x - (right - left) / 2 : x;
-        ctx.fillText(text, baseX, y);
-      }
+      const metrics = ctx.measureText(text);
+      const left = (metrics as any).actualBoundingBoxLeft;
+      const right = (metrics as any).actualBoundingBoxRight;
+      const baseX =
+        typeof left === "number" && typeof right === "number" ? x - (right - left) / 2 : x;
+      ctx.fillText(text, baseX, y);
     } else {
-      ctx.fillText(text, x + khmerXShift, y);
+      ctx.fillText(text, x, y);
     }
   };
 
@@ -297,19 +242,15 @@ export function drawPosterText(
   const attributionColor = computeAttributionColor(textColor, landColor, showOverlay);
   const attributionAlpha = showOverlay ? 0.55 : 0.9;
   const titleFontFamily = fontFamily
-    ? `"${fontFamily}", ${KHMER_FALLBACK}, "Space Grotesk", sans-serif`
-    : `${KHMER_FALLBACK}, "Space Grotesk", sans-serif`;
+    ? `"${fontFamily}", "Space Grotesk", sans-serif`
+    : TITLE_FONT_FAMILY;
   const bodyFontFamily = fontFamily
-    ? `"${fontFamily}", ${KHMER_FALLBACK}, "IBM Plex Mono", monospace`
-    : `${KHMER_FALLBACK}, "IBM Plex Mono", monospace`;
+    ? `"${fontFamily}", "IBM Plex Mono", monospace`
+    : BODY_FONT_FAMILY;
 
   const dimScale = Math.max(0.45, Math.min(width, height) / TEXT_DIMENSION_REFERENCE_PX);
   const attributionFontSize = ATTRIBUTION_FONT_BASE_PX * dimScale;
   const yOffset = getShapeTextYOffset(shape) * height;
-
-  /** Optical lift for Khmer so its visual midline matches Latin text. */
-  const khmerY = (text: string, baseY: number, fontSize: number) =>
-    containsKhmer(text) ? baseY - fontSize * KHMER_OPTICAL_LIFT_EM : baseY;
 
   if (showPosterText) {
     const cityLabel = formatCityLabel(city);
@@ -325,13 +266,7 @@ export function drawPosterText(
     ctx.fillStyle = textColor;
     ctx.textBaseline = "middle";
     const cityFont = `700 ${cityFontSize}px ${titleFontFamily}`;
-    drawTextWithAlignment(
-      cityLabel,
-      width * 0.5,
-      khmerY(cityLabel, cityY, cityFontSize),
-      cityFontSize,
-      cityFont,
-    );
+    drawTextWithAlignment(cityLabel, width * 0.5, cityY, cityFontSize, cityFont);
 
     if (showUnderline) {
       ctx.strokeStyle = textColor;
@@ -346,7 +281,7 @@ export function drawPosterText(
     drawTextWithAlignment(
       country.toUpperCase(),
       width * 0.5,
-      khmerY(country, countryY, countryFontSize),
+      countryY,
       countryFontSize,
       countryFont,
     );
