@@ -84,17 +84,22 @@ export function drawDualPosterText(
     ) => {
       ctx.font = font;
       ctx.textAlign = "center";
-      const metrics = ctx.measureText(text);
-      const left = (metrics as any).actualBoundingBoxLeft;
-      const right = (metrics as any).actualBoundingBoxRight;
-      // Optical (ink-box) centering when the browser supports it — this is the
-      // path that actually runs in every modern browser, so the Khmer nudge
-      // below must be applied on top of it, not as a fallback for when it's
-      // absent (that fallback is effectively unreachable in practice).
-      const baseX =
-        typeof left === "number" && typeof right === "number" ? cx - (right - left) / 2 : cx;
       const khmerXShift = containsKhmer(text) ? fontSize * KHMER_OPTICAL_SHIFT_X_EM : 0;
-      ctx.fillText(text, baseX + khmerXShift, y);
+
+      if (containsKhmer(text)) {
+        // iOS WebKit returns unreliable actualBoundingBoxLeft/Right for
+        // complex Khmer clusters (coeng subscripts, etc.), so ink-box
+        // centering produces a wrong position. Use advance-width centering
+        // (textAlign "center" at cx) and apply a manual nudge instead.
+        ctx.fillText(text, cx + khmerXShift, y);
+      } else {
+        const metrics = ctx.measureText(text);
+        const left = (metrics as any).actualBoundingBoxLeft;
+        const right = (metrics as any).actualBoundingBoxRight;
+        const baseX =
+          typeof left === "number" && typeof right === "number" ? cx - (right - left) / 2 : cx;
+        ctx.fillText(text, baseX, y);
+      }
     };
 
     /** Optical lift for Khmer so its visual midline matches Latin text. */
@@ -268,16 +273,20 @@ export function drawPosterText(
     const khmerXShift = containsKhmer(text) ? fontSize * KHMER_OPTICAL_SHIFT_X_EM : 0;
 
     if (align === "center") {
-      const metrics = ctx.measureText(text);
-      const left = (metrics as any).actualBoundingBoxLeft;
-      const right = (metrics as any).actualBoundingBoxRight;
-      // Optical (ink-box) centering when the browser supports it — this is the
-      // path that actually runs in every modern browser, so the Khmer nudge
-      // must be applied on top of it, not as a fallback for when it's absent
-      // (that fallback is effectively unreachable in practice).
-      const baseX =
-        typeof left === "number" && typeof right === "number" ? x - (right - left) / 2 : x;
-      ctx.fillText(text, baseX + khmerXShift, y);
+      if (containsKhmer(text)) {
+        // iOS WebKit returns unreliable actualBoundingBoxLeft/Right for
+        // complex Khmer clusters (coeng subscripts, etc.), so ink-box
+        // centering produces a wrong position. Use advance-width centering
+        // (textAlign "center" at cx) and apply a manual nudge instead.
+        ctx.fillText(text, x + khmerXShift, y);
+      } else {
+        const metrics = ctx.measureText(text);
+        const left = (metrics as any).actualBoundingBoxLeft;
+        const right = (metrics as any).actualBoundingBoxRight;
+        const baseX =
+          typeof left === "number" && typeof right === "number" ? x - (right - left) / 2 : x;
+        ctx.fillText(text, baseX, y);
+      }
     } else {
       ctx.fillText(text, x + khmerXShift, y);
     }

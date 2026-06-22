@@ -168,10 +168,9 @@ export async function compositeExport(
   }
 
   const dimScale = Math.min(width, height) / 1000;
-  const khmerFallback = '"Battambang", "Noto Sans Khmer", "Suwannaphum", serif';
   const resolvedFontFamily = fontFamily
-    ? `"${fontFamily}", ${khmerFallback}, sans-serif`
-    : `${khmerFallback}, sans-serif`;
+    ? `"${fontFamily}", "Noto Sans Khmer", "Suwannaphum", serif, sans-serif`
+    : `"Noto Sans Khmer", "Suwannaphum", serif, sans-serif`;
 
   // 6. Poster text
   drawPosterText(

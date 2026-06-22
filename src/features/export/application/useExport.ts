@@ -105,12 +105,24 @@ export function useExport() {
       try {
         if (form.showPosterText) {
           if (form.fontFamily.trim()) await ensureGoogleFont(form.fontFamily.trim());
-          // ensureGoogleFont only loads the user-chosen display font. The
-          // self-hosted Khmer fallback (Noto Sans Khmer) is loaded lazily by
-          // the browser the first time text needs it, and that download can
-          // still be in flight here. Waiting on document.fonts.ready makes
-          // sure the canvas snapshot below uses the real Khmer glyphs/metrics
-          // instead of a one-shot system fallback.
+          // Explicitly load the self-hosted Noto Sans Khmer font so it is
+          // available in the canvas context. On iOS, document.fonts.ready
+          // alone doesn't guarantee canvas font availability — the canvas
+          // may fall back to the system "Khmer Sangam MN" font (whose
+          // bearings differ from Noto Sans Khmer), causing Khmer text to
+          // shift right. Triggering document.fonts.load() forces the font
+          // file download and registration before canvas rendering.
+          if (typeof document !== "undefined" && document.fonts?.load) {
+            try {
+              await Promise.all([
+                document.fonts.load('700 100px "Noto Sans Khmer"'),
+                document.fonts.load('400 100px "Noto Sans Khmer"'),
+                document.fonts.load('300 100px "Noto Sans Khmer"'),
+              ]);
+            } catch {
+              // Font load may fail if offline; fall through to document.fonts.ready
+            }
+          }
           if (typeof document !== "undefined" && document.fonts?.ready) {
             await document.fonts.ready;
           }
