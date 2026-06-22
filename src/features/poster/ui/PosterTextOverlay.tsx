@@ -65,10 +65,13 @@ export default function PosterTextOverlay({
 }: PosterTextOverlayProps) {
   const toCqMin = (px: number) => (px / TEXT_DIMENSION_REFERENCE_PX) * 100;
 
-  const titleFont = fontFamily ? `"${fontFamily}", "DM Sans", sans-serif` : '"DM Sans", sans-serif';
+  const khmerFallback = '"Battambang", "Suwannaphum", serif';
+  const titleFont = fontFamily
+    ? `"${fontFamily}", ${khmerFallback}, "DM Sans", sans-serif`
+    : `"DM Sans", ${khmerFallback}, sans-serif`;
   const bodyFont = fontFamily
-    ? `"${fontFamily}", "Spline Sans Mono", monospace`
-    : '"Spline Sans Mono", monospace';
+    ? `"${fontFamily}", ${khmerFallback}, "Spline Sans Mono", monospace`
+    : `"Spline Sans Mono", ${khmerFallback}, monospace`;
 
   const cityLabel = formatCityLabel(city);
   const countryLabel = titleAllCaps ? country.toUpperCase() : country;

@@ -103,17 +103,8 @@ export function useExport() {
       }
       dispatch({ type: "SET_EXPORT_STATUS", exporting: true });
       try {
-        if (form.showPosterText) {
-          if (form.fontFamily.trim()) await ensureGoogleFont(form.fontFamily.trim());
-          // ensureGoogleFont only loads the user-chosen display font. The
-          // self-hosted Khmer fallback (Noto Sans Khmer) is loaded lazily by
-          // the browser the first time text needs it, and that download can
-          // still be in flight here. Waiting on document.fonts.ready makes
-          // sure the canvas snapshot below uses the real Khmer glyphs/metrics
-          // instead of a one-shot system fallback.
-          if (typeof document !== "undefined" && document.fonts?.ready) {
-            await document.fonts.ready;
-          }
+        if (form.showPosterText && form.fontFamily.trim()) {
+          await ensureGoogleFont(form.fontFamily.trim());
         }
         const isDualCity = form.layoutMode === "dual-city";
         let widthCm = Number(form.width) || DEFAULT_POSTER_WIDTH_CM;
