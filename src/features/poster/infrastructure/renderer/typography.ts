@@ -18,6 +18,8 @@ import {
   computeAttributionColor,
   getShapeTextYOffset,
   getShapeAttributionX,
+  containsKhmer,
+  KHMER_OPTICAL_SHIFT_X_EM,
 } from "@/features/poster/domain/textLayout";
 import type { PosterShape } from "@/features/poster/domain/clipShapes";
 
@@ -71,7 +73,13 @@ export function drawDualPosterText(
     ctx.textBaseline = "middle";
     ctx.letterSpacing = `${letterSpacing}px`;
 
-    const drawCenteredText = (text: string, cx: number, y: number, font: string) => {
+    const drawCenteredText = (
+      text: string,
+      cx: number,
+      y: number,
+      font: string,
+      fontSize: number,
+    ) => {
       ctx.font = font;
       ctx.textAlign = "center";
       const metrics = ctx.measureText(text);
@@ -79,13 +87,20 @@ export function drawDualPosterText(
       const right = (metrics as any).actualBoundingBoxRight;
       const baseX =
         typeof left === "number" && typeof right === "number" ? cx - (right - left) / 2 : cx;
-      ctx.fillText(text, baseX, y);
+      const khmerShift = containsKhmer(text) ? fontSize * KHMER_OPTICAL_SHIFT_X_EM : 0;
+      ctx.fillText(text, baseX + khmerShift, y);
     };
 
     // City 1 (left quarter at 25%)
     const cityLabel1 = formatCityLabel(city1.city);
     const cityFontSize1 = CITY_FONT_BASE_PX * dimScale * computeDualCityFontScale(city1.city);
-    drawCenteredText(cityLabel1, width * 0.25, cityY, `700 ${cityFontSize1}px ${titleFontFamily}`);
+    drawCenteredText(
+      cityLabel1,
+      width * 0.25,
+      cityY,
+      `700 ${cityFontSize1}px ${titleFontFamily}`,
+      cityFontSize1,
+    );
 
     if (showUnderline) {
       ctx.strokeStyle = textColor;
@@ -102,6 +117,7 @@ export function drawDualPosterText(
       width * 0.25,
       countryY,
       `300 ${countryFontSize}px ${titleFontFamily}`,
+      countryFontSize,
     );
 
     // Coords 1
@@ -115,17 +131,30 @@ export function drawDualPosterText(
       width * 0.25,
       coordinatesY,
       `400 ${coordinateFontSize}px ${bodyFontFamily}`,
+      coordinateFontSize,
     );
     ctx.globalAlpha = 1;
 
     // Ampersand in center
     const ampersandFontSize = COUNTRY_FONT_BASE_PX * dimScale * 1.5;
-    drawCenteredText("&", width * 0.5, countryY, `300 ${ampersandFontSize}px ${titleFontFamily}`);
+    drawCenteredText(
+      "&",
+      width * 0.5,
+      countryY,
+      `300 ${ampersandFontSize}px ${titleFontFamily}`,
+      ampersandFontSize,
+    );
 
     // City 2 (right quarter at 75%)
     const cityLabel2 = formatCityLabel(city2.city);
     const cityFontSize2 = CITY_FONT_BASE_PX * dimScale * computeDualCityFontScale(city2.city);
-    drawCenteredText(cityLabel2, width * 0.75, cityY, `700 ${cityFontSize2}px ${titleFontFamily}`);
+    drawCenteredText(
+      cityLabel2,
+      width * 0.75,
+      cityY,
+      `700 ${cityFontSize2}px ${titleFontFamily}`,
+      cityFontSize2,
+    );
 
     if (showUnderline) {
       ctx.strokeStyle = textColor;
@@ -142,6 +171,7 @@ export function drawDualPosterText(
       width * 0.75,
       countryY,
       `300 ${countryFontSize}px ${titleFontFamily}`,
+      countryFontSize,
     );
 
     // Coords 2
@@ -155,6 +185,7 @@ export function drawDualPosterText(
       width * 0.75,
       coordinatesY,
       `400 ${coordinateFontSize}px ${bodyFontFamily}`,
+      coordinateFontSize,
     );
     ctx.globalAlpha = 1;
   }
@@ -206,7 +237,7 @@ export function drawPosterText(
     text: string,
     xCenter: number,
     y: number,
-    _fontSize: number,
+    fontSize: number,
     font: string,
   ) => {
     ctx.font = font;
@@ -231,9 +262,11 @@ export function drawPosterText(
       const right = (metrics as any).actualBoundingBoxRight;
       const baseX =
         typeof left === "number" && typeof right === "number" ? x - (right - left) / 2 : x;
-      ctx.fillText(text, baseX, y);
+      const khmerShift = containsKhmer(text) ? fontSize * KHMER_OPTICAL_SHIFT_X_EM : 0;
+      ctx.fillText(text, baseX + khmerShift, y);
     } else {
-      ctx.fillText(text, x, y);
+      const khmerShift = containsKhmer(text) ? fontSize * KHMER_OPTICAL_SHIFT_X_EM : 0;
+      ctx.fillText(text, x + khmerShift, y);
     }
   };
 

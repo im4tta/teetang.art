@@ -51,6 +51,28 @@ export function formatCityLabel(city: string): string {
 }
 
 /**
+ * Khmer script range: U+1780-17FF (Khmer), U+19E0-19FF (Khmer Symbols),
+ * plus ZWJ/ZWNJ/U+25CC which participate in coeng/roboreang clusters.
+ */
+const KHMER_CHAR_RE = /[\u1780-\u17FF\u19E0-\u19FF]/;
+
+/** True if the string contains any Khmer (or Khmer Symbols) codepoint. */
+export function containsKhmer(text: string | undefined | null): boolean {
+  if (!text) {
+    return false;
+  }
+  return KHMER_CHAR_RE.test(text);
+}
+
+/**
+ * Horizontal nudge (em) for Khmer text in the canvas exporter. On some
+ * iOS/WebKit versions the ink-box centering formula leaves Khmer script
+ * slightly right of center; a small negative shift moves it left.
+ * Tuned by eye against iOS canvas exports.
+ */
+export const KHMER_OPTICAL_SHIFT_X_EM = -0.12;
+
+/**
  * Returns a multiplier (≤1) to shrink the city font for long names.
  * Callers apply it to their own base font size.
  */
