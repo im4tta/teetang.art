@@ -10,7 +10,6 @@ import {
   COORDS_FONT_BASE_PX,
   ATTRIBUTION_FONT_BASE_PX,
   formatCityLabel,
-  computeCityFontScale,
   computeDualCityFontScale,
   computeAttributionColor,
 } from "@/features/poster/domain/textLayout";

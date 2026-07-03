@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useMobileViewport } from "@/shared/hooks/useMobileViewport";
 import { useI18n } from "@/shared/i18n/context";
 import { createPortal } from "react-dom";
@@ -74,7 +74,7 @@ function ColorButton({ color, onClick }: { color: string; onClick: () => void })
   );
 }
 
-function MarkerCard({ marker, icon, markerLabel, isMobile, onEdit, onRemove }: { marker: MarkerItem; icon: any; markerLabel: string; isMobile: boolean; onEdit: () => void; onRemove: () => void }) {
+function MarkerCard({ marker, icon, markerLabel, onEdit, onRemove }: { marker: MarkerItem; icon: any; markerLabel: string; onEdit: () => void; onRemove: () => void }) {
   return (
     <article className="marker-mobile-card" role="listitem">
       <button type="button" className="marker-mobile-card__delete" onClick={e => { e.stopPropagation(); onRemove(); }} aria-label={`Delete ${markerLabel}`}><CloseIcon /></button>
@@ -272,7 +272,7 @@ export default function MarkersSection() {
                     {!expandedId ? (
                       <div className={isMobile ? "markers-section__mobile-strip" : "markers-section__marker-grid"} role="list">
                         {markerRows.map(({ marker, icon, markerLabel }) => (
-                          <MarkerCard key={marker.id} marker={marker} icon={icon} markerLabel={markerLabel} isMobile={isMobile} onEdit={() => openEditor(marker.id)} onRemove={() => remove(marker.id)} />
+                          <MarkerCard key={marker.id} marker={marker} icon={icon} markerLabel={markerLabel} onEdit={() => openEditor(marker.id)} onRemove={() => remove(marker.id)} />
                         ))}
                       </div>
                     ) : (

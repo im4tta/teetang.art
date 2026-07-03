@@ -8,7 +8,6 @@ import {
   MarkersIcon,
   RouteIcon,
   StyleIcon,
-  SettingsIcon,
 } from "./Icons";
 import type { MobileTab } from "./MobileNavBar";
 import { useI18n } from "@/shared/i18n/context";

@@ -37,10 +37,6 @@ import {
   DEFAULT_POSTER_WIDTH_CM,
   DEFAULT_POSTER_HEIGHT_CM,
   DEFAULT_DISTANCE_METERS,
-  DEFAULT_LAT,
-  DEFAULT_LON,
-  DEFAULT_CITY,
-  DEFAULT_COUNTRY,
 } from "@/core/config";
 import { ensureGoogleFont, reverseGeocodeCoordinates } from "@/core/services";
 import {
@@ -110,8 +106,7 @@ function getPois(form: any): string[] {
 export default function PreviewPanel() {
   const { state, dispatch, effectiveTheme, effectiveTheme2, mapStyle, mapStyle2, mapRef, mapRef2 } =
     usePosterContext();
-  const { t, lang } = useI18n();
-  const isKhmer = lang === "km";
+  const { t } = useI18n();
   const { form, selectedLocation, userLocation, isMarkerEditorActive, activeMarkerId } = state;
   const hasVisibleMarkers = form.showMarkers && state.markers.length > 0;
   const {

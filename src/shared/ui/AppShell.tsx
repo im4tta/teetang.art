@@ -16,12 +16,11 @@ import { CheckIcon } from "@/shared/ui/Icons";
 import SupportModal from "@/features/export/ui/SupportModal";
 import { SUPPORT_PROMPT_EVENT, type SupportPromptState } from "@/features/export/application/useExport";
 import DotField from "@/shared/ui/DotField";
+import DesktopLocationBar from "@/shared/ui/DesktopLocationBar";
 
 const AboutModal = lazy(() => import("@/shared/ui/AboutModal"));
 const SettingsPanel = lazy(() => import("@/features/poster/ui/SettingsPanel"));
 const AnnouncementModal = lazy(() => import("@/features/updates/ui/AnnouncementModal"));
-const ExportFab = lazy(() => import("@/features/export/ui/ExportFab"));
-const DesktopLocationBar = lazy(() => import("@/shared/ui/DesktopLocationBar"));
 const UserGuidePanel = lazy(() => import("@/shared/ui/UserGuidePanel"));
 
 function SettingsDrawer({ mobileTab, onClose, showAllSections = false }: { mobileTab: MobileTab; onClose: () => void; showAllSections?: boolean }) {
@@ -143,7 +142,7 @@ export default function AppShell() {
 
       {isMobileViewport && (
         <div className={`mobile-location-row-wrap${mobileLocationVisible ? "" : " is-hidden"}`}>
-          <Suspense fallback={null}><DesktopLocationBar /></Suspense>
+          <DesktopLocationBar />
         </div>
       )}
 

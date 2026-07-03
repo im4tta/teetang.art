@@ -5,7 +5,6 @@ import { CloseIcon, DownloadIcon, LoaderIcon } from "@/shared/ui/Icons";
 import SocialLinkGroup from "@/shared/ui/SocialLinkGroup";
 import { useI18n } from "@/shared/i18n/context";
 import { usePosterContext } from "@/features/poster/ui/PosterContext";
-import UserGuide from "@/shared/ui/UserGuide";
 
 const FORMAT_OPTIONS: { format: ExportFormat; labelKey: string }[] = [
   { format: "png", labelKey: "export.png" },

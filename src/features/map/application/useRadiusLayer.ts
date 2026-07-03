@@ -28,10 +28,6 @@ function getStrokeColor(style: RadiusStyle): string {
   }
 }
 
-function getStrokeDasharray(style: RadiusStyle): [number, number] | undefined {
-  return style === "dashed" ? [4, 4] : undefined;
-}
-
 export function useRadiusLayer({
   mapRef,
   radiusMeters,

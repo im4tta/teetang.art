@@ -17,6 +17,6 @@ export const localStorageCache: ICache = {
   },
   write(key: string, data: unknown): void {
     if (typeof window === "undefined") return;
-    try { localStorage.setItem(PREFIX + key, JSON.stringify({ ts: Date.now(), data })); } catch {}
+    try { localStorage.setItem(PREFIX + key, JSON.stringify({ ts: Date.now(), data })); } catch { /* quota exceeded or storage unavailable; ignore */ }
   },
 };

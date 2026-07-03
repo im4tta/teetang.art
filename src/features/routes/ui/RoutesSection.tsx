@@ -38,7 +38,7 @@ interface LocationInputProps {
 function LocationInput({
   label,
   value,
-  focused,
+  focused: _focused,
   suggestions,
   searching,
   onChange,
@@ -319,7 +319,7 @@ function RouteCard({
 // ─── RoutesSection ────────────────────────────────────────────────────────────
 
 export default function RoutesSection() {
-  const { state, dispatch, effectiveTheme, mapRef } = usePosterContext();
+  const { state, dispatch, effectiveTheme } = usePosterContext();
   const { t } = useI18n();
   const { form, routes, customMarkerIcons } = state;
   const [routeA, setRouteA] = useState({ input: "", loc: null as SearchResult | null, focused: false });
@@ -357,7 +357,7 @@ export default function RoutesSection() {
     [dispatch],
   );
 
-  const useCurrentLocation = useCallback((target: "A" | "B") => {
+  const applyCurrentLocation = useCallback((target: "A" | "B") => {
     if (!navigator.geolocation) return;
     navigator.geolocation.getCurrentPosition(
       ({ coords: { latitude: lat, longitude: lon } }) => {
@@ -446,7 +446,7 @@ export default function RoutesSection() {
           onFocus={() => setRouteA(p => ({ ...p, focused: true }))}
           onBlur={() => setRouteA(p => ({ ...p, focused: false }))}
           onSelect={s => { setRouteA({ input: s.label, loc: s, focused: false }); autoA.clearLocationSuggestions(); }}
-          onUseCurrentLocation={() => useCurrentLocation("A")}
+          onUseCurrentLocation={() => applyCurrentLocation("A")}
         />
         <LocationInput
           label={t("routes.locationB")}
@@ -458,7 +458,7 @@ export default function RoutesSection() {
           onFocus={() => setRouteB(p => ({ ...p, focused: true }))}
           onBlur={() => setRouteB(p => ({ ...p, focused: false }))}
           onSelect={s => { setRouteB({ input: s.label, loc: s, focused: false }); autoB.clearLocationSuggestions(); }}
-          onUseCurrentLocation={() => useCurrentLocation("B")}
+          onUseCurrentLocation={() => applyCurrentLocation("B")}
         />
         <button
           type="button"

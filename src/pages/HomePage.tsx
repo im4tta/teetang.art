@@ -57,10 +57,6 @@ function CarouselFeatured() {
     return () => clearInterval(timerRef.current);
   }, [cards.length]);
 
-  const prev = (i: number) => (i - 1 + cards.length) % cards.length;
-  const next = (i: number) => (i + 1) % cards.length;
-  const c = cards[idx];
-  const IconComponent = c.icon;
 
   return (
     <div className="home-carousel">

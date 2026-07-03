@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from "react";
 import { LocationIcon, ThemeIcon, LayoutIcon, LayersIcon, MarkersIcon, RouteIcon, StyleIcon } from "./Icons";
 import { MapPin } from "lucide-react";
 import { useI18n } from "@/shared/i18n/context";
@@ -19,11 +20,24 @@ interface Props { activeTab: MobileTab; drawerOpen: boolean; isLocationVisible: 
 
 export default function MobileNavBar({ activeTab, drawerOpen, isLocationVisible, onTabChange }: Props) {
   const { t } = useI18n();
+  const tabsRef = useRef<HTMLDivElement>(null);
+  const [hasOverflow, setHasOverflow] = useState(false);
+
+  useEffect(() => {
+    const el = tabsRef.current;
+    if (!el) return;
+    const checkOverflow = () => setHasOverflow(el.scrollWidth > el.clientWidth + 1);
+    checkOverflow();
+    const observer = new ResizeObserver(checkOverflow);
+    observer.observe(el);
+    return () => observer.disconnect();
+  }, []);
+
   return (
     <div className="mobile-nav-wrapper">
       <nav className="mobile-nav" aria-label="Mobile navigation">
         <div className="mobile-nav-scroll-container">
-          <div className="mobile-nav-tabs">
+          <div className="mobile-nav-tabs" ref={tabsRef}>
             {TABS.map(({ id, labelKey, Icon }) => {
               const isLoc = id === "location";
               const isActive = isLoc ? isLocationVisible : drawerOpen && activeTab === id;
@@ -37,7 +51,7 @@ export default function MobileNavBar({ activeTab, drawerOpen, isLocationVisible,
               );
             })}
           </div>
-          <div className="mobile-nav-fade" aria-hidden="true" />
+          {hasOverflow && <div className="mobile-nav-fade" aria-hidden="true" />}
         </div>
       </nav>
     </div>

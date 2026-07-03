@@ -100,6 +100,7 @@
     -ms-overflow-style: none;
     scroll-snap-type: x proximity;
     -webkit-overflow-scrolling: touch;
+    justify-content: center;
   }
 
   .mobile-nav-tabs::-webkit-scrollbar {
@@ -136,8 +137,9 @@
   }
 
   .mobile-nav-tab {
-    flex-shrink: 0;
-    width: 72px;
+    flex: 1 0 72px;
+    min-width: 72px;
+    max-width: 104px;
     display: flex;
     flex-direction: column;
     align-items: center;

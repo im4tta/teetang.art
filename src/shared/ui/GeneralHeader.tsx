@@ -1,7 +1,6 @@
 import { useNavigate } from "react-router-dom";
 import { MapPin } from "lucide-react";
 import { InfoIcon } from "@/shared/ui/Icons";
-import { usePosterContext } from "@/features/poster/ui/PosterContext";
 import { useI18n } from "@/shared/i18n/context";
 
 interface GeneralHeaderProps {
@@ -26,13 +25,7 @@ function GlobeIcon() {
 
 export default function GeneralHeader({ onAboutOpen }: GeneralHeaderProps) {
   const navigate = useNavigate();
-  const { state } = usePosterContext();
   const { lang, toggleLang, t } = useI18n();
-  const { form } = state;
-  const locLabel =
-    form.displayCity && form.displayCountry
-      ? `${form.displayCity}, ${form.displayCountry}`
-      : "Phnom Penh, Cambodia";
 
   return (
     <header className="general-header">

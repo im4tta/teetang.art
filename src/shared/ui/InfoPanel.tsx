@@ -8,8 +8,8 @@ import UserGuide from "@/shared/ui/UserGuide";
 
 function HelpUsGrowSection({
   repoUrl,
-  repoStars,
-  repoStarsLoading,
+  repoStars: _repoStars,
+  repoStarsLoading: _repoStarsLoading,
 }: {
   repoUrl: string;
   repoStars: number | null;

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import type { MapInstanceRef } from "@/features/map/domain/types";
 import type { Route } from "@/features/routes/domain/types";
 import type { MarkerIconDefinition } from "@/features/markers/domain/types";
-import type { Coordinate } from "@/shared/geo/types";
 import { findMarkerIcon } from "@/features/markers/infrastructure/iconRegistry";
 import MarkerVisual from "@/features/markers/ui/MarkerVisual";
 import { routeEndpoints } from "@/features/routes/infrastructure/helpers";

@@ -2,7 +2,6 @@ import { useCallback, useEffect, useState } from "react";
 import { ensureGoogleFont } from "@/core/services";
 import type { PosterForm } from "@/features/poster/application/posterReducer";
 import type { FontOption } from "@/core/config";
-import { RADIUS_OPTIONS } from "@/core/config";
 import { PLACEHOLDER_EXAMPLE_CITY, PLACEHOLDER_EXAMPLE_COUNTRY } from "@/features/location/ui/constants";
 import { useI18n } from "@/shared/i18n/context";
 import { usePosterContext } from "@/features/poster/ui/PosterContext";
@@ -207,7 +206,7 @@ function QRSection({ form, onChange }: { form: PosterForm; onChange: (e: any) =>
     try {
       if ("share" in navigator) await (navigator as any).share({ title: "Map location", text: url, url });
       else await (navigator as any).clipboard.writeText(url);
-    } catch {}
+    } catch { /* share/clipboard cancelled or unsupported; ignore */ }
   }, [form]);
 
   const setXY = (field: string, v: number) => dispatch({ type: "SET_FORM_FIELDS", fields: { [field]: String(v), qrPosition: "custom" } });

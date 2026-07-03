@@ -1,4 +1,4 @@
-import type { Location, SearchResult } from "../domain/types";
+import type { SearchResult } from "../domain/types";
 
 interface NominatimEntry {
   lat?: number | string;

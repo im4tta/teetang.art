@@ -1,4 +1,3 @@
-import { useI18n } from "@/shared/i18n/context";
 import { SunIcon, MoonIcon, MaximizeIcon, MinimizeIcon, StyleIcon, LayoutIcon } from "@/shared/ui/Icons";
 
 interface Props {
@@ -7,8 +6,6 @@ interface Props {
 }
 
 export default function AppSettingsSection({ form, onChange }: Props) {
-  const { t } = useI18n();
-
   const opt = (name: string, value: string, Icon: React.ComponentType<{ className?: string }>, label: string) => (
     <button
       type="button"
