@@ -1,8 +1,8 @@
 import React from "react";
 import ReactDOM from "react-dom/client";
-import { isNativePlatform, onPlatformAdapterChange } from "@/core/platform";
-import App from "./App";
-import "./styles/index.css";
+import { isNativePlatform, onPlatformAdapterChange } from "@/services/platform";
+import App from "@/App";
+import "@/styles/index.css";
 
 const syncDisplayMode = () => {
   const standalone =
