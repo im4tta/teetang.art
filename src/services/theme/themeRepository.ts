@@ -2,7 +2,7 @@ import themesManifest from "@/data/themes.json";
 import additionalThemesManifest from "@/data/additional_themes.json";
 import { blendHex, normalizeHexColor } from "@/utils/color";
 import { getThemeColorByPath } from "@/services/theme/colorPaths";
-import type { ResolvedTheme, ThemeColorKey, ThemeOption } from "@/services/theme/types";
+import type { ResolvedTheme, ThemeColorKey, ThemeOption, ThemeGroup } from "@/services/theme/types";
 import { DISPLAY_PALETTE_KEYS } from "@/services/theme/types";
 
 const hexColorPattern = /^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
@@ -330,6 +330,120 @@ export const themeOptions: ThemeOption[] = themeNames.map((name) => ({
   description: String(getPathValue(themesByName[name], "description") ?? ""),
   palette: getThemePalette(themesByName[name]),
 }));
+
+const themeOptionsById: Record<string, ThemeOption> = themeOptions.reduce(
+  (acc: Record<string, ThemeOption>, option) => {
+    if (!acc[option.id]) acc[option.id] = option;
+    return acc;
+  },
+  {},
+);
+
+/**
+ * Curated preset groupings for the theme picker. Each theme id maps to exactly
+ * one category so the list can be filtered into compact, scrollable presets.
+ */
+const THEME_CATEGORY_ORDER: { id: string; name: string }[] = [
+  { id: "editorial", name: "Editorial & Minimal" },
+  { id: "warm", name: "Warm & Earthy" },
+  { id: "dark", name: "Dark & Luxe" },
+  { id: "vibrant", name: "Vibrant & Festive" },
+  { id: "nature", name: "Nature & Coastal" },
+  { id: "heritage", name: "Cultural & Heritage" },
+  { id: "craft", name: "Art & Printcraft" },
+];
+
+const THEME_CATEGORY_MAP: Record<string, string> = {
+  // Editorial & Minimal
+  linen: "editorial",
+  paper_white: "editorial",
+  minimal: "editorial",
+  coral: "editorial",
+  sage: "editorial",
+  contrast_zones: "editorial",
+  ocean: "editorial",
+  pastel_dream: "editorial",
+  urban_mosaic: "editorial",
+  forest_light: "editorial",
+  iceberg: "editorial",
+  mint: "editorial",
+  gradient_roads: "editorial",
+  monochrome_blue: "editorial",
+  // Warm & Earthy
+  copper: "warm",
+  terracotta: "warm",
+  rustic: "warm",
+  copper_patina: "warm",
+  sandstone: "warm",
+  sunset: "warm",
+  autumn: "warm",
+  warm_beige: "warm",
+  // Dark & Luxe
+  midnight: "dark",
+  gold_ink: "dark",
+  dusk: "dark",
+  ember: "dark",
+  mono: "dark",
+  rose: "dark",
+  midnight_blue: "dark",
+  heatwave: "dark",
+  ruby: "dark",
+  emerald: "dark",
+  noir: "dark",
+  volcanic: "dark",
+  old_navy: "dark",
+  jade_imperial: "dark",
+  art_deco: "dark",
+  // Vibrant & Festive
+  neon: "vibrant",
+  holi: "vibrant",
+  alebrije: "vibrant",
+  kente: "vibrant",
+  tartan: "vibrant",
+  vaporwave: "vibrant",
+  prism: "vibrant",
+  // Nature & Coastal
+  forest: "nature",
+  archipelago: "nature",
+  mangrove: "nature",
+  aurora: "nature",
+  sakura: "nature",
+  // Cultural & Heritage
+  angkor: "heritage",
+  khmer_royal: "heritage",
+  tonle_sap: "heritage",
+  bakong: "heritage",
+  apsara: "heritage",
+  japanese_ink: "heritage",
+  wine: "heritage",
+  nordic: "heritage",
+  washi: "heritage",
+  santorini: "heritage",
+  // Art & Printcraft
+  handmap: "craft",
+  blueprint: "craft",
+  vintage_plan: "craft",
+  cyanotype: "craft",
+  risograph: "craft",
+  etching: "craft",
+  chalkboard: "craft",
+  mosaic_tile: "craft",
+  memphis: "craft",
+  bauhaus: "craft",
+  topographic: "craft",
+  terrazzo: "craft",
+  transit: "craft",
+  newspaper: "craft",
+};
+
+export const themeGroups: ThemeGroup[] = THEME_CATEGORY_ORDER.map((category) => ({
+  id: category.id,
+  name: category.name,
+  options: themeNames
+    .filter((name) => THEME_CATEGORY_MAP[name] === category.id)
+    .map((name) => themeOptionsById[name])
+    .filter((option): option is ThemeOption => Boolean(option)),
+})).filter((group) => group.options.length > 0);
 
 const preferredDefaultThemeName = "angkor";
 

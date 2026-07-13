@@ -1250,6 +1250,41 @@ button.location-current-btn:focus-visible {
   margin-bottom: 0;
 }
 
+.theme-group-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 10px;
+}
+
+.theme-group-chip {
+  flex: 0 0 auto;
+  padding: 5px 11px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: #b9c9d8;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 999px;
+  cursor: pointer;
+  transition:
+    background 0.16s ease,
+    border-color 0.16s ease,
+    color 0.16s ease;
+}
+
+.theme-group-chip:hover {
+  border-color: rgba(255, 255, 255, 0.28);
+  color: #e7f2fb;
+}
+
+.theme-group-chip.is-active {
+  color: #0d1622;
+  background: #8fd0ff;
+  border-color: #8fd0ff;
+}
+
 .mobile-section--theme .accordion-body-inner {
   scrollbar-width: none;
   -ms-overflow-style: none;

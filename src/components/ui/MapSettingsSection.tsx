@@ -9,7 +9,7 @@ import ColorPicker from "@/components/ui/ColorPicker";
 import ThemeColorEditor from "@/components/ui/ThemeColorEditor";
 import ThemeSummarySection from "@/components/ui/ThemeSummarySection";
 import { CheckIcon, EditIcon } from "@/components/ui/Icons";
-import type { ResolvedTheme } from "@/services/theme/types";
+import type { ResolvedTheme, ThemeGroup } from "@/services/theme/types";
 import type { LayoutGroup } from "@/services/layout/types";
 import { useColorEditorState } from "@/hooks/useColorEditorState";
 
@@ -39,6 +39,7 @@ interface MapSettingsSectionProps {
   onLayoutChange: (layoutId: string) => void;
   selectedTheme: ResolvedTheme;
   themeOptions: ThemeOption[];
+  themeGroups: ThemeGroup[];
   layoutGroups: LayoutGroup[];
   minPosterCm: number;
   maxPosterCm: number;
@@ -57,6 +58,7 @@ export default function MapSettingsSection({
   onLayoutChange,
   selectedTheme,
   themeOptions,
+  themeGroups,
   layoutGroups,
   minPosterCm,
   maxPosterCm,
@@ -209,6 +211,7 @@ export default function MapSettingsSection({
             <ThemeSummarySection
               listRef={themeListRef}
               themeOptions={themeOptions}
+              themeGroups={themeGroups}
               selectedThemeId={form.theme}
               selectedThemeOption={summaryThemeOption}
               onThemeSelect={handleThemeSelect}

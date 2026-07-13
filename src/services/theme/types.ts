@@ -59,6 +59,12 @@ export interface ThemeOption {
   palette: string[];
 }
 
+export interface ThemeGroup {
+  id: string;
+  name: string;
+  options: ThemeOption[];
+}
+
 export const DISPLAY_PALETTE_KEYS: ThemeColorKey[] = [
   "ui.bg",
   "ui.text",

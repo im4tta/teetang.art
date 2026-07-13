@@ -18,7 +18,7 @@ import {
   LocationIcon, ThemeIcon, LayoutIcon, LayersIcon, MarkersIcon, RouteIcon, StyleIcon,
   ChevronDownIcon, GearIcon,
 } from "@/components/ui/Icons";
-import { themeOptions } from "@/services/theme/themeRepository";
+import { themeOptions, themeGroups } from "@/services/theme/themeRepository";
 import { layoutGroups } from "@/services/layout/layoutRepository";
 import { MIN_POSTER_CM, MAX_POSTER_CM, FONT_OPTIONS } from "@/services/config";
 import type { SearchResult } from "@/services/location/types";
@@ -83,7 +83,7 @@ export default function SettingsPanel({ mobileTab, desktopActivePanel }: { mobil
         onThemeChange={handlers.handleThemeChange}
         onLayoutChange={handlers.handleLayoutChange}
         selectedTheme={selectedTheme}
-        themeOptions={themeOptions} layoutGroups={layoutGroups}
+        themeOptions={themeOptions} themeGroups={themeGroups} layoutGroups={layoutGroups}
         minPosterCm={MIN_POSTER_CM} maxPosterCm={MAX_POSTER_CM}
         customColors={state.customColors}
         onColorChange={handlers.handleColorChange}
