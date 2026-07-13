@@ -1,6 +1,5 @@
-// NOTE: additional_themes.json exists in src/data/ but is currently unused.
-// It is preserved for potential future expansion of the theme registry.
 import themesManifest from "@/data/themes.json";
+import additionalThemesManifest from "@/data/additional_themes.json";
 import { blendHex, normalizeHexColor } from "@/utils/color";
 import { getThemeColorByPath } from "@/services/theme/colorPaths";
 import type { ResolvedTheme, ThemeColorKey, ThemeOption } from "@/services/theme/types";
@@ -125,6 +124,34 @@ const preferredThemeOrder = [
   "ruby",
   "sage",
   "rustic",
+  "old_navy",
+  "gradient_roads",
+  "monochrome_blue",
+  "sunset",
+  "autumn",
+  "warm_beige",
+  "risograph",
+  "etching",
+  "chalkboard",
+  "mosaic_tile",
+  "washi",
+  "santorini",
+  "holi",
+  "alebrije",
+  "jade_imperial",
+  "kente",
+  "tartan",
+  "art_deco",
+  "memphis",
+  "vaporwave",
+  "bauhaus",
+  "aurora",
+  "sakura",
+  "topographic",
+  "terrazzo",
+  "prism",
+  "transit",
+  "newspaper",
 ];
 
 function isObject(value: unknown): value is ThemeObject {
@@ -265,7 +292,14 @@ const manifestThemes = isObject(themesManifest)
   ? (themesManifest as ThemeObject).themes
   : undefined;
 
-const rawThemes = isObject(manifestThemes) ? (manifestThemes as Record<string, unknown>) : {};
+const additionalRawThemes = isObject(additionalThemesManifest)
+  ? (additionalThemesManifest as ThemeObject).themes
+  : undefined;
+
+const rawThemes = {
+  ...(isObject(manifestThemes) ? (manifestThemes as Record<string, unknown>) : {}),
+  ...(isObject(additionalRawThemes) ? (additionalRawThemes as Record<string, unknown>) : {}),
+};
 
 const themesByName: Record<string, ThemeObject> = Object.entries(rawThemes).reduce(
   (acc: Record<string, ThemeObject>, [key, value]) => {

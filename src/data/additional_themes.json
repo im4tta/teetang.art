@@ -149,6 +149,556 @@
           "minor_low": "#C8A888"
         }
       }
+    },
+    "risograph": {
+      "name": "Risograph",
+      "description": "Fluorescent pink and blue overprint on cream stock - grainy DIY print aesthetic",
+      "ui": {
+        "bg": "#F4EFE6",
+        "text": "#1A1A1A"
+      },
+      "map": {
+        "land": "#F4EFE6",
+        "water": "#2EA8E0",
+        "waterway": "#2EA8E0",
+        "parks": "#3DDC84",
+        "buildings": "#E8B0C8",
+        "aeroway": "#2EA8E0",
+        "rail": "#FF3D7F",
+        "roads": {
+          "major": "#FF3D7F",
+          "path": "#C8C0A8",
+          "outline": "#F4EFE6",
+          "minor_high": "#1FA0C8",
+          "minor_mid": "#E07BA8",
+          "minor_low": "#B8A0C8"
+        }
+      }
+    },
+    "etching": {
+      "name": "Etching",
+      "description": "Antique engraved map - sepia linework and fine hatching on parchment",
+      "ui": {
+        "bg": "#EDE3CF",
+        "text": "#3A2A1A"
+      },
+      "map": {
+        "land": "#EDE3CF",
+        "water": "#C9B79A",
+        "waterway": "#C9B79A",
+        "parks": "#D8C9A8",
+        "buildings": "#5C4326",
+        "aeroway": "#D8C9A8",
+        "rail": "#3A2A1A",
+        "roads": {
+          "major": "#5C4326",
+          "path": "#D0C0A0",
+          "outline": "#EDE3CF",
+          "minor_high": "#7A5A38",
+          "minor_mid": "#9A7A52",
+          "minor_low": "#B89A70"
+        }
+      }
+    },
+    "chalkboard": {
+      "name": "Chalkboard",
+      "description": "Dark slate ground with soft pastel chalk streets - classroom cartography",
+      "ui": {
+        "bg": "#1E2A24",
+        "text": "#E8F0E0"
+      },
+      "map": {
+        "land": "#1E2A24",
+        "water": "#16201B",
+        "waterway": "#16201B",
+        "parks": "#243029",
+        "buildings": "#6E8A78",
+        "aeroway": "#243029",
+        "rail": "#9AD1E0",
+        "roads": {
+          "major": "#F2A9C4",
+          "path": "#3A4A40",
+          "outline": "#2E3A32",
+          "minor_high": "#9AD1E0",
+          "minor_mid": "#E8E0A8",
+          "minor_low": "#A8C8A0"
+        }
+      }
+    },
+    "mosaic_tile": {
+      "name": "Mosaic Tile",
+      "description": "Byzantine and zellige tilework - terracotta land, teal water, grout-line roads",
+      "ui": {
+        "bg": "#C8713C",
+        "text": "#F0E6D2"
+      },
+      "map": {
+        "land": "#C8713C",
+        "water": "#1E8A8A",
+        "waterway": "#1E8A8A",
+        "parks": "#3A7A4A",
+        "buildings": "#E0C890",
+        "aeroway": "#3A7A4A",
+        "rail": "#F0E6D2",
+        "roads": {
+          "major": "#F0E6D2",
+          "path": "#E8DCC4",
+          "outline": "#F0E6D2",
+          "minor_high": "#D4A24A",
+          "minor_mid": "#B87030",
+          "minor_low": "#8A4A22"
+        }
+      }
+    },
+    "washi": {
+      "name": "Washi",
+      "description": "Japanese paper - indigo fields with vermilion linework",
+      "ui": {
+        "bg": "#F3ECDD",
+        "text": "#1B3A6B"
+      },
+      "map": {
+        "land": "#F3ECDD",
+        "water": "#2A5A9E",
+        "waterway": "#2A5A9E",
+        "parks": "#E8D8C0",
+        "buildings": "#C8472E",
+        "aeroway": "#E8D8C0",
+        "rail": "#1B3A6B",
+        "roads": {
+          "major": "#C8472E",
+          "path": "#E0D4BC",
+          "outline": "#F3ECDD",
+          "minor_high": "#1B3A6B",
+          "minor_mid": "#6A8AB8",
+          "minor_low": "#A8B8D0"
+        }
+      }
+    },
+    "santorini": {
+      "name": "Santorini",
+      "description": "Greek blue and white - Aegean water against whitewashed land",
+      "ui": {
+        "bg": "#F2F6FB",
+        "text": "#0B2E63"
+      },
+      "map": {
+        "land": "#F2F6FB",
+        "water": "#11458C",
+        "waterway": "#11458C",
+        "parks": "#DCE6F2",
+        "buildings": "#3A6EA5",
+        "aeroway": "#DCE6F2",
+        "rail": "#0B2E63",
+        "roads": {
+          "major": "#0B2E63",
+          "path": "#DCE6F2",
+          "outline": "#F2F6FB",
+          "minor_high": "#11458C",
+          "minor_mid": "#5A86B8",
+          "minor_low": "#A8C0E0"
+        }
+      }
+    },
+    "holi": {
+      "name": "Holi",
+      "description": "Festival of color - vivid pink, orange and gold splatter on deep plum",
+      "ui": {
+        "bg": "#2A0A2A",
+        "text": "#FFD24A"
+      },
+      "map": {
+        "land": "#2A0A2A",
+        "water": "#1A081A",
+        "waterway": "#1A081A",
+        "parks": "#3A1A3A",
+        "buildings": "#FF5C8A",
+        "aeroway": "#3A1A3A",
+        "rail": "#FFD24A",
+        "roads": {
+          "major": "#FF7A1A",
+          "path": "#5A2A5A",
+          "outline": "#6A3A6A",
+          "minor_high": "#FF3D7F",
+          "minor_mid": "#FFD24A",
+          "minor_low": "#3A9A6A"
+        }
+      }
+    },
+    "alebrije": {
+      "name": "Alebrije",
+      "description": "Mexican folk-art spirit - clashing turquoise, magenta and lime on black",
+      "ui": {
+        "bg": "#0D0D14",
+        "text": "#FFE14A"
+      },
+      "map": {
+        "land": "#0D0D14",
+        "water": "#0A2A4A",
+        "waterway": "#0A2A4A",
+        "parks": "#1A4A1A",
+        "buildings": "#FF3D7F",
+        "aeroway": "#1A4A1A",
+        "rail": "#FFE14A",
+        "roads": {
+          "major": "#00E0C8",
+          "path": "#2A2A38",
+          "outline": "#2A2A38",
+          "minor_high": "#FF8C1A",
+          "minor_mid": "#B04AFF",
+          "minor_low": "#3DD66A"
+        }
+      }
+    },
+    "jade_imperial": {
+      "name": "Jade Imperial",
+      "description": "Chinese imperial jade and gold on ink-black ground",
+      "ui": {
+        "bg": "#10140F",
+        "text": "#C8A24A"
+      },
+      "map": {
+        "land": "#10140F",
+        "water": "#0A1A14",
+        "waterway": "#0A1A14",
+        "parks": "#16301F",
+        "buildings": "#5A9A6A",
+        "aeroway": "#16301F",
+        "rail": "#C8A24A",
+        "roads": {
+          "major": "#2E8B6B",
+          "path": "#3A4A38",
+          "outline": "#243028",
+          "minor_high": "#C8A24A",
+          "minor_mid": "#1E6A4A",
+          "minor_low": "#143A2A"
+        }
+      }
+    },
+    "kente": {
+      "name": "Kente",
+      "description": "West African woven cloth - gold, red, green and black threads",
+      "ui": {
+        "bg": "#101008",
+        "text": "#E8C020"
+      },
+      "map": {
+        "land": "#101008",
+        "water": "#0A1408",
+        "waterway": "#0A1408",
+        "parks": "#14280C",
+        "buildings": "#C8202C",
+        "aeroway": "#14280C",
+        "rail": "#E8C020",
+        "roads": {
+          "major": "#1E8A2C",
+          "path": "#3A3A28",
+          "outline": "#3A3A28",
+          "minor_high": "#C8202C",
+          "minor_mid": "#E8C020",
+          "minor_low": "#2A6A30"
+        }
+      }
+    },
+    "tartan": {
+      "name": "Tartan",
+      "description": "Scottish clan weave - deep green and blue with red and gold threads",
+      "ui": {
+        "bg": "#13261A",
+        "text": "#E0C060"
+      },
+      "map": {
+        "land": "#13261A",
+        "water": "#0C1A24",
+        "waterway": "#0C1A24",
+        "parks": "#183020",
+        "buildings": "#8A2030",
+        "aeroway": "#183020",
+        "rail": "#E0C060",
+        "roads": {
+          "major": "#C8303C",
+          "path": "#2A3A30",
+          "outline": "#2A3A30",
+          "minor_high": "#E0C060",
+          "minor_mid": "#7A9AC0",
+          "minor_low": "#4A6A50"
+        }
+      }
+    },
+    "art_deco": {
+      "name": "Art Deco",
+      "description": "Gold geometry on black with emerald accents - roaring-twenties luxury",
+      "ui": {
+        "bg": "#0E0E0E",
+        "text": "#C8A24A"
+      },
+      "map": {
+        "land": "#0E0E0E",
+        "water": "#0A1A14",
+        "waterway": "#0A1A14",
+        "parks": "#0F2A20",
+        "buildings": "#0F6B53",
+        "aeroway": "#0F2A20",
+        "rail": "#C8A24A",
+        "roads": {
+          "major": "#C8A24A",
+          "path": "#2A2A2A",
+          "outline": "#2A2A2A",
+          "minor_high": "#0F6B53",
+          "minor_mid": "#8A7030",
+          "minor_low": "#3A3420"
+        }
+      }
+    },
+    "memphis": {
+      "name": "Memphis",
+      "description": "1980s Memphis design - clashing primaries and terrazzo speckle",
+      "ui": {
+        "bg": "#F4F0E8",
+        "text": "#1A1A1A"
+      },
+      "map": {
+        "land": "#F4F0E8",
+        "water": "#4AC0E0",
+        "waterway": "#4AC0E0",
+        "parks": "#F2C94C",
+        "buildings": "#E84393",
+        "aeroway": "#F2C94C",
+        "rail": "#1A1A1A",
+        "roads": {
+          "major": "#2D9CDB",
+          "path": "#D8D0C0",
+          "outline": "#E8E0D0",
+          "minor_high": "#E84393",
+          "minor_mid": "#F2C94C",
+          "minor_low": "#6FCF97"
+        }
+      }
+    },
+    "vaporwave": {
+      "name": "Vaporwave",
+      "description": "Pink, cyan and violet gradient sky with retro-grid streets",
+      "ui": {
+        "bg": "#2A1A4A",
+        "text": "#FF9EE8"
+      },
+      "map": {
+        "land": "#2A1A4A",
+        "water": "#1A2A6A",
+        "waterway": "#1A2A6A",
+        "parks": "#3A2A6A",
+        "buildings": "#00E0D0",
+        "aeroway": "#3A2A6A",
+        "rail": "#FF9EE8",
+        "roads": {
+          "major": "#FF6AD5",
+          "path": "#4A3A6A",
+          "outline": "#4A3A6A",
+          "minor_high": "#00E0D0",
+          "minor_mid": "#9A6AFF",
+          "minor_low": "#5A4A8A"
+        }
+      }
+    },
+    "bauhaus": {
+      "name": "Bauhaus",
+      "description": "Reduced primary forms - red, blue and yellow on off-white",
+      "ui": {
+        "bg": "#F0ECE2",
+        "text": "#1A1A1A"
+      },
+      "map": {
+        "land": "#F0ECE2",
+        "water": "#2A6FB0",
+        "waterway": "#2A6FB0",
+        "parks": "#E8C84A",
+        "buildings": "#C8302C",
+        "aeroway": "#E8C84A",
+        "rail": "#1A1A1A",
+        "roads": {
+          "major": "#C8302C",
+          "path": "#D8D4C8",
+          "outline": "#E4E0D4",
+          "minor_high": "#2A6FB0",
+          "minor_mid": "#E8C84A",
+          "minor_low": "#A8A89A"
+        }
+      }
+    },
+    "aurora": {
+      "name": "Aurora",
+      "description": "Teal-violet polar sky with green and pink shimmering roads",
+      "ui": {
+        "bg": "#0A1A2A",
+        "text": "#A8F0D0"
+      },
+      "map": {
+        "land": "#0A1A2A",
+        "water": "#07131F",
+        "waterway": "#07131F",
+        "parks": "#0F2A2A",
+        "buildings": "#3A8A6A",
+        "aeroway": "#0F2A2A",
+        "rail": "#A8F0D0",
+        "roads": {
+          "major": "#5CFFB0",
+          "path": "#1A3040",
+          "outline": "#16283A",
+          "minor_high": "#FF8AD0",
+          "minor_mid": "#7AD0E8",
+          "minor_low": "#3A6A8A"
+        }
+      }
+    },
+    "sakura": {
+      "name": "Sakura",
+      "description": "Cherry blossom pink on cream - spring wedding and keepsake aesthetic",
+      "ui": {
+        "bg": "#FBEFF2",
+        "text": "#8A4A5A"
+      },
+      "map": {
+        "land": "#FBEFF2",
+        "water": "#D8C8D8",
+        "waterway": "#D8C8D8",
+        "parks": "#F2D8E0",
+        "buildings": "#E8A8BC",
+        "aeroway": "#F2D8E0",
+        "rail": "#8A4A5A",
+        "roads": {
+          "major": "#C8607A",
+          "path": "#F0E0E6",
+          "outline": "#F5E6EC",
+          "minor_high": "#E8A8BC",
+          "minor_mid": "#D8B0C0",
+          "minor_low": "#E0C8D0"
+        }
+      }
+    },
+    "topographic": {
+      "name": "Topographic",
+      "description": "Survey map contour lines - tan paper with brown elevation hairlines",
+      "ui": {
+        "bg": "#EFE6D2",
+        "text": "#5A4326"
+      },
+      "map": {
+        "land": "#EFE6D2",
+        "water": "#BFD8D8",
+        "waterway": "#BFD8D8",
+        "parks": "#DCE0C8",
+        "buildings": "#8A7A5A",
+        "aeroway": "#DCE0C8",
+        "rail": "#5A4326",
+        "roads": {
+          "major": "#5A4326",
+          "path": "#DDD2BC",
+          "outline": "#EFE6D2",
+          "minor_high": "#7A6038",
+          "minor_mid": "#A08858",
+          "minor_low": "#C0A878"
+        }
+      }
+    },
+    "terrazzo": {
+      "name": "Terrazzo",
+      "description": "Speckled pastel aggregate - Italian terrazzo stone for interior prints",
+      "ui": {
+        "bg": "#F2EFE8",
+        "text": "#4A4A52"
+      },
+      "map": {
+        "land": "#F2EFE8",
+        "water": "#B8D8E0",
+        "waterway": "#B8D8E0",
+        "parks": "#D8E0C8",
+        "buildings": "#E0A0A8",
+        "aeroway": "#D8E0C8",
+        "rail": "#4A4A52",
+        "roads": {
+          "major": "#5A8AB0",
+          "path": "#E0DCD2",
+          "outline": "#EAE6DC",
+          "minor_high": "#C890A0",
+          "minor_mid": "#9AC0A0",
+          "minor_low": "#D0C090"
+        }
+      }
+    },
+    "prism": {
+      "name": "Prism",
+      "description": "Iridescent oil-slick holographic shift across the spectrum",
+      "ui": {
+        "bg": "#101418",
+        "text": "#A8F0E8"
+      },
+      "map": {
+        "land": "#101418",
+        "water": "#0A1018",
+        "waterway": "#0A1018",
+        "parks": "#141A24",
+        "buildings": "#C080E0",
+        "aeroway": "#141A24",
+        "rail": "#A8F0E8",
+        "roads": {
+          "major": "#FF8AC8",
+          "path": "#1E2630",
+          "outline": "#1E2630",
+          "minor_high": "#8AD0FF",
+          "minor_mid": "#A8FFC8",
+          "minor_low": "#C8A8FF"
+        }
+      }
+    },
+    "transit": {
+      "name": "Transit",
+      "description": "Subway-diagram styling - bold solid colored lines on cream paper",
+      "ui": {
+        "bg": "#F5F2EA",
+        "text": "#1A1A1A"
+      },
+      "map": {
+        "land": "#F5F2EA",
+        "water": "#BFD8DC",
+        "waterway": "#BFD8DC",
+        "parks": "#D8E4CC",
+        "buildings": "#D8D2C4",
+        "aeroway": "#D8E4CC",
+        "rail": "#1A1A1A",
+        "roads": {
+          "major": "#E8431F",
+          "path": "#C8C0B0",
+          "outline": "#E0DCD2",
+          "minor_high": "#1F7FE8",
+          "minor_mid": "#2CA85A",
+          "minor_low": "#E8A81F"
+        }
+      }
+    },
+    "newspaper": {
+      "name": "Newspaper",
+      "description": "Black ink on newsprint with halftone texture - front-page cartography",
+      "ui": {
+        "bg": "#EFEADD",
+        "text": "#1A1A1A"
+      },
+      "map": {
+        "land": "#EFEADD",
+        "water": "#CFC9B8",
+        "waterway": "#CFC9B8",
+        "parks": "#D8D2C2",
+        "buildings": "#3A3A3A",
+        "aeroway": "#D8D2C2",
+        "rail": "#1A1A1A",
+        "roads": {
+          "major": "#1A1A1A",
+          "path": "#D0CAB8",
+          "outline": "#E2DCCB",
+          "minor_high": "#5A5A5A",
+          "minor_mid": "#8A8A8A",
+          "minor_low": "#B0B0A0"
+        }
+      }
     }
   }
 }
