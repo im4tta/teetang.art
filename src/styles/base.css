@@ -180,3 +180,39 @@ body {
   min-height: 100dvh;
   background: transparent;
 }
+
+.route-loading {
+  min-height: 100vh;
+  min-height: 100dvh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  padding: 24px;
+  color: var(--text-muted);
+  font-size: 0.9rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.route-loading__spinner {
+  width: 22px;
+  height: 22px;
+  border: 2px solid var(--border);
+  border-top-color: var(--accent);
+  border-radius: 50%;
+  animation: route-loading-spin 0.8s linear infinite;
+}
+
+@keyframes route-loading-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .route-loading__spinner {
+    animation: none;
+    border-top-color: var(--border);
+  }
+}

@@ -2,17 +2,10 @@
 <html lang="km">
   <head>
     <meta charset="UTF-8" />
-    <meta
-      name="viewport"
-      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, minimum-scale=1.0, user-scalable=no, viewport-fit=cover"
-    />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
     <link rel="icon" type="image/svg+xml" href="/assets/logo.svg" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/assets/icons/logo-16x16.png" />
     <link rel="icon" type="image/png" sizes="32x32" href="/assets/icons/logo-32x32.png" />
-    <link rel="icon" type="image/png" sizes="48x48" href="/assets/icons/logo-48x48.png" />
-    <link rel="icon" type="image/png" sizes="64x64" href="/assets/icons/logo-64x64.png" />
     <link rel="apple-touch-icon" sizes="180x180" href="/assets/icons/logo-180x180.png" />
-    <meta name="msapplication-TileImage" content="/assets/icons/logo-144x144.png" />
     <link rel="manifest" href="/site.webmanifest" />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -33,7 +26,6 @@
     />
     <meta name="robots" content="index, follow" />
     <meta name="author" content="Tee Tang Art" />
-    <meta name="copyright" content="Tee Tang Art" />
     <link rel="canonical" href="https://teetang.art" />
 
     <!-- Theme colour -->
@@ -42,7 +34,6 @@
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Tee Tang Art" />
-    <meta name="msapplication-TileColor" content="#0b0f19" />
     <link rel="mask-icon" href="/assets/logo.svg" color="#0b0f19" />
 
     <!-- Open Graph -->
@@ -54,14 +45,29 @@
       content="ទីតាំង — Tee Tang Art: បង្កើតផែនទីប័រស្ទ័រដោយឥតគិតថ្លៃ។ រចនាផែនទីស្អាតៗសម្រាប់ទីក្រុងណាមួយ។"
     />
     <meta property="og:url" content="https://teetang.art" />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="https://teetang.art/assets/logo.svg" />
-    <meta property="og:image:width" content="512" />
-    <meta property="og:image:height" content="512" />
+    <meta property="og:image" content="https://teetang.art/social-card.jpg" />
+    <meta property="og:image:type" content="image/jpeg" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta
+      property="og:image:alt"
+      content="Tee Tang Art logo beside a selection of custom Phnom Penh map poster designs"
+    />
 
     <!-- Twitter / X Card -->
     <meta name="twitter:card" content="summary_large_image" />
-    <meta name="twitter:image" content="https://teetang.art/assets/logo.svg" />
+    <meta name="twitter:title" content="Tee Tang Art — ទីតាំង: Free Map Poster Creator" />
+    <meta
+      name="twitter:description"
+      content="ទីតាំង — Tee Tang Art: បង្កើតផែនទីប័រស្ទ័រដោយឥតគិតថ្លៃ។ រចនាផែនទីស្អាតៗសម្រាប់ទីក្រុងណាមួយ។"
+    />
+    <meta name="twitter:image" content="https://teetang.art/social-card.jpg" />
+    <meta name="twitter:image:width" content="1200" />
+    <meta name="twitter:image:height" content="630" />
+    <meta
+      name="twitter:image:alt"
+      content="Tee Tang Art logo beside a selection of custom Phnom Penh map poster designs"
+    />
 
     <!-- JSON-LD Structured Data -->
     <script type="application/ld+json">
@@ -102,32 +108,6 @@
   </head>
   <body>
     <div id="root"></div>
-
-    <!-- Prevent page pinch-zoom and double-tap zoom on mobile while keeping map gestures intact -->
-    <script>
-      (function () {
-        // Block multi-touch pinch zoom outside the map canvas.
-        document.addEventListener(
-          "touchmove",
-          function (e) {
-            if (e.touches.length > 1 && !e.target.closest(".map-container")) {
-              e.preventDefault();
-            }
-          },
-          { passive: false },
-        );
-
-        // Block double-tap page zoom.
-        document.addEventListener(
-          "dblclick",
-          function (e) {
-            e.preventDefault();
-          },
-          { passive: false },
-        );
-      })();
-    </script>
-
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

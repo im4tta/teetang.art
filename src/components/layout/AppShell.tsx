@@ -132,6 +132,7 @@ export default function AppShell() {
   const isMobileViewport = useMobileViewport();
   const [desktopTab, setDesktopTab] = useState<MobileTab>("theme");
   const [desktopPanelOpen, setDesktopPanelOpen] = useState(false);
+  const [desktopPanelMounted, setDesktopPanelMounted] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const [supportPrompt, setSupportPrompt] = useState<SupportPromptState | null>(null);
 
@@ -165,20 +166,6 @@ export default function AppShell() {
     const handler = (e: Event) => setSupportPrompt((e as CustomEvent<SupportPromptState>).detail);
     window.addEventListener(SUPPORT_PROMPT_EVENT, handler);
     return () => window.removeEventListener(SUPPORT_PROMPT_EVENT, handler);
-  }, []);
-
-  useEffect(() => {
-    const preload = () => {
-      void import("@/components/ui/SettingsPanel");
-      void import("@/components/ui/ExportFab");
-      void import("@/components/ui/AnnouncementModal");
-    };
-    if ("requestIdleCallback" in window) {
-      const id = window.requestIdleCallback(preload, { timeout: 2000 });
-      return () => window.cancelIdleCallback(id);
-    }
-    const tid = setTimeout(preload, 300);
-    return () => clearTimeout(tid);
   }, []);
 
   useEffect(() => {
@@ -226,6 +213,7 @@ export default function AppShell() {
     if (tab === desktopTab && desktopPanelOpen) setDesktopPanelOpen(false);
     else {
       setDesktopTab(tab);
+      setDesktopPanelMounted(true);
       setDesktopPanelOpen(true);
     }
   };
@@ -300,9 +288,11 @@ export default function AppShell() {
 
       <div id="desktop-settings-panel" className="desktop-left-panel">
         <div className={`desktop-settings-slide${desktopPanelOpen ? " is-open" : ""}`}>
-          <Suspense fallback={null}>
-            <SettingsPanel desktopActivePanel={desktopPanelOpen ? desktopTab : undefined} />
-          </Suspense>
+          {desktopPanelMounted && (
+            <Suspense fallback={null}>
+              <SettingsPanel desktopActivePanel={desktopPanelOpen ? desktopTab : undefined} />
+            </Suspense>
+          )}
         </div>
       </div>
 

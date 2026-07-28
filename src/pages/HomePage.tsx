@@ -1,6 +1,8 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { REPO_URL } from "@/services/config";
+import { preloadEditorPage } from "@/pages/editorLoader";
+import "@/styles/home-page.css";
 import {
   Sparkles,
   MapPin,
@@ -44,6 +46,49 @@ const provincesData = [
   { kh: "ប៉ៃលិន", en: "Pailin" },
   { kh: "ត្បូងឃ្មុំ", en: "Tbong Khmum" },
 ];
+
+const showcaseSamples = [
+  {
+    src: "/assets/phnom_penh_copper.webp",
+    title: "Phnom Penh",
+    city: "Phnom Penh",
+    theme: "copper",
+    badge: "Copper",
+    badgeColor: "#D4AF37",
+    badgePopDelay: "0s",
+    badgeBeatDelay: "0s",
+  },
+  {
+    src: "/assets/phnom-penh-paris-ruby.webp",
+    title: "Phnom Penh & Paris",
+    city: "Phnom Penh",
+    theme: "ruby",
+    badge: "Ruby",
+    badgeColor: "#E8453C",
+    badgePopDelay: "0.12s",
+    badgeBeatDelay: "0.3s",
+  },
+  {
+    src: "/assets/phnom_penh_japanese_ink.webp",
+    title: "Phnom Penh",
+    city: "Phnom Penh",
+    theme: "japanese-ink",
+    badge: "Japanese Ink",
+    badgeColor: "#3B82F6",
+    badgePopDelay: "0.24s",
+    badgeBeatDelay: "0.6s",
+  },
+  {
+    src: "/assets/phnom_penh_tonle_sap.webp",
+    title: "Tonle Sap",
+    city: "Phnom Penh",
+    theme: "tonle_sap",
+    badge: "Tonle Sap",
+    badgeColor: "#48B8A0",
+    badgePopDelay: "0.36s",
+    badgeBeatDelay: "0.9s",
+  },
+] as const;
 
 function CarouselFeatured() {
   const cards = [
@@ -195,7 +240,19 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className={`home-page${isDark ? "" : " light-theme"}`}>
+    <div
+      className={`home-page${isDark ? "" : " light-theme"}`}
+      onPointerOver={(event) => {
+        if (event.target instanceof Element && event.target.closest('a[href^="/create"]')) {
+          preloadEditorPage();
+        }
+      }}
+      onFocusCapture={(event) => {
+        if (event.target instanceof Element && event.target.closest('a[href^="/create"]')) {
+          preloadEditorPage();
+        }
+      }}
+    >
       {/* Toast */}
       {toast && (
         <div className="home-toast" id="toast-notification" role="status" aria-live="polite">
@@ -321,126 +378,38 @@ export default function HomePage() {
           </div>
 
           {/* Sample Gallery */}
-          <div
-            style={{
-              display: "grid",
-              gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-              gap: 20,
-              marginBottom: 40,
-            }}
-          >
-            {[
-              {
-                src: "/assets/phnom_penh_copper.png",
-                title: "Phnom Penh",
-                city: "Phnom Penh",
-                theme: "copper",
-                badge: "Copper",
-                badgeColor: "#D4AF37",
-              },
-              {
-                src: "/assets/phnom-penh-paris-ruby.png",
-                title: "Phnom Penh & Paris",
-                city: "Phnom Penh",
-                theme: "ruby",
-                badge: "Ruby",
-                badgeColor: "#E8453C",
-              },
-              {
-                src: "/assets/phnom_penh_japanese_ink.png",
-                title: "Phnom Penh",
-                city: "Phnom Penh",
-                theme: "japanese-ink",
-                badge: "Japanese Ink",
-                badgeColor: "#3B82F6",
-              },
-              {
-                src: "/assets/phnom_penh_tonle_sap.png",
-                title: "Tonle Sap",
-                city: "Phnom Penh",
-                theme: "tonle_sap",
-                badge: "Tonle Sap",
-                badgeColor: "#48B8A0",
-              },
-            ].map((sample, i) => (
-              <div key={i} className="home-feat-card" style={{ padding: 12, textAlign: "center" }}>
-                <div
-                  style={{
-                    width: "100%",
-                    aspectRatio: "3/4",
-                    borderRadius: 12,
-                    overflow: "hidden",
-                    border: "1px solid #1e2a47",
-                    marginBottom: 16,
-                    background: "#0a0f1e",
-                    position: "relative",
-                  }}
-                >
+          <div className="home-sample-grid">
+            {showcaseSamples.map((sample) => (
+              <div key={sample.src} className="home-sample-card">
+                <div className="home-sample-frame">
                   <img
                     src={sample.src}
                     alt={sample.title}
-                    style={{
-                      width: "100%",
-                      height: "100%",
-                      objectFit: "cover",
-                      display: "block",
-                    }}
+                    className="home-sample-image"
+                    width={720}
+                    height={1018}
+                    decoding="async"
                     loading="lazy"
                   />
                   {/* Lively beating theme badge on image */}
                   <span
                     className="home-sample-badge"
-                    style={{
-                      position: "absolute",
-                      bottom: 10,
-                      left: 10,
-                      display: "inline-flex",
-                      alignItems: "center",
-                      gap: 4,
-                      padding: "3px 10px",
-                      borderRadius: 9999,
-                      background: "rgba(11, 15, 25, 0.85)",
-                      backdropFilter: "blur(4px)",
-                      border: `1px solid ${sample.badgeColor}`,
-                      color: sample.badgeColor,
-                      fontSize: 11,
-                      fontWeight: 600,
-                      letterSpacing: "0.04em",
-                      animation: `home-badge-pop 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) ${i * 0.12}s both, home-badge-beat 1.8s ease-in-out ${i * 0.3}s infinite`,
-                      transition: "transform 0.2s ease, box-shadow 0.2s ease",
-                      cursor: "default",
-                      zIndex: 3,
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.animation = "none";
-                      e.currentTarget.style.transform = "scale(1.15)";
-                      e.currentTarget.style.boxShadow = `0 0 16px ${sample.badgeColor}60`;
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = "scale(1)";
-                      e.currentTarget.style.boxShadow = "none";
-                      e.currentTarget.style.animation = `home-badge-beat 1.8s ease-in-out ${i * 0.3}s infinite`;
-                    }}
+                    style={
+                      {
+                        "--home-sample-badge-color": sample.badgeColor,
+                        "--home-sample-pop-delay": sample.badgePopDelay,
+                        "--home-sample-beat-delay": sample.badgeBeatDelay,
+                      } as CSSProperties
+                    }
                   >
                     <Sparkles size={11} />
                     {sample.badge}
                   </span>
                 </div>
-                <h3
-                  className="home-feat-title"
-                  style={{ justifyContent: "center", fontSize: 16, marginBottom: 8 }}
-                >
-                  {sample.title}
-                </h3>
+                <h3 className="home-sample-title">{sample.title}</h3>
                 <Link
                   to={`/create?city=${encodeURIComponent(sample.city)}&theme=${sample.theme}`}
-                  className="home-btn home-btn-primary"
-                  style={{
-                    width: "100%",
-                    justifyContent: "center",
-                    padding: "10px 16px",
-                    fontSize: 13,
-                  }}
+                  className="home-btn home-btn-primary home-sample-button"
                 >
                   <Zap size={14} /> បង្កើតភ្លាមៗ
                 </Link>
