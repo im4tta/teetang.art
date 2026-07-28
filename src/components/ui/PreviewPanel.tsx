@@ -1,12 +1,14 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   lazy,
   Suspense,
   type CSSProperties,
 } from "react";
+import type { Map as MaplibreMap } from "maplibre-gl";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { usePosterContext } from "@/context/PosterContext";
 import { useMapSync, distanceToZoom, resolveZoomBounds, zoomToDistance } from "@/hooks/useMapSync";
@@ -33,7 +35,8 @@ import {
   DEFAULT_POSTER_HEIGHT_CM,
   DEFAULT_DISTANCE_METERS,
 } from "@/services/config";
-import { ensureGoogleFont, reverseGeocodeCoordinates } from "@/services/container";
+import { ensureGoogleFont } from "@/services/container";
+import { useThrottledReverseGeocode } from "@/hooks/useThrottledReverseGeocode";
 import {
   buildGoogleMapsUrl,
   buildWhatsAppUrl,
@@ -126,6 +129,7 @@ export default function PreviewPanel() {
     url: string;
   } | null>(null);
   const [badgeVisible, setBadgeVisible] = useState(true);
+  const [primaryMap, setPrimaryMap] = useState<MaplibreMap | null>(null);
   const isMobileViewport = useMobileViewport();
 
   const isDualCity = form.layoutMode === "dual-city";
@@ -189,12 +193,17 @@ export default function PreviewPanel() {
   });
 
   // ── Ghost canvas sync ──────────────────────────────────────────────────
+  // Keyed on the live map instance, not on `mapRef`: switching layout mode
+  // unmounts MapPreview and builds a new map, and a ref never changes identity,
+  // so a ref-keyed effect would leave the ghost layer frozen on the old canvas.
   useEffect(() => {
-    const map = mapRef.current;
-    if (!map) return;
-    const syncGhost = () => {
-      const ghost = ghostCanvasRef.current,
-        src = map.getCanvas();
+    if (!primaryMap) return;
+    let frameId: number | null = null;
+
+    const copyToGhost = () => {
+      frameId = null;
+      const ghost = ghostCanvasRef.current;
+      const src = primaryMap.getCanvas();
       if (!ghost || !src) return;
       if (ghost.width !== src.width || ghost.height !== src.height) {
         ghost.width = src.width;
@@ -202,19 +211,43 @@ export default function PreviewPanel() {
       }
       ghost.getContext("2d")?.drawImage(src, 0, 0);
     };
-    map.on("render", syncGhost);
-    return () => {
-      map.off("render", syncGhost);
+
+    // `render` fires many times per frame during a drag; coalesce to one copy.
+    const scheduleGhostSync = () => {
+      if (frameId !== null) return;
+      frameId = requestAnimationFrame(copyToGhost);
     };
-  }, [mapRef]);
+
+    primaryMap.on("render", scheduleGhostSync);
+    return () => {
+      primaryMap.off("render", scheduleGhostSync);
+      if (frameId !== null) cancelAnimationFrame(frameId);
+    };
+  }, [primaryMap]);
 
   // ── Badge timer ────────────────────────────────────────────────────────
   useEffect(() => {
-    clearTimeout(badgeTimerRef.current!);
+    if (badgeTimerRef.current !== null) clearTimeout(badgeTimerRef.current);
+    badgeTimerRef.current = null;
     if (isEditing) return;
     badgeTimerRef.current = setTimeout(() => setBadgeVisible(false), 4000);
-    return () => clearTimeout(badgeTimerRef.current!);
+    return () => {
+      if (badgeTimerRef.current !== null) clearTimeout(badgeTimerRef.current);
+      badgeTimerRef.current = null;
+    };
   }, [form.theme, form.mapShape, form.layoutMode, isMobileViewport, isEditing]);
+
+  const handleBadgeHoverStart = useCallback(() => {
+    if (badgeTimerRef.current !== null) clearTimeout(badgeTimerRef.current);
+    badgeTimerRef.current = null;
+    setBadgeVisible(true);
+  }, []);
+
+  const handleBadgeHoverEnd = useCallback(() => {
+    if (isEditing) return;
+    if (badgeTimerRef.current !== null) clearTimeout(badgeTimerRef.current);
+    badgeTimerRef.current = setTimeout(() => setBadgeVisible(false), 4000);
+  }, [isEditing]);
 
   // ── Container width observer ───────────────────────────────────────────
   useEffect(() => {
@@ -252,6 +285,21 @@ export default function PreviewPanel() {
 
   // ── handleMove2 / handleMoveEnd2 (dual-city second panel) ─────────────
   const handleMove2 = useCallback((_: [number, number], __: number) => {}, []);
+
+  // Same throttle + stale-response guard the primary map gets. Without it a slow
+  // response from an earlier pan could overwrite the city resolved by a later one.
+  const updateFromCoords2 = useThrottledReverseGeocode(({ city, country, continent }) => {
+    if (!city && !country) return;
+    dispatch({
+      type: "SET_FORM_FIELDS",
+      fields: {
+        ...(city ? { displayCity2: city } : {}),
+        ...(country ? { displayCountry2: country } : {}),
+        ...(continent ? { displayContinent2: continent } : {}),
+      },
+    });
+  });
+
   const handleMoveEnd2 = useCallback(
     (center: [number, number], zoom: number) => {
       const [lon, lat] = center;
@@ -266,22 +314,9 @@ export default function PreviewPanel() {
           distance2: String(Math.round(dist)),
         },
       });
-      void reverseGeocodeCoordinates(lat, lon)
-        .then((r) => {
-          const city = String(r.city ?? "").trim(),
-            country = String(r.country ?? "").trim();
-          if (city || country)
-            dispatch({
-              type: "SET_FORM_FIELDS",
-              fields: {
-                ...(city ? { displayCity2: city } : {}),
-                ...(country ? { displayCountry2: country } : {}),
-              },
-            });
-        })
-        .catch(() => {});
+      updateFromCoords2(lat, lon);
     },
-    [dispatch, frameWidth],
+    [dispatch, frameWidth, updateFromCoords2],
   );
 
   // ── Marker interactions ────────────────────────────────────────────────
@@ -356,38 +391,79 @@ export default function PreviewPanel() {
     },
   });
 
-  const commonMapProps = {
-    interactive: (isEditing || state.routeDrawMode) && !isMarkerEditorActive,
-    allowRotation: isEditing && isRotationEnabled,
-    minZoom: mapMinZoom,
-    maxZoom: mapMaxZoom,
-    overzoomScale,
-  };
-  const markerOverlayProps = {
-    markers: state.markers,
-    customIcons: state.customMarkerIcons,
-    mapRef,
-    isMarkerEditMode: isMarkerEditorActive,
-    activeMarkerId,
-    onActiveMarkerChange: handleActiveMarkerChange,
-    onMarkerPositionChange: handleMarkerPositionChange,
-    onMarkerSizeChange: handleMarkerSizeChange,
-    overzoomScale,
-  };
-  const routeOverlayProps = {
-    routes: state.routes,
-    mapRef,
-    visible: form.showRoutes,
-    overzoomScale,
-  };
-  const endpointProps = {
-    ...routeOverlayProps,
-    customIcons: state.customMarkerIcons,
-    draggable: !state.routeDrawMode && state.routeEditMode,
-    onEndpointDragEnd: handleRouteEndpointDragEnd,
-    onViaPointDragEnd: handleViaPointDragEnd,
-    onViaPointDelete: handleViaPointDelete,
-  };
+  // These prop bags feed memoised overlay components. Keeping them referentially
+  // stable is what lets the overlays skip re-rendering while the map is panned
+  // (every moveend produces a new poster state and re-renders this panel).
+  const commonMapProps = useMemo(
+    () => ({
+      interactive: (isEditing || state.routeDrawMode) && !isMarkerEditorActive,
+      allowRotation: isEditing && isRotationEnabled,
+      minZoom: mapMinZoom,
+      maxZoom: mapMaxZoom,
+      overzoomScale,
+    }),
+    [
+      isEditing,
+      state.routeDrawMode,
+      isMarkerEditorActive,
+      isRotationEnabled,
+      mapMinZoom,
+      mapMaxZoom,
+      overzoomScale,
+    ],
+  );
+  const markerOverlayProps = useMemo(
+    () => ({
+      markers: state.markers,
+      customIcons: state.customMarkerIcons,
+      mapRef,
+      isMarkerEditMode: isMarkerEditorActive,
+      activeMarkerId,
+      onActiveMarkerChange: handleActiveMarkerChange,
+      onMarkerPositionChange: handleMarkerPositionChange,
+      onMarkerSizeChange: handleMarkerSizeChange,
+      overzoomScale,
+    }),
+    [
+      state.markers,
+      state.customMarkerIcons,
+      mapRef,
+      isMarkerEditorActive,
+      activeMarkerId,
+      handleActiveMarkerChange,
+      handleMarkerPositionChange,
+      handleMarkerSizeChange,
+      overzoomScale,
+    ],
+  );
+  const routeOverlayProps = useMemo(
+    () => ({
+      routes: state.routes,
+      mapRef,
+      visible: form.showRoutes,
+      overzoomScale,
+    }),
+    [state.routes, mapRef, form.showRoutes, overzoomScale],
+  );
+  const endpointProps = useMemo(
+    () => ({
+      ...routeOverlayProps,
+      customIcons: state.customMarkerIcons,
+      draggable: !state.routeDrawMode && state.routeEditMode,
+      onEndpointDragEnd: handleRouteEndpointDragEnd,
+      onViaPointDragEnd: handleViaPointDragEnd,
+      onViaPointDelete: handleViaPointDelete,
+    }),
+    [
+      routeOverlayProps,
+      state.customMarkerIcons,
+      state.routeDrawMode,
+      state.routeEditMode,
+      handleRouteEndpointDragEnd,
+      handleViaPointDragEnd,
+      handleViaPointDelete,
+    ],
+  );
 
   return (
     <section className="preview-panel">
@@ -419,6 +495,7 @@ export default function PreviewPanel() {
                     center={mapCenter}
                     zoom={mapZoom}
                     mapRef={mapRef}
+                    onMapReady={setPrimaryMap}
                     {...commonMapProps}
                     onMove={handleMove}
                     onMoveEnd={handleMoveEnd}
@@ -488,6 +565,7 @@ export default function PreviewPanel() {
                 center={mapCenter}
                 zoom={mapZoom}
                 mapRef={mapRef}
+                onMapReady={setPrimaryMap}
                 {...commonMapProps}
                 onMove={handleMove}
                 onMoveEnd={handleMoveEnd}
@@ -594,9 +672,8 @@ export default function PreviewPanel() {
         isDualCity={isDualCity}
         isMobile={isMobileViewport}
         badgeVisible={badgeVisible}
-        isEditing={isEditing}
-        badgeTimerRef={badgeTimerRef}
-        onVisibilityChange={setBadgeVisible}
+        onHoverStart={handleBadgeHoverStart}
+        onHoverEnd={handleBadgeHoverEnd}
       />
 
       <div className="map-controls" aria-label="Map controls">

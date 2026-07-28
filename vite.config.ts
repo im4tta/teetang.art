@@ -1,10 +1,13 @@
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
-import path from "path";
-import fs from "fs";
+import path from "node:path";
+import fs from "node:fs";
+import { fileURLToPath } from "node:url";
 
-const packageJson = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, "package.json"), "utf8"),
+const rootDir = path.dirname(fileURLToPath(import.meta.url));
+
+const packageJson: { version?: string } = JSON.parse(
+  fs.readFileSync(path.resolve(rootDir, "package.json"), "utf8"),
 );
 const appVersion = String(packageJson.version ?? "0.0.0");
 const MAPLIBRE_DEP_PACKAGES = new Set([
@@ -19,19 +22,22 @@ const MAPLIBRE_DEP_PACKAGES = new Set([
   "tinyqueue",
 ]);
 
-function getPackageName(id) {
-  const nodeModulesMatch = id.match(/[\\/]node_modules[\\/](.*)$/);
-  if (!nodeModulesMatch || !nodeModulesMatch[1]) return null;
+function getPackageName(id: string): string | null {
+  const nodeModulesMatch = /[\\/]node_modules[\\/](.*)$/.exec(id);
+  if (!nodeModulesMatch?.[1]) return null;
 
   const modulePath = nodeModulesMatch[1];
   const parts = modulePath.split(/[\\/]/);
   if (parts.length === 0) return null;
 
-  if (parts[0].startsWith("@") && parts.length > 1) {
-    return `${parts[0]}/${parts[1]}`;
+  const first = parts[0];
+  if (!first) return null;
+
+  if (first.startsWith("@") && parts.length > 1) {
+    return `${first}/${parts[1]}`;
   }
 
-  return parts[0];
+  return first;
 }
 
 export default defineConfig({
@@ -45,7 +51,7 @@ export default defineConfig({
     chunkSizeWarningLimit: 1100,
     rolldownOptions: {
       output: {
-        manualChunks(id) {
+        manualChunks(id: string) {
           if (!id.includes("node_modules")) return;
           const packageName = getPackageName(id);
 
@@ -78,7 +84,12 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "src"),
+      "@": path.resolve(rootDir, "src"),
     },
+  },
+  test: {
+    environment: "node",
+    include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
+    reporters: ["default"],
   },
 });

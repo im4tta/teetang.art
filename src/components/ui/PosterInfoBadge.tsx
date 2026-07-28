@@ -10,9 +10,13 @@ interface Props {
   isDualCity: boolean;
   isMobile: boolean;
   badgeVisible: boolean;
-  isEditing: boolean;
-  badgeTimerRef: React.RefObject<ReturnType<typeof setTimeout> | null>;
-  onVisibilityChange: (visible: boolean) => void;
+  /**
+   * The auto-hide timer is owned entirely by the parent; the badge only reports
+   * hover. Sharing a mutable timer ref between both let either side clear the
+   * other's timeout, so the badge could stick visible or vanish early.
+   */
+  onHoverStart: () => void;
+  onHoverEnd: () => void;
 }
 
 const BADGE_STYLE: CSSProperties = {
@@ -29,27 +33,40 @@ const BADGE_STYLE: CSSProperties = {
 };
 
 const ROW_STYLE: CSSProperties = { display: "flex", alignItems: "center", gap: 8 };
-const HINT_ROW_STYLE: CSSProperties = { display: "flex", alignItems: "center", gap: 6, marginBottom: 2 };
+const HINT_ROW_STYLE: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  marginBottom: 2,
+};
 
 export default function PosterInfoBadge({
-  form, layoutLabel, isDualCity, isMobile, badgeVisible, isEditing, badgeTimerRef, onVisibilityChange,
+  form,
+  layoutLabel,
+  isDualCity,
+  isMobile,
+  badgeVisible,
+  onHoverStart,
+  onHoverEnd,
 }: Props) {
   const { lang } = useI18n();
   const isKhmer = lang === "km";
 
   const rows: [typeof MapPin, string, string, string][] = [
     [
-      MapPin, "#C0392B",
+      MapPin,
+      "#C0392B",
       isDualCity
         ? `${form.displayCity || form.location || "Phnom Penh"} ↔ ${form.displayCity2 || form.location2 || "Paris"}`
         : `${form.displayCity || form.location || "Phnom Penh"}${form.displayCountry ? `, ${form.displayCountry}` : ""}`,
       "#F5F5FA",
     ],
     [
-      Palette, "#D4AF37",
+      Palette,
+      "#D4AF37",
       isDualCity
-        ? `${themeOptions.find(t => t.id === form.theme)?.name || form.theme} ↔ ${themeOptions.find(t => t.id === form.theme2)?.name || form.theme2 || form.theme}`
-        : themeOptions.find(t => t.id === form.theme)?.name || form.theme,
+        ? `${themeOptions.find((t) => t.id === form.theme)?.name || form.theme} ↔ ${themeOptions.find((t) => t.id === form.theme2)?.name || form.theme2 || form.theme}`
+        : themeOptions.find((t) => t.id === form.theme)?.name || form.theme,
       "#94A3B8",
     ],
     [Layout, "#3B82F6", isDualCity ? `Dual City • ${layoutLabel}` : layoutLabel, "#94A3B8"],
@@ -67,18 +84,29 @@ export default function PosterInfoBadge({
 
   return (
     <div
-      onMouseEnter={() => { clearTimeout(badgeTimerRef.current!); onVisibilityChange(true); }}
-      onMouseLeave={() => { if (!isEditing) badgeTimerRef.current = setTimeout(() => onVisibilityChange(false), 4000); }}
-      style={{ ...positionStyle, ...BADGE_STYLE, opacity: badgeVisible ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: badgeVisible ? "auto" : "none" }}
+      onMouseEnter={onHoverStart}
+      onMouseLeave={onHoverEnd}
+      style={{
+        ...positionStyle,
+        ...BADGE_STYLE,
+        opacity: badgeVisible ? 1 : 0,
+        transition: "opacity 0.4s ease",
+        pointerEvents: badgeVisible ? "auto" : "none",
+      }}
     >
       {rows.map(([Icon, color, text, textColor]) => (
         <div key={color} style={ROW_STYLE}>
           <Icon size={12} style={{ color, flexShrink: 0 }} />
-          <span style={{
-            fontSize: 12, color: textColor, whiteSpace: "nowrap",
-            overflow: "hidden", textOverflow: "ellipsis",
-            textTransform: Icon === Shapes ? "capitalize" : undefined,
-          }}>
+          <span
+            style={{
+              fontSize: 12,
+              color: textColor,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              textTransform: Icon === Shapes ? "capitalize" : undefined,
+            }}
+          >
             {text}
           </span>
         </div>

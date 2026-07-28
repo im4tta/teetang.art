@@ -1,5 +1,5 @@
 import { type MutableRefObject, useEffect } from "react";
-import maplibregl from "maplibre-gl";
+import * as maplibregl from "maplibre-gl";
 
 type RadiusStyle = "dashed" | "filled" | "gradient";
 
@@ -14,17 +14,23 @@ interface UseRadiusLayerOptions {
 
 function getCircleColor(style: RadiusStyle): string {
   switch (style) {
-    case "filled": return "rgba(200, 200, 255, 0.25)";
-    case "gradient": return "rgba(200, 200, 255, 0.08)";
-    default: return "rgba(200, 200, 255, 0.12)";
+    case "filled":
+      return "rgba(200, 200, 255, 0.25)";
+    case "gradient":
+      return "rgba(200, 200, 255, 0.08)";
+    default:
+      return "rgba(200, 200, 255, 0.12)";
   }
 }
 
 function getStrokeColor(style: RadiusStyle): string {
   switch (style) {
-    case "filled": return "rgba(200, 200, 255, 0.6)";
-    case "gradient": return "rgba(200, 200, 255, 0.35)";
-    default: return "rgba(200, 200, 255, 0.5)";
+    case "filled":
+      return "rgba(200, 200, 255, 0.6)";
+    case "gradient":
+      return "rgba(200, 200, 255, 0.35)";
+    default:
+      return "rgba(200, 200, 255, 0.5)";
   }
 }
 
@@ -72,7 +78,13 @@ export function useRadiusLayer({
         });
         if (map.getLayer("radius-circle")) {
           map.setPaintProperty("radius-circle", "circle-radius", [
-            "interpolate", ["linear"], ["zoom"], 0, 0, 22, r / 30,
+            "interpolate",
+            ["linear"],
+            ["zoom"],
+            0,
+            0,
+            22,
+            r / 30,
           ]);
           map.setPaintProperty("radius-circle", "circle-color", getCircleColor(style));
           map.setPaintProperty("radius-circle", "circle-stroke-color", getStrokeColor(style));
@@ -80,11 +92,7 @@ export function useRadiusLayer({
       }
 
       if (map.getLayer("radius-circle")) {
-        map.setLayoutProperty(
-          "radius-circle",
-          "visibility",
-          r <= 0 ? "none" : "visible",
-        );
+        map.setLayoutProperty("radius-circle", "visibility", r <= 0 ? "none" : "visible");
       }
     };
 
@@ -92,7 +100,9 @@ export function useRadiusLayer({
       updateRadius();
     } else {
       map.once("load", updateRadius);
-      return () => { map.off("load", updateRadius); };
+      return () => {
+        map.off("load", updateRadius);
+      };
     }
   }, [radiusMeters, radiusStyle, center, mapRef]);
 }

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { memo, useEffect, useRef, useState } from "react";
 import type { MapInstanceRef } from "@/services/map/types";
 import type { Route } from "@/services/routes/types";
 import { drawRoutesWithProjector } from "@/services/routes/rendering";
@@ -10,12 +10,7 @@ interface RouteOverlayProps {
   overzoomScale: number;
 }
 
-export default function RouteOverlay({
-  routes,
-  mapRef,
-  visible,
-  overzoomScale,
-}: RouteOverlayProps) {
+function RouteOverlay({ routes, mapRef, visible, overzoomScale }: RouteOverlayProps) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
   const [renderTick, setRenderTick] = useState(0);
@@ -94,3 +89,7 @@ export default function RouteOverlay({
     </div>
   );
 }
+
+// Memoised: PreviewPanel re-renders on every map moveend, but the overlay
+// props only change when the overlay's own inputs change.
+export default memo(RouteOverlay);

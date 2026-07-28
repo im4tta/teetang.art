@@ -22,13 +22,13 @@ const CRC_TABLE = makeCrcTable();
 function crc32(bytes: Uint8Array): number {
   let crc = 0xffffffff;
   for (let i = 0; i < bytes.length; i += 1) {
-    const index = (crc ^ bytes[i]) & 0xff;
-    crc = (CRC_TABLE[index] ^ (crc >>> 8)) >>> 0;
+    const index = (crc ^ (bytes[i] ?? 0)) & 0xff;
+    crc = ((CRC_TABLE[index] ?? 0) ^ (crc >>> 8)) >>> 0;
   }
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-function buildPhysChunk(dpi: number): Uint8Array {
+function buildPhysChunk(dpi: number): Uint8Array<ArrayBuffer> {
   const ppm = Math.max(1, Math.round(dpi / 0.0254));
   const length = 9;
   const chunk = new Uint8Array(4 + 4 + length + 4);
@@ -43,34 +43,40 @@ function buildPhysChunk(dpi: number): Uint8Array {
 
   const crcBytes = new Uint8Array(4 + length);
   crcBytes.set(type, 0);
-  crcBytes.set(chunk.slice(dataOffset, dataOffset + length), 4);
+  crcBytes.set(chunk.subarray(dataOffset, dataOffset + length), 4);
   writeUint32BE(chunk, dataOffset + length, crc32(crcBytes));
 
   return chunk;
 }
 
-function injectDpiChunk(pngBytes: Uint8Array, dpi: number): Uint8Array {
+/**
+ * Byte ranges (plus the pHYs chunk) that make up the final PNG.
+ *
+ * Returned as parts rather than one concatenated array so the Blob can be built
+ * directly from views onto the original buffer. A 300 DPI poster PNG is tens of
+ * megabytes and the previous implementation copied it three extra times.
+ */
+function buildPngParts(pngBytes: Uint8Array<ArrayBuffer>, dpi: number): BlobPart[] {
   if (dpi <= 0 || !Number.isFinite(dpi)) {
-    return pngBytes;
+    return [pngBytes];
   }
 
   // PNG signature is 8 bytes, first chunk is expected to be IHDR.
   if (pngBytes.length < 33) {
-    return pngBytes;
+    return [pngBytes];
   }
 
-  const ihdrLength = (pngBytes[8] << 24) | (pngBytes[9] << 16) | (pngBytes[10] << 8) | pngBytes[11];
+  const ihdrLength =
+    ((pngBytes[8] ?? 0) << 24) |
+    ((pngBytes[9] ?? 0) << 16) |
+    ((pngBytes[10] ?? 0) << 8) |
+    (pngBytes[11] ?? 0);
   const insertAt = 8 + 12 + ihdrLength;
   if (insertAt > pngBytes.length) {
-    return pngBytes;
+    return [pngBytes];
   }
 
-  const physChunk = buildPhysChunk(dpi);
-  const result = new Uint8Array(pngBytes.length + physChunk.length);
-  result.set(pngBytes.slice(0, insertAt), 0);
-  result.set(physChunk, insertAt);
-  result.set(pngBytes.slice(insertAt), insertAt + physChunk.length);
-  return result;
+  return [pngBytes.subarray(0, insertAt), buildPhysChunk(dpi), pngBytes.subarray(insertAt)];
 }
 
 export async function createPngBlob(canvas: HTMLCanvasElement, dpi: number = 300): Promise<Blob> {
@@ -84,11 +90,6 @@ export async function createPngBlob(canvas: HTMLCanvasElement, dpi: number = 300
     }, "image/png");
   });
 
-  const bytes = new Uint8Array(await baseBlob.arrayBuffer());
-  const withDpi = injectDpiChunk(bytes, dpi);
-  // Copy into a fresh ArrayBuffer to satisfy stricter TS DOM typings
-  // (BlobPart expects ArrayBuffer, not SharedArrayBuffer / ArrayBufferLike).
-  const copy = new Uint8Array(withDpi.byteLength);
-  copy.set(withDpi);
-  return new Blob([copy.buffer], { type: "image/png" });
+  const bytes = new Uint8Array<ArrayBuffer>(await baseBlob.arrayBuffer());
+  return new Blob(buildPngParts(bytes, dpi), { type: "image/png" });
 }

@@ -1,6 +1,7 @@
 # Dependencies
+# package-lock.json is intentionally tracked: it is what makes `npm ci`
+# reproducible and lets Dependabot / npm audit see the real dependency tree.
 node_modules/
-package-lock.json
 
 # Build output
 dist/

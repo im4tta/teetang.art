@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { memo, useEffect, useRef } from "react";
 import type { MapInstanceRef } from "@/services/map/types";
 
 const POI_QUERIES: Record<string, string> = {
@@ -40,7 +40,7 @@ interface PoiOverlayProps {
   activeTypes: string[];
 }
 
-export default function PoiOverlay({ mapRef, center, visible, activeTypes }: PoiOverlayProps) {
+function PoiOverlay({ mapRef, center, visible, activeTypes }: PoiOverlayProps) {
   const poiDataRef = useRef<Record<string, any[]>>({});
   const prevTypesRef = useRef<string>("");
 
@@ -165,3 +165,7 @@ export default function PoiOverlay({ mapRef, center, visible, activeTypes }: Poi
 
   return null;
 }
+
+// Memoised: PreviewPanel re-renders on every map moveend, but the overlay
+// props only change when the overlay's own inputs change.
+export default memo(PoiOverlay);

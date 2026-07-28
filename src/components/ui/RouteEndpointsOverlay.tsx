@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { Map as MaplibreMap } from "maplibre-gl";
 import type { MapInstanceRef } from "@/services/map/types";
 import type { Route } from "@/services/routes/types";
@@ -33,7 +33,7 @@ interface ProjectedItem {
   lon: number;
 }
 
-export default function RouteEndpointsOverlay({
+function RouteEndpointsOverlay({
   routes,
   customIcons,
   mapRef,
@@ -274,3 +274,7 @@ export default function RouteEndpointsOverlay({
     </div>
   );
 }
+
+// Memoised: PreviewPanel re-renders on every map moveend, but the overlay
+// props only change when the overlay's own inputs change.
+export default memo(RouteEndpointsOverlay);

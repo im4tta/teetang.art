@@ -341,7 +341,7 @@ export default function AnnouncementModal() {
             <img
               className="updates-step-image"
               src={resolvedImagePath}
-              alt={`${activeStep.title} preview`}
+              alt={`${activeStep?.title ?? ""} preview`}
             />
           ) : null}
         </div>

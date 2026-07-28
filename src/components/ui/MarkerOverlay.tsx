@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import { memo, useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
 import type { Map as MaplibreMap } from "maplibre-gl";
 import type { MarkerIconDefinition, MarkerItem } from "@/services/markers/types";
 import type { MapInstanceRef } from "@/services/map/types";
@@ -75,7 +75,7 @@ function getOppositeHighlightColor(input: string): string {
   return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
 }
 
-export default function MarkerOverlay({
+function MarkerOverlay({
   markers,
   customIcons,
   mapRef,
@@ -548,3 +548,7 @@ export default function MarkerOverlay({
     </div>
   );
 }
+
+// Memoised: PreviewPanel re-renders on every map moveend, but the overlay
+// props only change when the overlay's own inputs change.
+export default memo(MarkerOverlay);

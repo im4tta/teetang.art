@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { clamp } from "@/utils/geo/math";
-import { reverseGeocodeCoordinates } from "@/services/container";
+import { useThrottledReverseGeocode } from "@/hooks/useThrottledReverseGeocode";
 import type { MapInstanceRef } from "@/services/map/types";
 import {
   MIN_DISTANCE_METERS,
@@ -59,9 +59,6 @@ type MapSyncDispatch = (a: {
 
 export function useMapSync(state: MapSyncState, dispatch: MapSyncDispatch, mapRef: MapInstanceRef) {
   const { form } = state;
-  const lastLookupAtRef = useRef(0);
-  const lastLookupCoordsRef = useRef<[number, number] | null>(null);
-  const latestSeqRef = useRef(0);
   const skippedRef = useRef("");
   const lastManualRef = useRef("");
 
@@ -95,38 +92,19 @@ export function useMapSync(state: MapSyncState, dispatch: MapSyncDispatch, mapRe
     [formDistance, formLat, effectivePx, zoomBounds],
   );
 
-  const updateFromCoords = useCallback(
-    (lat: number, lon: number) => {
-      const now = Date.now();
-      const prev = lastLookupCoordsRef.current;
-      if (prev && Math.abs(prev[0] - lat) < 0.002 && Math.abs(prev[1] - lon) < 0.002) return;
-      if (now - lastLookupAtRef.current < 2000) return;
-      lastLookupCoordsRef.current = [lat, lon];
-      lastLookupAtRef.current = now;
-      const seq = ++latestSeqRef.current;
-      void reverseGeocodeCoordinates(lat, lon)
-        .then((r) => {
-          if (seq !== latestSeqRef.current) return;
-          const city = String(r.city ?? "").trim();
-          const country = String(r.country ?? "").trim();
-          const continent = String(r.continent ?? "").trim();
-          const location =
-            [city, country].filter(Boolean).join(", ") || String(r.label ?? "").trim();
-          if (!location) return;
-          dispatch({
-            type: "SET_FORM_FIELDS",
-            fields: {
-              location,
-              displayContinent: continent,
-              ...(!state.displayNameOverrides.city ? { displayCity: city } : {}),
-              ...(!state.displayNameOverrides.country ? { displayCountry: country } : {}),
-            },
-          });
-        })
-        .catch(() => {});
-    },
-    [dispatch, state.displayNameOverrides.city, state.displayNameOverrides.country],
-  );
+  const updateFromCoords = useThrottledReverseGeocode(({ city, country, continent, label }) => {
+    const location = [city, country].filter(Boolean).join(", ") || label;
+    if (!location) return;
+    dispatch({
+      type: "SET_FORM_FIELDS",
+      fields: {
+        location,
+        displayContinent: continent,
+        ...(!state.displayNameOverrides.city ? { displayCity: city } : {}),
+        ...(!state.displayNameOverrides.country ? { displayCountry: country } : {}),
+      },
+    });
+  });
 
   const handleMove = useCallback((_: [number, number]) => {}, []);
 
