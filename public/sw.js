@@ -1,4 +1,4 @@
-const CACHE_NAME = "teetangart-static-v4";
+const CACHE_NAME = "teetangart-static-v5";
 const TILE_CACHE_NAME = "teetangart-tiles-v1";
 const TILE_ORIGINS = ["https://tiles.openfreemap.org"];
 const APP_SHELL_ASSETS = [

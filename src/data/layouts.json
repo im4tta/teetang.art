@@ -155,8 +155,88 @@
     },
     {
       "id": "wallpaper",
-      "name": "Wallpaper",
+      "name": "Devices & Displays",
       "layouts": [
+        {
+          "id": "wallpaper_iphone_17",
+          "name": "iPhone 17",
+          "description": "Native portrait wallpaper for the 6.3-inch iPhone 17 display.",
+          "width": 1206,
+          "height": 2622,
+          "unit": "px",
+          "posterWidthCm": 13.8,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "wallpaper_iphone_air",
+          "name": "iPhone Air",
+          "description": "Native portrait wallpaper for the 6.5-inch iPhone Air display.",
+          "width": 1260,
+          "height": 2736,
+          "unit": "px",
+          "posterWidthCm": 13.82,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "wallpaper_iphone_17_pro",
+          "name": "iPhone 17 Pro",
+          "description": "Native portrait wallpaper for the 6.3-inch iPhone 17 Pro display.",
+          "width": 1206,
+          "height": 2622,
+          "unit": "px",
+          "posterWidthCm": 13.8,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "wallpaper_iphone_17_pro_max",
+          "name": "iPhone 17 Pro Max",
+          "description": "Native portrait wallpaper for the 6.9-inch iPhone 17 Pro Max display.",
+          "width": 1320,
+          "height": 2868,
+          "unit": "px",
+          "posterWidthCm": 13.81,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "wallpaper_samsung_galaxy_s25_ultra",
+          "name": "Galaxy S25 Ultra",
+          "description": "Native portrait wallpaper for the Galaxy S25 Ultra QHD+ display.",
+          "width": 1440,
+          "height": 3120,
+          "unit": "px",
+          "posterWidthCm": 13.85,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "wallpaper_ipad_pro_11_m5",
+          "name": "iPad Pro 11\" (M5)",
+          "description": "Native portrait wallpaper for the current 11-inch iPad Pro.",
+          "width": 1668,
+          "height": 2420,
+          "unit": "px",
+          "posterWidthCm": 20.68,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "wallpaper_ipad_pro_13_m5",
+          "name": "iPad Pro 13\" (M5)",
+          "description": "Native portrait wallpaper for the current 13-inch iPad Pro.",
+          "width": 2064,
+          "height": 2752,
+          "unit": "px",
+          "posterWidthCm": 22.5,
+          "posterHeightCm": 30
+        },
+        {
+          "id": "wallpaper_imac_24_4_5k",
+          "name": "iMac 24\" 4.5K",
+          "description": "Native landscape wallpaper for the 24-inch 4.5K Retina iMac.",
+          "width": 4480,
+          "height": 2520,
+          "unit": "px",
+          "posterWidthCm": 30,
+          "posterHeightCm": 16.88
+        },
         {
           "id": "wallpaper_desktop_full_hd",
           "name": "Desktop Full HD",
@@ -186,56 +266,6 @@
           "unit": "px",
           "posterWidthCm": 30,
           "posterHeightCm": 12.56
-        },
-        {
-          "id": "wallpaper_iphone_15_pro",
-          "name": "iPhone 15 Pro",
-          "description": "Vertical wallpaper format for iPhone 15 Pro.",
-          "width": 1179,
-          "height": 2556,
-          "unit": "px",
-          "posterWidthCm": 13.84,
-          "posterHeightCm": 30
-        },
-        {
-          "id": "wallpaper_iphone_15_pro_max",
-          "name": "iPhone 15 Pro Max",
-          "description": "Vertical wallpaper format for iPhone 15 Pro Max.",
-          "width": 1290,
-          "height": 2796,
-          "unit": "px",
-          "posterWidthCm": 13.84,
-          "posterHeightCm": 30
-        },
-        {
-          "id": "wallpaper_samsung_galaxy_s24_ultra",
-          "name": "Galaxy S24 Ultra",
-          "description": "Vertical wallpaper format for Samsung Galaxy S24 Ultra.",
-          "width": 1440,
-          "height": 3120,
-          "unit": "px",
-          "posterWidthCm": 13.85,
-          "posterHeightCm": 30
-        },
-        {
-          "id": "wallpaper_ipad_pro_11",
-          "name": "iPad Pro 11\"",
-          "description": "Wallpaper format for iPad Pro 11-inch display.",
-          "width": 1668,
-          "height": 2388,
-          "unit": "px",
-          "posterWidthCm": 20.95,
-          "posterHeightCm": 30
-        },
-        {
-          "id": "wallpaper_ipad_pro_12_9",
-          "name": "iPad Pro 12.9\"",
-          "description": "Wallpaper format for iPad Pro 12.9-inch display.",
-          "width": 2048,
-          "height": 2732,
-          "unit": "px",
-          "posterWidthCm": 22.49,
-          "posterHeightCm": 30
         },
         {
           "id": "wallpaper_xteink_x4",

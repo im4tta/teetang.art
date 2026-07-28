@@ -35,9 +35,15 @@ export default function LayoutCard({ layoutOption, onClick, isSelected = false }
   return (
     <button type="button" className={className} onClick={onClick} aria-pressed={isSelected}>
       <div className="layout-card-copy">
+        <span className="layout-card-category">{layoutOption.categoryName}</span>
         <p className="layout-card-name">{layoutOption.name}</p>
         <p className="layout-card-meta">{sizeText}</p>
       </div>
+      {isSelected ? (
+        <span className="layout-card-selected" aria-hidden="true">
+          ✓
+        </span>
+      ) : null}
       {symbolDataUri ? (
         <img
           className="layout-card-symbol"

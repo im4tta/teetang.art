@@ -29,22 +29,36 @@ function isInStandaloneMode(): boolean {
 }
 
 export default function useInstallPrompt() {
-  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
-  const [showIosHint, setShowIosHint] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(() => {
+    if (isNativePlatform() || isInStandaloneMode() || isIos()) return null;
+    if (localStorageCache.read<boolean>(INSTALL_DISMISS_KEY, WEEK_MS)) return null;
+    return (
+      (window.__teetangartDeferredInstallPrompt as BeforeInstallPromptEvent | undefined) ?? null
+    );
+  });
+  const [showIosHint, setShowIosHint] = useState(
+    () =>
+      !isNativePlatform() &&
+      !isInStandaloneMode() &&
+      !localStorageCache.read<boolean>(INSTALL_DISMISS_KEY, WEEK_MS) &&
+      isIos(),
+  );
   const [showAndroidHint, setShowAndroidHint] = useState(false);
-  const [dismissed, setDismissed] = useState(false);
-  const [beforeInstallPromptFired, setBeforeInstallPromptFired] = useState(false);
+  const [dismissed, setDismissed] = useState(() =>
+    Boolean(localStorageCache.read<boolean>(INSTALL_DISMISS_KEY, WEEK_MS)),
+  );
+  const [beforeInstallPromptFired, setBeforeInstallPromptFired] = useState(() =>
+    Boolean(window.__teetangartDeferredInstallPrompt),
+  );
   const [promptOutcome, setPromptOutcome] = useState<"accepted" | "dismissed" | "failed" | null>(
     null,
   );
-  const [swControlled, setSwControlled] = useState(false);
+  const [swControlled] = useState(() => Boolean(navigator.serviceWorker?.controller));
   const [swReady, setSwReady] = useState(false);
 
   useEffect(() => {
     if (isNativePlatform()) return;
 
-    setBeforeInstallPromptFired(Boolean(window.__teetangartDeferredInstallPrompt));
-    setSwControlled(Boolean(navigator.serviceWorker?.controller));
     if (navigator.serviceWorker?.ready) {
       void navigator.serviceWorker.ready
         .then(() => setSwReady(true))
@@ -53,19 +67,9 @@ export default function useInstallPrompt() {
 
     if (isInStandaloneMode()) return;
 
-    if (localStorageCache.read<boolean>(INSTALL_DISMISS_KEY, WEEK_MS)) {
-      setDismissed(true);
-      return;
-    }
+    if (localStorageCache.read<boolean>(INSTALL_DISMISS_KEY, WEEK_MS)) return;
 
-    if (isIos()) {
-      setShowIosHint(true);
-      return;
-    }
-
-    if (window.__teetangartDeferredInstallPrompt) {
-      setDeferredPrompt(window.__teetangartDeferredInstallPrompt as BeforeInstallPromptEvent);
-    }
+    if (isIos()) return;
 
     const handler = (e: Event) => {
       e.preventDefault();

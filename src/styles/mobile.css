@@ -1676,3 +1676,128 @@
     padding: 0;
   }
 }
+
+/* Focused mobile tool sheets */
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  .mobile-nav-tabs {
+    justify-content: flex-start;
+    scroll-padding-inline: 20px;
+  }
+
+  .mobile-nav-tab {
+    min-width: 76px;
+  }
+
+  .mobile-drawer-sheet {
+    height: min(52vh, 520px);
+  }
+
+  .mobile-drawer-toolbar {
+    position: relative;
+    min-height: 48px;
+    flex: 0 0 auto;
+  }
+
+  .mobile-drawer-toolbar .mobile-drawer-handle {
+    min-height: 48px;
+    padding: 0;
+  }
+
+  .mobile-drawer-close {
+    position: absolute;
+    top: 6px;
+    right: 10px;
+    width: 36px;
+    height: 36px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.06);
+    color: #f5f5fa;
+    font-size: 1.4rem;
+    line-height: 1;
+    z-index: 2;
+  }
+
+  .mobile-drawer-close:focus-visible,
+  .mobile-nav-tab:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .settings-panel--mobile-focused .panel-hdr {
+    display: flex;
+    align-items: center;
+    margin: 0 0 14px;
+    padding: 0 0 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .settings-panel--mobile-focused .panel-hdr h2 {
+    margin: 0;
+    font-size: 0.82rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #def2ff;
+  }
+
+  .settings-panel--mobile-focused .section {
+    min-width: 0;
+  }
+
+  .settings-panel--mobile-focused .settings-credits {
+    display: none;
+  }
+}
+
+/* Accurate overflow affordances and keyboard-operable drawer handle */
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  .mobile-nav-fade--end {
+    left: auto;
+    right: 0;
+    border-radius: 0 20px 20px 0;
+  }
+
+  .mobile-nav-fade--start {
+    left: 0;
+    right: auto;
+    background: linear-gradient(
+      to left,
+      transparent,
+      rgba(9, 16, 24, 0.62) 70%,
+      rgba(9, 16, 24, 0.78) 100%
+    );
+    border-radius: 20px 0 0 20px;
+  }
+
+  .mobile-nav-fade--start::after {
+    left: 6px;
+    right: auto;
+    transform: translateY(-50%) rotate(-135deg);
+  }
+
+  button.mobile-drawer-handle {
+    border: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  button.mobile-drawer-handle::after {
+    display: none;
+  }
+
+  .mobile-drawer-grabber {
+    display: block;
+    width: 44px;
+    height: 5px;
+    border-radius: 999px;
+    background: rgba(180, 205, 225, 0.42);
+  }
+
+  button.mobile-drawer-handle:focus-visible .mobile-drawer-grabber {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
+  }
+}

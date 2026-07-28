@@ -9,12 +9,7 @@ import {
 } from "react";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { usePosterContext } from "@/context/PosterContext";
-import {
-  useMapSync,
-  distanceToZoom,
-  resolveZoomBounds,
-  zoomToDistance,
-} from "@/hooks/useMapSync";
+import { useMapSync, distanceToZoom, resolveZoomBounds, zoomToDistance } from "@/hooks/useMapSync";
 import MapPreview from "@/components/ui/MapPreview";
 import MarkerOverlay from "@/components/ui/MarkerOverlay";
 import RouteOverlay from "@/components/ui/RouteOverlay";
@@ -125,7 +120,11 @@ export default function PreviewPanel() {
   const badgeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [isUserGuideOpen, setIsUserGuideOpen] = useState(false);
-  const [qrPreviewUrl, setQrPreviewUrl] = useState("");
+  const [frameWidth, setFrameWidth] = useState(0);
+  const [qrPreviewResult, setQrPreviewResult] = useState<{
+    data: string;
+    url: string;
+  } | null>(null);
   const [badgeVisible, setBadgeVisible] = useState(true);
   const isMobileViewport = useMobileViewport();
 
@@ -138,7 +137,7 @@ export default function PreviewPanel() {
     formLon2 = Number(form.longitude2) || 0;
   const formDistance2 = Number(form.distance2) || DEFAULT_DISTANCE_METERS;
   const mapCenter2: [number, number] = [formLon2, formLat2];
-  const halfContainerPx = Math.max(300, (frameRef.current?.getBoundingClientRect().width ?? 0) / 2);
+  const halfContainerPx = Math.max(300, frameWidth / 2);
   const mapZoom2 = clamp(
     distanceToZoom(formDistance2, formLat2, halfContainerPx),
     mapMinZoom,
@@ -171,6 +170,11 @@ export default function PreviewPanel() {
     handleBearingChange,
     handleCompassReset,
   } = useMapBearing({ mapRef, mapRef2, isDualCity, isMarkerEditorActive });
+
+  const handleStartMapEditing = () => {
+    setBadgeVisible(true);
+    handleStartEditing();
+  };
 
   const { handleRecenter } = useMapRecenter({
     mapRef,
@@ -206,12 +210,8 @@ export default function PreviewPanel() {
 
   // ── Badge timer ────────────────────────────────────────────────────────
   useEffect(() => {
-    if (isEditing) {
-      setBadgeVisible(true);
-      clearTimeout(badgeTimerRef.current!);
-      return;
-    }
     clearTimeout(badgeTimerRef.current!);
+    if (isEditing) return;
     badgeTimerRef.current = setTimeout(() => setBadgeVisible(false), 4000);
     return () => clearTimeout(badgeTimerRef.current!);
   }, [form.theme, form.mapShape, form.layoutMode, isMobileViewport, isEditing]);
@@ -220,7 +220,10 @@ export default function PreviewPanel() {
   useEffect(() => {
     const el = frameRef.current;
     if (!el) return;
-    const ro = new ResizeObserver(([e]) => setContainerWidth(e.contentRect.width));
+    const ro = new ResizeObserver(([e]) => {
+      setFrameWidth(e.contentRect.width);
+      setContainerWidth(e.contentRect.width);
+    });
     ro.observe(el);
     return () => ro.disconnect();
   }, [setContainerWidth]);
@@ -232,38 +235,27 @@ export default function PreviewPanel() {
   }, [form.fontFamily]);
 
   // ── QR code preview ────────────────────────────────────────────────────
+  const qrPreviewData = form.showQrCode ? buildQrData(form) : "";
+  const qrPreviewUrl =
+    qrPreviewData && qrPreviewResult?.data === qrPreviewData ? qrPreviewResult.url : "";
+
   useEffect(() => {
-    if (!form.showQrCode) {
-      setQrPreviewUrl("");
-      return;
-    }
-    const data = buildQrData(form);
-    if (!data) {
-      setQrPreviewUrl("");
-      return;
-    }
+    if (!qrPreviewData) return;
     let alive = true;
-    void getQrCodeDataUrl(data, 300).then((url) => {
-      if (alive) setQrPreviewUrl(url);
+    void getQrCodeDataUrl(qrPreviewData, 300).then((url) => {
+      if (alive) setQrPreviewResult({ data: qrPreviewData, url });
     });
     return () => {
       alive = false;
     };
-  }, [
-    form.latitude,
-    form.longitude,
-    form.qrCustomUrl,
-    form.qrDestination,
-    form.qrPhone,
-    form.showQrCode,
-  ]);
+  }, [qrPreviewData]);
 
   // ── handleMove2 / handleMoveEnd2 (dual-city second panel) ─────────────
   const handleMove2 = useCallback((_: [number, number], __: number) => {}, []);
   const handleMoveEnd2 = useCallback(
     (center: [number, number], zoom: number) => {
       const [lon, lat] = center;
-      const hw = Math.max(300, (frameRef.current?.getBoundingClientRect().width ?? 0) / 2);
+      const hw = Math.max(300, frameWidth / 2);
       const bounds = resolveZoomBounds(lat, hw);
       const dist = zoomToDistance(clamp(zoom, bounds.minZoom, bounds.maxZoom), lat, hw);
       dispatch({
@@ -289,7 +281,7 @@ export default function PreviewPanel() {
         })
         .catch(() => {});
     },
-    [dispatch, frameRef],
+    [dispatch, frameWidth],
   );
 
   // ── Marker interactions ────────────────────────────────────────────────
@@ -582,8 +574,8 @@ export default function PreviewPanel() {
         </div>
 
         {state.routeDrawMode && (
-          <div ref={routeDrawOverlayRef} className="route-draw-hint">
-            Click the map to place the start point
+          <div ref={routeDrawOverlayRef} className="route-draw-hint" role="status">
+            {t("routes.clickToPlaceStart")}
           </div>
         )}
 
@@ -623,7 +615,7 @@ export default function PreviewPanel() {
             recenterHint={RECENTER_HINT}
             unlockHint={UNLOCK_HINT}
             onRecenter={handleRecenter}
-            onStartEditing={handleStartEditing}
+            onStartEditing={handleStartMapEditing}
             onFinishEditing={handleFinishEditing}
             isRotationEnabled={isRotationEnabled}
             onToggleRotation={handleToggleRotation}

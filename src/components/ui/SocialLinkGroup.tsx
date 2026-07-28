@@ -1,6 +1,7 @@
-import { KOFI_URL, REPO_API_URL, REPO_URL, SOCIAL_INSTAGRAM } from "@/services/config";
+import { ABA_ACCOUNT, REPO_API_URL, REPO_URL, SOCIAL_INSTAGRAM } from "@/services/config";
 import { useRepoStars } from "@/hooks/useRepoStars";
-import { GitHubIcon, InstagramIcon, KofiIcon, StarIcon } from "@/components/ui/Icons";
+import { GitHubIcon, InstagramIcon, StarIcon } from "@/components/ui/Icons";
+import AbaLogo from "@/components/ui/AbaLogo";
 
 interface SocialLinkGroupProps {
   variant: "header" | "mobile-export";
@@ -10,7 +11,7 @@ export default function SocialLinkGroup({ variant }: SocialLinkGroupProps) {
   const repoUrl = String(REPO_URL ?? "").trim();
   const repoApiUrl = String(REPO_API_URL ?? "").trim();
   const instagramUrl = String(SOCIAL_INSTAGRAM ?? "").trim();
-  const kofiUrl = String(KOFI_URL ?? "").trim();
+  const abaAccount = String(ABA_ACCOUNT ?? "").trim();
   const { repoStars, repoStarsLoading } = useRepoStars(repoApiUrl);
   const starsText = repoStarsLoading ? "..." : (repoStars?.toLocaleString() ?? "Star");
 
@@ -47,17 +48,15 @@ export default function SocialLinkGroup({ variant }: SocialLinkGroupProps) {
           <InstagramIcon />
         </a>
       ) : null}
-      {kofiUrl ? (
-        <a
-          className="general-header-social-btn"
-          href={kofiUrl}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Support Tee Tang Art on Ko-fi"
-          title="Ko-fi"
+      {abaAccount ? (
+        <span
+          className="general-header-social-btn general-header-social-btn--aba"
+          aria-label={`ABA Account ${abaAccount}`}
+          title={`ABA Account: ${abaAccount}`}
         >
-          <KofiIcon />
-        </a>
+          <AbaLogo className="general-header-aba-logo" />
+          <span className="general-header-aba-number">{abaAccount}</span>
+        </span>
       ) : null}
     </div>
   );

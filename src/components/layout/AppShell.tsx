@@ -1,4 +1,4 @@
-import { lazy, Suspense, useCallback, useEffect, useState } from "react";
+import { lazy, Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { useSearchParams } from "react-router-dom";
 import { usePosterContext } from "@/context/PosterContext";
@@ -23,14 +23,92 @@ const SettingsPanel = lazy(() => import("@/components/ui/SettingsPanel"));
 const AnnouncementModal = lazy(() => import("@/components/ui/AnnouncementModal"));
 const UserGuidePanel = lazy(() => import("@/components/ui/UserGuidePanel"));
 
-function SettingsDrawer({ mobileTab, onClose, showAllSections = false }: { mobileTab: MobileTab; onClose: () => void; showAllSections?: boolean }) {
+function SettingsDrawer({ mobileTab, onClose }: { mobileTab: MobileTab; onClose: () => void }) {
+  const { t } = useI18n();
   const [expanded, setExpanded] = useState(false);
-  const { sheetRef, handleRef, handleProps } = useSwipeDown(onClose, 80, { onExpand: () => setExpanded(true) });
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const { sheetRef, handleRef, handleProps } = useSwipeDown(onClose, 80, {
+    onExpand: () => setExpanded(true),
+  });
+
+  useEffect(() => {
+    closeButtonRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+        return;
+      }
+      if (event.key !== "Tab" || !sheetRef.current) return;
+      const focusable = Array.from(
+        sheetRef.current.querySelectorAll<HTMLElement>(
+          "button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]",
+        ),
+      );
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose, sheetRef]);
+
+  useEffect(() => {
+    const background = Array.from(
+      document.querySelectorAll<HTMLElement>(".app-shell > :not(.mobile-drawer)"),
+    );
+    background.forEach((element) => {
+      element.setAttribute("aria-hidden", "true");
+      (element as HTMLElement & { inert: boolean }).inert = true;
+    });
+    return () => {
+      background.forEach((element) => {
+        element.removeAttribute("aria-hidden");
+        (element as HTMLElement & { inert: boolean }).inert = false;
+      });
+    };
+  }, []);
+
   return (
-    <div className="mobile-drawer" role="dialog" aria-label="Settings">
+    <div className="mobile-drawer">
       <div className="mobile-drawer-backdrop" onClick={onClose} aria-hidden="true" />
-      <div className={`mobile-drawer-sheet${expanded ? " is-expanded" : ""}`} ref={sheetRef} data-mobile-tab={showAllSections ? "settings" : mobileTab}>
-        <div className="mobile-drawer-handle" ref={handleRef} aria-hidden="true" {...handleProps} />
+      <div
+        className={`mobile-drawer-sheet${expanded ? " is-expanded" : ""}`}
+        ref={sheetRef}
+        data-mobile-tab={mobileTab}
+        role="dialog"
+        aria-modal="true"
+        aria-label={t("nav.settings")}
+      >
+        <div className="mobile-drawer-toolbar">
+          <button
+            ref={handleRef}
+            type="button"
+            className="mobile-drawer-handle"
+            onClick={() => setExpanded((value) => !value)}
+            aria-expanded={expanded}
+            aria-label={expanded ? t("close") : t("nav.settings")}
+            {...handleProps}
+          >
+            <span className="mobile-drawer-grabber" aria-hidden="true" />
+          </button>
+          <button
+            ref={closeButtonRef}
+            type="button"
+            className="mobile-drawer-close"
+            onClick={onClose}
+            aria-label={t("close")}
+          >
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>
         <div className="mobile-drawer-content">
           <SettingsPanel mobileTab={mobileTab} />
         </div>
@@ -43,7 +121,10 @@ export default function AppShell() {
   const { t } = useI18n();
   const { state, dispatch } = usePosterContext();
   const { isMarkerEditorActive } = state;
-  const activeMarker = state.activeMarkerId != null ? (state.markers.find(m => m.id === state.activeMarkerId) ?? null) : null;
+  const activeMarker =
+    state.activeMarkerId != null
+      ? (state.markers.find((m) => m.id === state.activeMarkerId) ?? null)
+      : null;
 
   const [mobileTab, setMobileTab] = useState<MobileTab>("theme");
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
@@ -66,12 +147,18 @@ export default function AppShell() {
           const r = await geocodeLocation(city);
           if (!cancelled) dispatch({ type: "SELECT_LOCATION", location: r });
         } catch {
-          if (!cancelled) dispatch({ type: "SET_FORM_FIELDS", fields: { displayCity: city, displayCountry: "Cambodia" } });
+          if (!cancelled)
+            dispatch({
+              type: "SET_FORM_FIELDS",
+              fields: { displayCity: city, displayCountry: "Cambodia" },
+            });
         }
       }
     }
     void apply();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams, dispatch]);
 
   useEffect(() => {
@@ -94,15 +181,22 @@ export default function AppShell() {
     return () => clearTimeout(tid);
   }, []);
 
-
   useEffect(() => {
     if (!mobileDrawerOpen) return;
-    const prev = { bO: document.body.style.overflow, hO: document.documentElement.style.overflow, bS: document.body.style.overscrollBehavior, hS: document.documentElement.style.overscrollBehavior };
+    const prev = {
+      bO: document.body.style.overflow,
+      hO: document.documentElement.style.overflow,
+      bS: document.body.style.overscrollBehavior,
+      hS: document.documentElement.style.overscrollBehavior,
+    };
     document.body.style.overflow = document.documentElement.style.overflow = "hidden";
-    document.body.style.overscrollBehavior = document.documentElement.style.overscrollBehavior = "none";
+    document.body.style.overscrollBehavior = document.documentElement.style.overscrollBehavior =
+      "none";
     return () => {
-      document.body.style.overflow = prev.bO; document.documentElement.style.overflow = prev.hO;
-      document.body.style.overscrollBehavior = prev.bS; document.documentElement.style.overscrollBehavior = prev.hS;
+      document.body.style.overflow = prev.bO;
+      document.documentElement.style.overflow = prev.hO;
+      document.body.style.overscrollBehavior = prev.bS;
+      document.documentElement.style.overscrollBehavior = prev.hS;
     };
   }, [mobileDrawerOpen]);
 
@@ -116,29 +210,58 @@ export default function AppShell() {
   }, [state.form.appTheme, state.form.uiDensity]);
 
   const handleMobileTabChange = (tab: MobileTab) => {
-    if (tab === "location") { setMobileLocationVisible(v => !v); setMobileDrawerOpen(false); return; }
+    if (tab === "location") {
+      setMobileLocationVisible((v) => !v);
+      setMobileDrawerOpen(false);
+      return;
+    }
     if (tab === mobileTab && mobileDrawerOpen) setMobileDrawerOpen(false);
-    else { setMobileTab(tab); setMobileDrawerOpen(true); }
+    else {
+      setMobileTab(tab);
+      setMobileDrawerOpen(true);
+    }
   };
 
   const handleDesktopTabChange = (tab: MobileTab) => {
     if (tab === desktopTab && desktopPanelOpen) setDesktopPanelOpen(false);
-    else { setDesktopTab(tab); setDesktopPanelOpen(true); }
+    else {
+      setDesktopTab(tab);
+      setDesktopPanelOpen(true);
+    }
   };
 
-  const handleMobileMarkerSize = useCallback((size: number) => {
-    if (!activeMarker) return;
-    dispatch({ type: "UPDATE_MARKER", markerId: activeMarker.id, changes: { size: Math.max(MIN_MARKER_SIZE, Math.min(MAX_MARKER_SIZE, Math.round(size))) } });
-  }, [activeMarker, dispatch]);
+  const handleMobileMarkerSize = useCallback(
+    (size: number) => {
+      if (!activeMarker) return;
+      dispatch({
+        type: "UPDATE_MARKER",
+        markerId: activeMarker.id,
+        changes: { size: Math.max(MIN_MARKER_SIZE, Math.min(MAX_MARKER_SIZE, Math.round(size))) },
+      });
+    },
+    [activeMarker, dispatch],
+  );
 
   return (
-    <div className="app-shell" data-mobile-tab={mobileTab} data-desktop-tab={desktopTab}>
+    <div
+      className="app-shell"
+      data-mobile-tab={mobileTab}
+      data-desktop-tab={desktopTab}
+      data-desktop-panel-open={desktopPanelOpen ? "true" : "false"}
+    >
       <DotField />
       <InstallPrompt />
 
-      {!isMobileViewport
-        ? <DesktopTopBar activeTab={desktopTab} panelOpen={desktopPanelOpen} onTabChange={handleDesktopTabChange} onAboutOpen={() => setAboutOpen(true)} />
-        : <GeneralHeader onAboutOpen={() => setAboutOpen(true)} />}
+      {!isMobileViewport ? (
+        <DesktopTopBar
+          activeTab={desktopTab}
+          panelOpen={desktopPanelOpen}
+          onTabChange={handleDesktopTabChange}
+          onAboutOpen={() => setAboutOpen(true)}
+        />
+      ) : (
+        <GeneralHeader onAboutOpen={() => setAboutOpen(true)} />
+      )}
 
       {isMobileViewport && (
         <div className={`mobile-location-row-wrap${mobileLocationVisible ? "" : " is-hidden"}`}>
@@ -148,12 +271,20 @@ export default function AppShell() {
 
       {isMobileViewport && isMarkerEditorActive && activeMarker && (
         <div className="mobile-marker-size-bar" role="group" aria-label={t("markerSize")}>
-          <p className="mobile-marker-size-bar__label">{t("markerSize")}</p>
+          <label className="mobile-marker-size-bar__label" htmlFor="mobile-marker-size">
+            {t("markerSize")}
+          </label>
           <div className="mobile-marker-size-bar__controls">
-            <input type="range" className="mobile-marker-size-bar__slider map-control-slider"
-              min={MIN_MARKER_SIZE} max={MAX_MARKER_SIZE} step={1}
+            <input
+              id="mobile-marker-size"
+              type="range"
+              className="mobile-marker-size-bar__slider map-control-slider"
+              min={MIN_MARKER_SIZE}
+              max={MAX_MARKER_SIZE}
+              step={1}
               value={Math.round(activeMarker.size)}
-              onChange={e => handleMobileMarkerSize(Number(e.target.value))} />
+              onChange={(e) => handleMobileMarkerSize(Number(e.target.value))}
+            />
             <span className="mobile-marker-size-bar__value">{Math.round(activeMarker.size)}px</span>
           </div>
         </div>
@@ -161,37 +292,64 @@ export default function AppShell() {
 
       {!isMobileViewport && (
         <div className="desktop-user-guide-panel">
-          <Suspense fallback={null}><UserGuidePanel /></Suspense>
+          <Suspense fallback={null}>
+            <UserGuidePanel />
+          </Suspense>
         </div>
       )}
 
-      <div className="desktop-left-panel">
+      <div id="desktop-settings-panel" className="desktop-left-panel">
         <div className={`desktop-settings-slide${desktopPanelOpen ? " is-open" : ""}`}>
-          <Suspense fallback={null}><SettingsPanel desktopActivePanel={desktopPanelOpen ? desktopTab : undefined} /></Suspense>
+          <Suspense fallback={null}>
+            <SettingsPanel desktopActivePanel={desktopPanelOpen ? desktopTab : undefined} />
+          </Suspense>
         </div>
       </div>
 
       <PreviewPanel />
 
-      {mobileDrawerOpen && <SettingsDrawer mobileTab={mobileTab} onClose={() => setMobileDrawerOpen(false)} />}
+      {mobileDrawerOpen && (
+        <SettingsDrawer mobileTab={mobileTab} onClose={() => setMobileDrawerOpen(false)} />
+      )}
 
       {isMobileViewport && isMarkerEditorActive && (
-        <button type="button" className="mobile-marker-edit-done" onClick={() => {
-          dispatch({ type: "SET_MARKER_EDITOR_ACTIVE", active: false });
-          dispatch({ type: "SET_ACTIVE_MARKER", markerId: null });
-          setMobileDrawerOpen(false);
-        }}>
+        <button
+          type="button"
+          className="mobile-marker-edit-done"
+          onClick={() => {
+            dispatch({ type: "SET_MARKER_EDITOR_ACTIVE", active: false });
+            dispatch({ type: "SET_ACTIVE_MARKER", markerId: null });
+            setMobileDrawerOpen(false);
+          }}
+        >
           <CheckIcon />
           <span>{t("doneEditing")}</span>
         </button>
       )}
 
-      <MobileNavBar activeTab={mobileTab} drawerOpen={mobileDrawerOpen} isLocationVisible={mobileLocationVisible} onTabChange={handleMobileTabChange} />
+      <MobileNavBar
+        activeTab={mobileTab}
+        drawerOpen={mobileDrawerOpen}
+        isLocationVisible={mobileLocationVisible}
+        onTabChange={handleMobileTabChange}
+      />
 
       <FooterNote />
-      <Suspense fallback={null}><AnnouncementModal /></Suspense>
-      {aboutOpen && <Suspense fallback={null}><AboutModal onClose={() => setAboutOpen(false)} /></Suspense>}
-      {supportPrompt && <SupportModal posterNumber={supportPrompt.posterNumber} variant={supportPrompt.variant} onClose={() => setSupportPrompt(null)} />}
+      <Suspense fallback={null}>
+        <AnnouncementModal />
+      </Suspense>
+      {aboutOpen && (
+        <Suspense fallback={null}>
+          <AboutModal onClose={() => setAboutOpen(false)} />
+        </Suspense>
+      )}
+      {supportPrompt && (
+        <SupportModal
+          posterNumber={supportPrompt.posterNumber}
+          variant={supportPrompt.variant}
+          onClose={() => setSupportPrompt(null)}
+        />
+      )}
     </div>
   );
 }

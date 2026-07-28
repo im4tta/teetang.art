@@ -351,9 +351,21 @@
   overflow: hidden;
 }
 
-/* hide MapLibre's default attribution & logo */
+/* Keep MapLibre attribution available for accessibility and provider compliance. */
 .map-container .maplibregl-control-container {
-  display: none;
+  display: block;
+}
+
+.map-container .maplibregl-ctrl-bottom-right {
+  right: 4px;
+  bottom: 4px;
+}
+
+.map-container .maplibregl-ctrl-attrib {
+  max-width: min(70%, 280px);
+  font-size: 8px;
+  line-height: 1.25;
+  opacity: 0.72;
 }
 
 /* ── Gradient fades ── */

@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import type { SearchResult } from "@/services/location/types";
 import type { PosterForm } from "@/context/posterReducer";
 import {
@@ -43,9 +43,15 @@ export default function LocationSection({
   const hasLocationValue = form.location.trim().length > 0;
   const [history, setHistory] = useState(readSearchHistory());
 
-  useEffect(() => {
+  const handleLocationFocus = () => {
     setHistory(readSearchHistory());
-  }, [form.location]);
+    onLocationFocus();
+  };
+
+  const handleLocationSelect = (suggestion: SearchResult) => {
+    onLocationSelect(suggestion);
+    setHistory(readSearchHistory());
+  };
 
   const handleHistorySelect = (item: ReturnType<typeof readSearchHistory>[number]) => {
     const synthetic = {
@@ -78,7 +84,7 @@ export default function LocationSection({
                 name="location"
                 value={form.location}
                 onChange={onChange}
-                onFocus={onLocationFocus}
+                onFocus={handleLocationFocus}
                 onBlur={onLocationBlur}
                 onKeyDown={(e) => {
                   if (e.key === "Enter") void searchNow(e.currentTarget.value);
@@ -119,7 +125,7 @@ export default function LocationSection({
                     className="location-suggestion"
                     onMouseDown={(event) => {
                       event.preventDefault();
-                      onLocationSelect(suggestion);
+                      handleLocationSelect(suggestion);
                     }}
                   >
                     {suggestion.label}

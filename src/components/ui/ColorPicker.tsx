@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { HexColorPicker } from "react-colorful";
 import { normalizeHexColor, toUniqueHexColors } from "@/utils/color";
 
@@ -33,20 +33,17 @@ export default function ColorPicker({
 
   const normalizedCurrentColor =
     normalizeHexColor(currentColor) || suggestionList[0] || additionalList[0] || "#000000";
-  const [hexInput, setHexInput] = useState(normalizedCurrentColor);
+  const [hexDraft, setHexDraft] = useState({
+    color: normalizedCurrentColor,
+    value: normalizedCurrentColor,
+  });
   const [showMoreColors, setShowMoreColors] = useState(false);
-
-  const visiblePalette = showMoreColors ? [...suggestionList, ...additionalList] : suggestionList;
-
-  useEffect(() => {
-    setHexInput(normalizedCurrentColor);
-  }, [normalizedCurrentColor]);
-
-  useEffect(() => {
-    if (additionalList.length === 0) {
-      setShowMoreColors(false);
-    }
-  }, [additionalList]);
+  const hexInput =
+    hexDraft.color === normalizedCurrentColor ? hexDraft.value : normalizedCurrentColor;
+  const effectiveShowMoreColors = showMoreColors && additionalList.length > 0;
+  const visiblePalette = effectiveShowMoreColors
+    ? [...suggestionList, ...additionalList]
+    : suggestionList;
 
   function handlePresetClick(color: string) {
     onChange(color);
@@ -58,13 +55,13 @@ export default function ColorPicker({
       return;
     }
 
-    setHexInput(normalized);
+    setHexDraft({ color: normalizedCurrentColor, value: normalized });
     onChange(normalized);
   }
 
   function handleHexInput(event: React.ChangeEvent<HTMLInputElement>) {
     const nextValue = event.target.value;
-    setHexInput(nextValue);
+    setHexDraft({ color: normalizedCurrentColor, value: nextValue });
 
     const normalized = normalizeHexColor(nextValue.startsWith("#") ? nextValue : `#${nextValue}`);
     if (!normalized) {
@@ -75,7 +72,7 @@ export default function ColorPicker({
   }
 
   function handleHexBlur() {
-    setHexInput(normalizedCurrentColor);
+    setHexDraft({ color: normalizedCurrentColor, value: normalizedCurrentColor });
   }
 
   return (
@@ -97,11 +94,11 @@ export default function ColorPicker({
       <div className="color-picker-actions">
         <button
           type="button"
-          className={`color-grid-action${showMoreColors ? " is-active" : ""}`}
-          onClick={() => setShowMoreColors((prev) => !prev)}
+          className={`color-grid-action${effectiveShowMoreColors ? " is-active" : ""}`}
+          onClick={() => setShowMoreColors((previous) => !previous)}
           disabled={additionalList.length === 0}
         >
-          {showMoreColors ? "Less" : "More"}
+          {effectiveShowMoreColors ? "Less" : "More"}
         </button>
         <button
           type="button"

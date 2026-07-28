@@ -17,12 +17,20 @@ syncDisplayMode();
 onPlatformAdapterChange(syncDisplayMode);
 
 const mq = window.matchMedia("(display-mode: standalone)");
-(mq.addEventListener ?? ((e: string, h: EventListener) => mq.addEventListener(e, h))).call(mq, "change", syncDisplayMode);
+(mq.addEventListener ?? ((e: string, h: EventListener) => mq.addEventListener(e, h))).call(
+  mq,
+  "change",
+  syncDisplayMode,
+);
 
-if ("serviceWorker" in navigator && !isNativePlatform()) {
-  window.addEventListener("load", () => navigator.serviceWorker.register("/sw.js").catch(console.warn));
+if (import.meta.env.PROD && "serviceWorker" in navigator && !isNativePlatform()) {
+  window.addEventListener("load", () =>
+    navigator.serviceWorker.register("/sw.js").catch(console.warn),
+  );
 }
 
 ReactDOM.createRoot(document.getElementById("root")!).render(
-  <React.StrictMode><App /></React.StrictMode>
+  <React.StrictMode>
+    <App />
+  </React.StrictMode>,
 );

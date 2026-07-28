@@ -1,6 +1,9 @@
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
-import { KOFI_URL, SOCIAL_INSTAGRAM } from "@/services/config";
+import { ABA_ACCOUNT, SOCIAL_INSTAGRAM } from "@/services/config";
 import { CloseIcon, InstagramIcon } from "@/components/ui/Icons";
+import AbaLogo from "@/components/ui/AbaLogo";
+import { useI18n } from "@/context/i18n/context";
 import type { SupportPromptVariant } from "@/hooks/useExport";
 
 interface SupportModalProps {
@@ -16,8 +19,33 @@ export default function SupportModal({
   onClose,
   titleId = "export-support-modal-title",
 }: SupportModalProps) {
-  const kofiUrl = String(KOFI_URL ?? "").trim();
+  const { t } = useI18n();
+  const abaAccount = String(ABA_ACCOUNT ?? "").trim();
   const instagramUrl = String(SOCIAL_INSTAGRAM ?? "").trim();
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const [isAccountCopied, setIsAccountCopied] = useState(false);
+
+  const handleCopyAccount = async () => {
+    try {
+      await navigator.clipboard.writeText(abaAccount);
+      setIsAccountCopied(true);
+      window.setTimeout(() => setIsAccountCopied(false), 2000);
+    } catch {
+      // Clipboard may be unavailable; the number stays visible for manual copying.
+    }
+  };
+
+  useEffect(() => {
+    closeRef.current?.focus();
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") {
+        event.preventDefault();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [onClose]);
 
   return createPortal(
     <div className="picker-modal-backdrop" role="presentation" onClick={onClose}>
@@ -28,18 +56,22 @@ export default function SupportModal({
         aria-labelledby={titleId}
         onClick={(event) => event.stopPropagation()}
       >
-        <button type="button" className="support-modal__close" onClick={onClose} aria-label="Close">
+        <button
+          ref={closeRef}
+          type="button"
+          className="support-modal__close"
+          onClick={onClose}
+          aria-label={t("close")}
+        >
           <CloseIcon />
         </button>
         <div className="support-modal__body">
           {variant === "first" ? (
             <>
               <p className="support-modal__headline" id={titleId}>
-                🎉 Your first poster!
+                🎉 {t("export.yourFirstPoster")}
               </p>
-              <p className="support-modal__text">
-                Love your poster? Support us by sharing to the world.
-              </p>
+              <p className="support-modal__text">{t("export.loveYourPoster")}</p>
               <div className="support-modal__actions">
                 {instagramUrl ? (
                   <a
@@ -48,7 +80,7 @@ export default function SupportModal({
                     target="_blank"
                     rel="noreferrer"
                   >
-                    <InstagramIcon /> Follow us
+                    <InstagramIcon /> {t("export.followUs")}
                   </a>
                 ) : null}
               </div>
@@ -56,24 +88,26 @@ export default function SupportModal({
           ) : (
             <>
               <p className="support-modal__headline" id={titleId}>
-                ✨ Your poster is ready!
+                ✨ {t("export.yourPosterReady")}
               </p>
+              <p className="support-modal__text">{t("export.helpedYouCreate")}</p>
               <p className="support-modal__text">
-                If Tee Tang Art helped you create this poster, consider supporting the project.
-              </p>
-              <p className="support-modal__text">
-                This was your poster <strong>#{posterNumber}</strong> 🎉
+                {t("export.wasYourPoster").replace("{n}", String(posterNumber))} 🎉
               </p>
               <div className="support-modal__actions">
-                {kofiUrl ? (
-                  <a
-                    className="support-modal__kofi"
-                    href={kofiUrl}
-                    target="_blank"
-                    rel="noreferrer"
+                {abaAccount ? (
+                  <button
+                    type="button"
+                    className="support-modal__aba"
+                    onClick={() => void handleCopyAccount()}
+                    aria-label={t("support.copyAccount")}
                   >
-                    <span className="heart">❤︎</span> Support on Ko-fi
-                  </a>
+                    <AbaLogo className="support-modal__aba-logo" />
+                    <span className="support-modal__aba-copy">
+                      <span className="support-modal__aba-label">{t("support.abaAccount")}</span>
+                      <span className="support-modal__aba-number">{abaAccount}</span>
+                    </span>
+                  </button>
                 ) : null}
                 {instagramUrl ? (
                   <a
@@ -82,14 +116,17 @@ export default function SupportModal({
                     target="_blank"
                     rel="noreferrer"
                   >
-                    <InstagramIcon /> Follow us
+                    <InstagramIcon /> {t("export.followUs")}
                   </a>
                 ) : (
                   <button type="button" className="support-modal__dismiss" onClick={onClose}>
-                    Close
+                    {t("export.close")}
                   </button>
                 )}
               </div>
+              <p className="support-modal__status" role="status" aria-live="polite">
+                {isAccountCopied ? t("support.accountCopied") : ""}
+              </p>
             </>
           )}
         </div>

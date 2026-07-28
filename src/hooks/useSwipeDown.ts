@@ -15,7 +15,7 @@ export function useSwipeDown(
   },
 ) {
   const sheetRef = useRef<HTMLDivElement>(null);
-  const handleRef = useRef<HTMLDivElement>(null);
+  const handleRef = useRef<HTMLButtonElement>(null);
   const startY = useRef(0);
 
   const onTouchStart = (e: React.TouchEvent) => {

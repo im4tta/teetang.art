@@ -1,7 +1,8 @@
 import { useI18n } from "@/context/i18n/context";
 import { useRepoStars } from "@/hooks/useRepoStars";
-import { REPO_URL, REPO_API_URL, KOFI_URL } from "@/services/config";
-import { GitHubIcon, KofiIcon } from "@/components/ui/Icons";
+import { REPO_URL, REPO_API_URL, ABA_ACCOUNT, SOCIAL_INSTAGRAM } from "@/services/config";
+import { GitHubIcon, InstagramIcon } from "@/components/ui/Icons";
+import AbaLogo from "@/components/ui/AbaLogo";
 import UserGuide from "@/components/ui/UserGuide";
 
 /* ── sub-components ── */
@@ -16,7 +17,8 @@ function HelpUsGrowSection({
   repoStarsLoading: boolean;
 }) {
   const { t } = useI18n();
-  const kofiUrl = String(KOFI_URL ?? "").trim();
+  const abaAccount = String(ABA_ACCOUNT ?? "").trim();
+  const instagramUrl = String(SOCIAL_INSTAGRAM ?? "").trim();
 
   return (
     <section className="info-panel-section">
@@ -60,17 +62,25 @@ function HelpUsGrowSection({
                 <span>GitHub</span>
               </a>
             ) : null}
-            {kofiUrl ? (
+            {instagramUrl ? (
               <a
                 className="github-badge"
-                href={kofiUrl}
+                href={instagramUrl}
                 target="_blank"
                 rel="noreferrer"
-                aria-label="Support Tee Tang Art on Ko-fi"
+                aria-label="Follow Tee Tang Art on Instagram"
               >
-                <KofiIcon className="badge-icon" />
-                <span>Ko-fi</span>
+                <InstagramIcon className="badge-icon" />
+                <span>Instagram</span>
               </a>
+            ) : null}
+            {abaAccount ? (
+              <span className="github-badge" aria-label={`${t("about.aba")} ${abaAccount}`}>
+                <AbaLogo className="badge-icon aba-badge-logo" />
+                <span>
+                  {t("about.aba")}: {abaAccount}
+                </span>
+              </span>
             ) : null}
           </div>
         </div>

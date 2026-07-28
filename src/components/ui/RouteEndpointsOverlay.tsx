@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import type { Map as MaplibreMap } from "maplibre-gl";
 import type { MapInstanceRef } from "@/services/map/types";
 import type { Route } from "@/services/routes/types";
 import type { MarkerIconDefinition } from "@/services/markers/types";
@@ -43,7 +44,10 @@ export default function RouteEndpointsOverlay({
   onViaPointDragEnd,
   onViaPointDelete,
 }: RouteEndpointsOverlayProps) {
-  const [renderTick, setRenderTick] = useState(0);
+  const [mapSnapshot, setMapSnapshot] = useState<{
+    map: MaplibreMap;
+    revision: number;
+  } | null>(null);
   const dragRef = useRef<{
     key: string;
     startX: number;
@@ -54,13 +58,20 @@ export default function RouteEndpointsOverlay({
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    const sync = () => setRenderTick((v) => v + 1);
+
+    let revision = 0;
+    const sync = () => {
+      revision += 1;
+      setMapSnapshot({ map, revision });
+    };
+    const initialFrame = window.requestAnimationFrame(sync);
     map.on("move", sync);
     map.on("moveend", sync);
     map.on("rotate", sync);
     map.on("resize", sync);
     map.on("load", sync);
     return () => {
+      window.cancelAnimationFrame(initialFrame);
       map.off("move", sync);
       map.off("moveend", sync);
       map.off("rotate", sync);
@@ -69,8 +80,8 @@ export default function RouteEndpointsOverlay({
     };
   }, [mapRef]);
 
-  const map = mapRef.current;
   const projected = useMemo(() => {
+    const map = mapSnapshot?.map;
     if (!map || !visible) return [];
     const items: ProjectedItem[] = [];
     const projectPoint = (lat: number, lon: number) => {
@@ -140,7 +151,7 @@ export default function RouteEndpointsOverlay({
       }
     }
     return items;
-  }, [map, routes, customIcons, visible, overzoomScale, renderTick]);
+  }, [mapSnapshot, routes, customIcons, visible, overzoomScale]);
 
   const handlePointerDown = useCallback(
     (e: React.PointerEvent, item: ProjectedItem) => {

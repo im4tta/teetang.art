@@ -15,17 +15,30 @@ import RoutesSection from "@/components/ui/RoutesSection";
 import TypographySection from "@/components/ui/TypographySection";
 import DualCitySection from "@/components/ui/DualCitySection";
 import {
-  LocationIcon, ThemeIcon, LayoutIcon, LayersIcon, MarkersIcon, RouteIcon, StyleIcon,
-  ChevronDownIcon, GearIcon,
+  LocationIcon,
+  ThemeIcon,
+  LayoutIcon,
+  LayersIcon,
+  MarkersIcon,
+  RouteIcon,
+  StyleIcon,
+  ChevronDownIcon,
+  GearIcon,
 } from "@/components/ui/Icons";
 import { themeOptions, themeGroups } from "@/services/theme/themeRepository";
 import { layoutGroups } from "@/services/layout/layoutRepository";
 import { MIN_POSTER_CM, MAX_POSTER_CM, FONT_OPTIONS } from "@/services/config";
 import type { SearchResult } from "@/services/location/types";
 
-type SectionId = "app" | "location" | "theme" | "layout" | "dualCity" | "style" | "layers" | "markers" | "routes";
+type SectionId =
+  "app" | "location" | "theme" | "layout" | "dualCity" | "style" | "layers" | "markers" | "routes";
 
-const SECTIONS: { id: SectionId; labelKey: string; step: string; Icon: React.ComponentType<{ className?: string }> }[] = [
+const SECTIONS: {
+  id: SectionId;
+  labelKey: string;
+  step: string;
+  Icon: React.ComponentType<{ className?: string }>;
+}[] = [
   { id: "app", labelKey: "nav.settings", step: "00", Icon: GearIcon },
   { id: "location", labelKey: "location", step: "01", Icon: LocationIcon },
   { id: "theme", labelKey: "theme", step: "02", Icon: ThemeIcon },
@@ -37,18 +50,36 @@ const SECTIONS: { id: SectionId; labelKey: string; step: string; Icon: React.Com
   { id: "routes", labelKey: "showRoutes", step: "08", Icon: RouteIcon },
 ];
 
-export default function SettingsPanel({ mobileTab, desktopActivePanel }: { mobileTab?: MobileTab; desktopActivePanel?: string }) {
+export default function SettingsPanel({
+  mobileTab,
+  desktopActivePanel,
+}: {
+  mobileTab?: MobileTab;
+  desktopActivePanel?: string;
+}) {
   const { state, dispatch, mapRef, selectedTheme } = usePosterContext();
   const { t } = useI18n();
   const handlers = useFormHandlers();
-  const { locationSuggestions, isLocationSearching, searchNow } = useLocationAutocomplete(state.form.location, state.isLocationFocused);
+  const { locationSuggestions, isLocationSearching, searchNow } = useLocationAutocomplete(
+    state.form.location,
+    state.isLocationFocused,
+  );
   const { flyToLocation } = useMapSync(state, dispatch, mapRef);
-  const { handleUseCurrentLocation, isLocatingUser, locationPermissionMessage } = useCurrentLocation(flyToLocation);
+  const { handleUseCurrentLocation, isLocatingUser, locationPermissionMessage } =
+    useCurrentLocation(flyToLocation);
   const [isColorEditorActive, setIsColorEditorActive] = useState(false);
-  const [openSections, setOpenSections] = useState<Set<SectionId>>(new Set(["location", "theme", "layout", "dualCity", "style"]));
+  const [openSections, setOpenSections] = useState<Set<SectionId>>(
+    new Set(["location", "theme", "layout", "dualCity", "style"]),
+  );
 
   const showSuggestions = state.isLocationFocused && locationSuggestions.length > 0;
-  const toggle = (id: SectionId) => setOpenSections(prev => { const s = new Set(prev); s.has(id) ? s.delete(id) : s.add(id); return s; });
+  const toggle = (id: SectionId) =>
+    setOpenSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
 
   const onLocationSelect = (loc: SearchResult) => {
     handlers.handleLocationSelect(loc);
@@ -58,66 +89,130 @@ export default function SettingsPanel({ mobileTab, desktopActivePanel }: { mobil
 
   const renderSection = (id: SectionId) => {
     const c = { form: state.form, onChange: handlers.handleChange };
-    if (isColorEditorActive && ["location", "theme", "layout", "markers", "routes", "dualCity"].includes(id)) return null;
-    if (id === "app") return <AppSettingsSection form={state.form} onChange={handlers.handleChange} />;
-    if (id === "location") return (
-      <LocationSection {...c}
-        onLocationFocus={() => handlers.setLocationFocused(true)}
-        onLocationBlur={() => handlers.setLocationFocused(false)}
-        searchNow={searchNow}
-        showLocationSuggestions={showSuggestions}
-        locationSuggestions={locationSuggestions}
-        isLocationSearching={isLocationSearching}
-        onLocationSelect={onLocationSelect}
-        onClearLocation={handlers.handleClearLocation}
-        onUseCurrentLocation={handleUseCurrentLocation}
-        isLocatingUser={isLocatingUser}
-        locationPermissionMessage={locationPermissionMessage}
-      />
-    );
-    if (id === "theme" || id === "layout") return (
-      <MapSettingsSection
-        activeMobileTab={desktopActivePanel || id}
-        form={state.form} onChange={handlers.handleChange}
-        onNumericFieldBlur={handlers.handleNumericFieldBlur}
-        onThemeChange={handlers.handleThemeChange}
-        onLayoutChange={handlers.handleLayoutChange}
-        selectedTheme={selectedTheme}
-        themeOptions={themeOptions} themeGroups={themeGroups} layoutGroups={layoutGroups}
-        minPosterCm={MIN_POSTER_CM} maxPosterCm={MAX_POSTER_CM}
-        customColors={state.customColors}
-        onColorChange={handlers.handleColorChange}
-        onResetColors={handlers.handleResetColors}
-        onColorEditorActiveChange={setIsColorEditorActive}
-      />
-    );
-    if (id === "layers") return <LayersSection form={state.form} onChange={handlers.handleChange} minPosterCm={MIN_POSTER_CM} maxPosterCm={MAX_POSTER_CM} onNumericFieldBlur={handlers.handleNumericFieldBlur} />;
+    if (
+      isColorEditorActive &&
+      ["location", "theme", "layout", "markers", "routes", "dualCity"].includes(id)
+    )
+      return null;
+    if (id === "app")
+      return <AppSettingsSection form={state.form} onChange={handlers.handleChange} />;
+    if (id === "location")
+      return (
+        <LocationSection
+          {...c}
+          onLocationFocus={() => handlers.setLocationFocused(true)}
+          onLocationBlur={() => handlers.setLocationFocused(false)}
+          searchNow={searchNow}
+          showLocationSuggestions={showSuggestions}
+          locationSuggestions={locationSuggestions}
+          isLocationSearching={isLocationSearching}
+          onLocationSelect={onLocationSelect}
+          onClearLocation={handlers.handleClearLocation}
+          onUseCurrentLocation={handleUseCurrentLocation}
+          isLocatingUser={isLocatingUser}
+          locationPermissionMessage={locationPermissionMessage}
+        />
+      );
+    if (id === "theme" || id === "layout")
+      return (
+        <MapSettingsSection
+          activeMobileTab={desktopActivePanel || id}
+          form={state.form}
+          onChange={handlers.handleChange}
+          onNumericFieldBlur={handlers.handleNumericFieldBlur}
+          onThemeChange={handlers.handleThemeChange}
+          onLayoutChange={handlers.handleLayoutChange}
+          selectedTheme={selectedTheme}
+          themeOptions={themeOptions}
+          themeGroups={themeGroups}
+          layoutGroups={layoutGroups}
+          minPosterCm={MIN_POSTER_CM}
+          maxPosterCm={MAX_POSTER_CM}
+          customColors={state.customColors}
+          onColorChange={handlers.handleColorChange}
+          onResetColors={handlers.handleResetColors}
+          onColorEditorActiveChange={setIsColorEditorActive}
+        />
+      );
+    if (id === "layers")
+      return (
+        <LayersSection
+          form={state.form}
+          onChange={handlers.handleChange}
+          minPosterCm={MIN_POSTER_CM}
+          maxPosterCm={MAX_POSTER_CM}
+          onNumericFieldBlur={handlers.handleNumericFieldBlur}
+        />
+      );
     if (id === "markers") return <MarkersSection />;
     if (id === "routes") return <RoutesSection />;
-    if (id === "dualCity") return <DualCitySection form={state.form} onChange={handlers.handleChange} onTheme2Change={handlers.handleTheme2Change} />;
-    if (id === "style") return <TypographySection form={state.form} onChange={handlers.handleChange} fontOptions={FONT_OPTIONS} />;
+    if (id === "dualCity")
+      return (
+        <DualCitySection
+          form={state.form}
+          onChange={handlers.handleChange}
+          onTheme2Change={handlers.handleTheme2Change}
+        />
+      );
+    if (id === "style")
+      return (
+        <TypographySection
+          form={state.form}
+          onChange={handlers.handleChange}
+          fontOptions={FONT_OPTIONS}
+        />
+      );
     return null;
   };
 
   if (desktopActivePanel) {
-    const section = SECTIONS.find(s => s.id === desktopActivePanel);
+    const section = SECTIONS.find((s) => s.id === desktopActivePanel);
     if (!section) return null;
     return (
-      <form className="settings-panel settings-panel--desktop" onSubmit={e => e.preventDefault()}>
+      <form className="settings-panel settings-panel--desktop" onSubmit={(e) => e.preventDefault()}>
         <div className="panel-view" data-panel={desktopActivePanel}>
-          <div className="panel-hdr"><h2>{t(section.labelKey as any)}</h2></div>
+          <div className="panel-hdr">
+            <h2>{t(section.labelKey as any)}</h2>
+          </div>
           <div className="section">{renderSection(section.id)}</div>
         </div>
       </form>
     );
   }
 
-  const visibleSections = mobileTab ? SECTIONS.filter(s => s.id !== "app") : SECTIONS;
+  if (mobileTab) {
+    const sectionId: SectionId = mobileTab === "settings" ? "app" : mobileTab;
+    const section = SECTIONS.find((item) => item.id === sectionId);
+    if (!section) return null;
+    return (
+      <form
+        className="settings-panel settings-panel--mobile-focused"
+        onSubmit={(e) => e.preventDefault()}
+      >
+        <div className="panel-view" data-panel={mobileTab}>
+          <div className="panel-hdr">
+            <h2>{t(section.labelKey as any)}</h2>
+          </div>
+          <div className="section">{renderSection(section.id)}</div>
+        </div>
+        {!isColorEditorActive && state.error && <p className="error">{state.error}</p>}
+      </form>
+    );
+  }
+
   return (
-    <form className="settings-panel" onSubmit={e => e.preventDefault()}>
-      {visibleSections.map(s => (
-        <div key={s.id} className={`mobile-section mobile-section--${s.id} accordion-item${openSections.has(s.id) ? " accordion-item--open" : ""}`}>
-          <button type="button" className={`accordion-header${openSections.has(s.id) ? " is-open" : ""}`} onClick={() => toggle(s.id)} aria-expanded={openSections.has(s.id)}>
+    <form className="settings-panel" onSubmit={(e) => e.preventDefault()}>
+      {SECTIONS.map((s) => (
+        <div
+          key={s.id}
+          className={`mobile-section mobile-section--${s.id} accordion-item${openSections.has(s.id) ? " accordion-item--open" : ""}`}
+        >
+          <button
+            type="button"
+            className={`accordion-header${openSections.has(s.id) ? " is-open" : ""}`}
+            onClick={() => toggle(s.id)}
+            aria-expanded={openSections.has(s.id)}
+          >
             <span className="accordion-step-badge">{s.step}</span>
             <s.Icon className="accordion-icon" />
             <span className="accordion-label">{t(s.labelKey as any)}</span>
@@ -132,8 +227,15 @@ export default function SettingsPanel({ mobileTab, desktopActivePanel }: { mobil
       <div className="settings-credits">
         <p className="settings-credits-text">
           <strong>MapToPoster</strong> &mdash; Inspired by{" "}
-          <a href="https://github.com/originalankur/maptoposter" target="_blank" rel="noopener noreferrer">originalankur/maptoposter</a>.
-          This project is an independent implementation built with a different stack and architecture.
+          <a
+            href="https://github.com/originalankur/maptoposter"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            originalankur/maptoposter
+          </a>
+          . This project is an independent implementation built with a different stack and
+          architecture.
         </p>
       </div>
     </form>

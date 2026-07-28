@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from "react";
+import type { Map as MaplibreMap } from "maplibre-gl";
 import type { MarkerIconDefinition, MarkerItem } from "@/services/markers/types";
 import type { MapInstanceRef } from "@/services/map/types";
 import { findMarkerIcon } from "@/services/markers/iconRegistry";
@@ -85,7 +86,10 @@ export default function MarkerOverlay({
   onMarkerSizeChange,
   overzoomScale,
 }: MarkerOverlayProps) {
-  const [renderTick, setRenderTick] = useState(0);
+  const [mapSnapshot, setMapSnapshot] = useState<{
+    map: MaplibreMap;
+    revision: number;
+  } | null>(null);
   const overlayRef = useRef<HTMLDivElement | null>(null);
   const [draggingMarkerId, setDraggingMarkerId] = useState<string | null>(null);
   const [isTouchSelectionActive, setIsTouchSelectionActive] = useState(false);
@@ -95,34 +99,30 @@ export default function MarkerOverlay({
     startSize: number;
   } | null>(null);
 
-  const map = mapRef.current;
-  const projectedMarkers = useMemo(
-    () =>
-      map
-        ? markers.flatMap((marker) => {
-            const icon = findMarkerIcon(marker.iconId, customIcons);
-            if (!icon) {
-              return [];
-            }
-            try {
-              const point = map.project([marker.lon, marker.lat]);
-              return [
-                {
-                  marker,
-                  icon,
-                  x: point.x / overzoomScale,
-                  y: point.y / overzoomScale,
-                },
-              ];
-            } catch {
-              return [];
-            }
-          })
-        : [],
-    // renderTick drives recomputation when the map view changes
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [map, markers, customIcons, renderTick],
-  );
+  const projectedMarkers = useMemo(() => {
+    const map = mapSnapshot?.map;
+    return map
+      ? markers.flatMap((marker) => {
+          const icon = findMarkerIcon(marker.iconId, customIcons);
+          if (!icon) {
+            return [];
+          }
+          try {
+            const point = map.project([marker.lon, marker.lat]);
+            return [
+              {
+                marker,
+                icon,
+                x: point.x / overzoomScale,
+                y: point.y / overzoomScale,
+              },
+            ];
+          } catch {
+            return [];
+          }
+        })
+      : [];
+  }, [mapSnapshot, markers, customIcons, overzoomScale]);
 
   const updateMarkerByClientPoint = useCallback(
     (markerId: string, clientX: number, clientY: number) => {
@@ -153,7 +153,7 @@ export default function MarkerOverlay({
         // Ignore projection failures during drag.
       }
     },
-    [isMarkerEditMode, mapRef, onMarkerPositionChange],
+    [isMarkerEditMode, mapRef, onMarkerPositionChange, overzoomScale],
   );
 
   const nudgeMarkerByScreenDelta = useCallback(
@@ -186,7 +186,7 @@ export default function MarkerOverlay({
         // Ignore projection failures during keyboard nudging.
       }
     },
-    [isMarkerEditMode, mapRef, onMarkerPositionChange],
+    [isMarkerEditMode, mapRef, onMarkerPositionChange, overzoomScale],
   );
 
   const handleMarkerPointerDown = useCallback(
@@ -395,10 +395,13 @@ export default function MarkerOverlay({
     if (isMarkerEditMode) {
       return;
     }
-    setDraggingMarkerId(null);
-    onActiveMarkerChange?.(null);
-    setTouchResizeState(null);
-    setIsTouchSelectionActive(false);
+    const cleanupFrame = window.requestAnimationFrame(() => {
+      setDraggingMarkerId(null);
+      onActiveMarkerChange?.(null);
+      setTouchResizeState(null);
+      setIsTouchSelectionActive(false);
+    });
+    return () => window.cancelAnimationFrame(cleanupFrame);
   }, [isMarkerEditMode, onActiveMarkerChange]);
 
   useEffect(() => {
@@ -471,27 +474,31 @@ export default function MarkerOverlay({
   }, [activeMarkerId, isMarkerEditMode, markers, nudgeMarkerByScreenDelta, onMarkerSizeChange]);
 
   useEffect(() => {
-    const mapInst = mapRef.current;
-    if (!mapInst) {
+    const map = mapRef.current;
+    if (!map) {
       return;
     }
 
+    let revision = 0;
     const sync = () => {
-      setRenderTick((value) => value + 1);
+      revision += 1;
+      setMapSnapshot({ map, revision });
     };
+    const initialFrame = window.requestAnimationFrame(sync);
 
-    mapInst.on("move", sync);
-    mapInst.on("moveend", sync);
-    mapInst.on("rotate", sync);
-    mapInst.on("resize", sync);
-    mapInst.on("load", sync);
+    map.on("move", sync);
+    map.on("moveend", sync);
+    map.on("rotate", sync);
+    map.on("resize", sync);
+    map.on("load", sync);
 
     return () => {
-      mapInst.off("move", sync);
-      mapInst.off("moveend", sync);
-      mapInst.off("rotate", sync);
-      mapInst.off("resize", sync);
-      mapInst.off("load", sync);
+      window.cancelAnimationFrame(initialFrame);
+      map.off("move", sync);
+      map.off("moveend", sync);
+      map.off("rotate", sync);
+      map.off("resize", sync);
+      map.off("load", sync);
     };
   }, [mapRef]);
 

@@ -12,8 +12,7 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier --write .",
-    "format:check": "prettier --check .",
-    "showcase:grid": "node scripts/combine-showcase-grid.mjs"
+    "format:check": "prettier --check ."
   },
   "dependencies": {
     "@fontsource/dm-sans": "^5.2.8",

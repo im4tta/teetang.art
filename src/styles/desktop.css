@@ -1868,3 +1868,168 @@
 .desktop-layout-label {
   display: none;
 }
+
+/* Collision-safe creator layout and compact desktop navigation */
+@media (min-width: 769px) and (hover: hover) and (pointer: fine) {
+  .desktop-top-bar-main,
+  .desktop-top-bar-nav,
+  .desktop-top-bar-right,
+  .desktop-top-search {
+    min-width: 0;
+  }
+
+  .desktop-top-bar-brand {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .desktop-top-bar-nav {
+    flex: 0 1 auto;
+  }
+
+  .desktop-top-search {
+    width: clamp(150px, 17vw, 220px);
+  }
+
+  .desktop-user-guide-panel,
+  .desktop-user-guide {
+    max-height: calc(100dvh - 80px);
+  }
+
+  .desktop-user-guide {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .desktop-user-guide__header {
+    flex: 0 0 auto;
+  }
+
+  .desktop-user-guide__content {
+    min-height: 0;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+
+  .desktop-user-guide__item > div:last-child {
+    min-width: 0;
+  }
+
+  .desktop-user-guide__item-title,
+  .desktop-user-guide__item-desc {
+    overflow-wrap: anywhere;
+  }
+
+  .app-shell > .preview-panel {
+    --poster-frame-margin-bottom: 120px;
+  }
+
+  .app-shell > .preview-panel .poster-viewport {
+    box-sizing: border-box;
+    padding: 0 24px 0 284px;
+    transition: padding 180ms ease;
+  }
+
+  .app-shell[data-desktop-panel-open="true"] > .preview-panel .poster-viewport {
+    padding-right: 304px;
+  }
+
+  .app-shell > .preview-panel > .map-controls {
+    left: 284px;
+    right: 24px;
+    width: auto;
+    max-width: none;
+    transform: none;
+    justify-content: center;
+    white-space: normal;
+    transition: right 180ms ease;
+  }
+
+  .app-shell[data-desktop-panel-open="true"] > .preview-panel > .map-controls {
+    right: 304px;
+  }
+
+  .app-shell > .preview-panel > .map-controls .map-control-group {
+    max-width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1400px) and (hover: hover) and (pointer: fine) {
+  .desktop-top-bar {
+    padding-inline: 12px;
+  }
+
+  .desktop-top-bar-main {
+    gap: 6px;
+  }
+
+  .desktop-top-bar-nav {
+    gap: 2px;
+    padding: 3px;
+  }
+
+  .desktop-top-tab {
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    justify-content: center;
+  }
+
+  .desktop-top-tab > span {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border: 0;
+  }
+
+  .desktop-top-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .desktop-top-bar-right {
+    gap: 6px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 1180px) and (hover: hover) and (pointer: fine) {
+  .desktop-user-guide-panel {
+    display: none;
+  }
+
+  .app-shell > .preview-panel .poster-viewport {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .app-shell[data-desktop-panel-open="true"] > .preview-panel .poster-viewport {
+    padding-right: 300px;
+  }
+
+  .app-shell > .preview-panel > .map-controls {
+    left: 16px;
+    right: 16px;
+  }
+
+  .app-shell[data-desktop-panel-open="true"] > .preview-panel > .map-controls {
+    right: 300px;
+  }
+}
+
+@media (min-width: 769px) and (max-width: 900px) and (hover: hover) and (pointer: fine) {
+  .desktop-top-bar-title {
+    display: none;
+  }
+
+  .desktop-top-search {
+    width: clamp(120px, 20vw, 160px);
+  }
+}

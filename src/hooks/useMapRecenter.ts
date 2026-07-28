@@ -1,8 +1,13 @@
-import { useCallback } from "react";
 import type { MapInstanceRef } from "@/services/map/types";
 import type { SearchResult } from "@/services/location/types";
 import { reverseGeocodeCoordinates } from "@/services/container";
-import { DEFAULT_DISTANCE_METERS, DEFAULT_LAT, DEFAULT_LON, DEFAULT_CITY, DEFAULT_COUNTRY } from "@/services/config";
+import {
+  DEFAULT_DISTANCE_METERS,
+  DEFAULT_LAT,
+  DEFAULT_LON,
+  DEFAULT_CITY,
+  DEFAULT_COUNTRY,
+} from "@/services/config";
 import type { PosterAction } from "@/context/posterReducer";
 
 const DEFAULT_LOCATION_LABEL = "Phnom Penh, Cambodia";
@@ -32,17 +37,19 @@ export function useMapRecenter({
   dispatch,
   onBearingReset,
 }: UseMapRecenterOptions) {
-  const handleRecenter = useCallback(() => {
+  function handleRecenter() {
     const map = mapRef.current;
     if (!map) return;
 
     if (isDualCity) {
       const m2 = mapRef2?.current;
-      if (m2) m2.stop(), m2.jumpTo({ center: mapCenter2, zoom: mapZoom2, bearing: 0, pitch: 0 });
+      if (m2) {
+        m2.stop();
+        m2.jumpTo({ center: mapCenter2, zoom: mapZoom2, bearing: 0, pitch: 0 });
+      }
     }
 
-    const target =
-      selectedLocation ||
+    const target = selectedLocation ||
       userLocation || {
         id: "fallback",
         label: DEFAULT_LOCATION_LABEL,
@@ -91,7 +98,7 @@ export function useMapRecenter({
       fields: buildFields(DEFAULT_CITY, DEFAULT_COUNTRY, "Asia", label, shortLabel),
     });
 
-    void reverseGeocodeCoordinates(target.lat, target.lon).then(r => {
+    void reverseGeocodeCoordinates(target.lat, target.lon).then((r) => {
       dispatch({ type: "SET_USER_LOCATION", location: r });
       const rc = String(r.city ?? "").trim() || DEFAULT_CITY;
       const rs = String((r as any).shortLabel ?? "").trim();
@@ -107,10 +114,7 @@ export function useMapRecenter({
         },
       });
     });
-  }, [
-    mapRef, mapRef2, isDualCity, mapCenter2, mapZoom2,
-    selectedLocation, userLocation, dispatch, onBearingReset,
-  ]);
+  }
 
   return { handleRecenter };
 }

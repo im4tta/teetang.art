@@ -55,22 +55,15 @@ function writeCachedStars(apiUrl: string, stars: number): void {
 }
 
 export function useRepoStars(repoApiUrl: string): UseRepoStarsReturn {
-  const [repoStars, setRepoStars] = useState<number | null>(null);
-  const [repoStarsLoading, setRepoStarsLoading] = useState(true);
+  const finalUrl = normalizeToApiUrl(repoApiUrl);
+  const cachedStars = finalUrl ? readCachedStars(finalUrl) : null;
+  const [completedRequest, setCompletedRequest] = useState<{
+    url: string;
+    stars: number | null;
+  } | null>(null);
 
   useEffect(() => {
-    const finalUrl = normalizeToApiUrl(repoApiUrl);
-    if (!finalUrl) {
-      setRepoStars(null);
-      setRepoStarsLoading(false);
-      return undefined;
-    }
-
-    const cachedStars = readCachedStars(finalUrl);
-    if (cachedStars !== null) {
-      setRepoStars(cachedStars);
-      setRepoStarsLoading(false);
-    }
+    if (!finalUrl) return;
 
     let cancelled = false;
 
@@ -108,22 +101,9 @@ export function useRepoStars(repoApiUrl: string): UseRepoStarsReturn {
         inFlightRequests.set(finalUrl, request);
       }
 
-      try {
-        if (cachedStars === null) {
-          setRepoStarsLoading(true);
-        }
-        const stars = await request;
-        if (!cancelled && stars !== null) {
-          setRepoStars(stars);
-        }
-      } catch {
-        if (!cancelled) {
-          setRepoStars(null);
-        }
-      } finally {
-        if (!cancelled) {
-          setRepoStarsLoading(false);
-        }
+      const stars = await request;
+      if (!cancelled) {
+        setCompletedRequest({ url: finalUrl, stars });
       }
     }
 
@@ -132,7 +112,16 @@ export function useRepoStars(repoApiUrl: string): UseRepoStarsReturn {
     return () => {
       cancelled = true;
     };
-  }, [repoApiUrl]);
+  }, [finalUrl]);
 
-  return { repoStars, repoStarsLoading };
+  if (!finalUrl) {
+    return { repoStars: null, repoStarsLoading: false };
+  }
+
+  const completedStars = completedRequest?.url === finalUrl ? completedRequest.stars : null;
+  const requestCompleted = completedRequest?.url === finalUrl;
+  return {
+    repoStars: completedStars ?? cachedStars,
+    repoStarsLoading: cachedStars === null && !requestCompleted,
+  };
 }

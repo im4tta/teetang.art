@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { Link } from "react-router-dom";
+import { REPO_URL } from "@/services/config";
 import {
   Sparkles,
   MapPin,
@@ -12,70 +13,116 @@ import {
   QrCode,
   ArrowRight,
   Zap,
+  Menu,
+  X,
 } from "lucide-react";
-import "@/styles/home-page.css";
 
 const provincesData = [
-  { kh: "ភ្នំពេញ", en: "Phnom Penh", lat: 11.5564, lng: 104.9282 },
-  { kh: "សៀមរាប", en: "Siem Reap", lat: 13.3633, lng: 103.857 },
-  { kh: "បាត់ដំបង", en: "Battambang", lat: 13.0957, lng: 103.2022 },
-  { kh: "កំពត", en: "Kampot", lat: 10.5942, lng: 104.164 },
-  { kh: "កែប", en: "Kep", lat: 10.4829, lng: 104.3167 },
-  { kh: "ព្រះសីហនុ", en: "Preah Sihanouk", lat: 10.6253, lng: 103.5234 },
-  { kh: "កំពង់ចាម", en: "Kampong Cham", lat: 11.9934, lng: 105.4635 },
-  { kh: "តាកែវ", en: "Takeo", lat: 10.9902, lng: 104.785 },
-  { kh: "មណ្ឌលគីរី", en: "Mondulkiri", lat: 12.4558, lng: 107.1895 },
-  { kh: "រតនគីរី", en: "Ratanakiri", lat: 13.7396, lng: 106.9873 },
-  { kh: "កំពង់ធំ", en: "Kampong Thom", lat: 12.6986, lng: 104.8885 },
-  { kh: "កណ្ដាល", en: "Kandal", lat: 11.4822, lng: 104.9482 },
-  { kh: "កំពង់ឆ្នាំង", en: "Kampong Chhnang", lat: 12.25, lng: 104.6667 },
-  { kh: "កំពង់ស្ពឺ", en: "Kampong Speu", lat: 11.4533, lng: 104.5208 },
-  { kh: "កោះកុង", en: "Koh Kong", lat: 11.6152, lng: 102.9838 },
-  { kh: "ក្រចេះ", en: "Kratie", lat: 12.4881, lng: 106.0187 },
-  { kh: "ព្រៃវែង", en: "Prey Veng", lat: 11.4868, lng: 105.3253 },
-  { kh: "ពោធិ៍សាត់", en: "Pursat", lat: 12.5333, lng: 103.9167 },
-  { kh: "ស្ទឹងត្រែង", en: "Stung Treng", lat: 13.5259, lng: 105.9683 },
-  { kh: "ស្វាយរៀង", en: "Svay Rieng", lat: 11.0878, lng: 105.7991 },
-  { kh: "បន្ទាយមានជ័យ", en: "Banteay Meanchey", lat: 13.5852, lng: 102.9737 },
-  { kh: "ឧត្តរមានជ័យ", en: "Oddar Meanchey", lat: 14.1751, lng: 103.5134 },
-  { kh: "ព្រះវិហារ", en: "Preah Vihear", lat: 13.8073, lng: 104.9804 },
-  { kh: "ប៉ៃលិន", en: "Pailin", lat: 12.8489, lng: 102.6093 },
-  { kh: "ត្បូងឃ្មុំ", en: "Tbong Khmum", lat: 11.9333, lng: 105.65 },
+  { kh: "ភ្នំពេញ", en: "Phnom Penh" },
+  { kh: "សៀមរាប", en: "Siem Reap" },
+  { kh: "បាត់ដំបង", en: "Battambang" },
+  { kh: "កំពត", en: "Kampot" },
+  { kh: "កែប", en: "Kep" },
+  { kh: "ព្រះសីហនុ", en: "Preah Sihanouk" },
+  { kh: "កំពង់ចាម", en: "Kampong Cham" },
+  { kh: "តាកែវ", en: "Takeo" },
+  { kh: "មណ្ឌលគីរី", en: "Mondulkiri" },
+  { kh: "រតនគីរី", en: "Ratanakiri" },
+  { kh: "កំពង់ធំ", en: "Kampong Thom" },
+  { kh: "កណ្ដាល", en: "Kandal" },
+  { kh: "កំពង់ឆ្នាំង", en: "Kampong Chhnang" },
+  { kh: "កំពង់ស្ពឺ", en: "Kampong Speu" },
+  { kh: "កោះកុង", en: "Koh Kong" },
+  { kh: "ក្រចេះ", en: "Kratie" },
+  { kh: "ព្រៃវែង", en: "Prey Veng" },
+  { kh: "ពោធិ៍សាត់", en: "Pursat" },
+  { kh: "ស្ទឹងត្រែង", en: "Stung Treng" },
+  { kh: "ស្វាយរៀង", en: "Svay Rieng" },
+  { kh: "បន្ទាយមានជ័យ", en: "Banteay Meanchey" },
+  { kh: "ឧត្តរមានជ័យ", en: "Oddar Meanchey" },
+  { kh: "ព្រះវិហារ", en: "Preah Vihear" },
+  { kh: "ប៉ៃលិន", en: "Pailin" },
+  { kh: "ត្បូងឃ្មុំ", en: "Tbong Khmum" },
 ];
 
 function CarouselFeatured() {
   const cards = [
-    { icon: MapIcon, title: "Live Editor", kh: "ផ្ទាំងរចនាបែបងាយស្រួល", desc: "អ្នកអាចប្តូរឈ្មោះខេត្ត ប្តូរចំណងជើងជាភាសាខ្មែរ ឬអង់គ្លេស និងផ្លាស់ប្តូរទម្រង់ស៊ុមបានភ្លាមៗដោយគ្មានការពិបាក។" },
-    { icon: Languages, title: "Full Khmer Typography", kh: "គាំទ្រអក្សរខ្មែរ", desc: "មានពុម្ពអក្សរខ្មែរស្អាតៗ និងត្រឹមត្រូវតាមបែបបទខ្មែរ សម្រាប់បង្ហាញឈ្មោះខេត្ត និងចំណងជើងផ្សេងៗយ៉ាងស្រស់បំព្រង។" },
-    { icon: QrCode, title: "Integrated QR Code", kh: "ភ្ជាប់ QR កូដងាយៗ", desc: "អាចបន្ថែមរូបសញ្ញា QR Code ភ្ជាប់ទៅកាន់ផែនទីពិតប្រាកដ ដើម្បីបង្ហាញភ្ញៀវ ឬមិត្តភក្តិឱ្យរកទីតាំងឃើញលឿនរហ័ស។" },
+    {
+      icon: MapIcon,
+      title: "Live Editor",
+      kh: "ផ្ទាំងរចនាបែបងាយស្រួល",
+      desc: "អ្នកអាចប្តូរឈ្មោះខេត្ត ប្តូរចំណងជើងជាភាសាខ្មែរ ឬអង់គ្លេស និងផ្លាស់ប្តូរទម្រង់ស៊ុមបានភ្លាមៗដោយគ្មានការពិបាក។",
+    },
+    {
+      icon: Languages,
+      title: "Full Khmer Typography",
+      kh: "គាំទ្រអក្សរខ្មែរ",
+      desc: "មានពុម្ពអក្សរខ្មែរស្អាតៗ និងត្រឹមត្រូវតាមបែបបទខ្មែរ សម្រាប់បង្ហាញឈ្មោះខេត្ត និងចំណងជើងផ្សេងៗយ៉ាងស្រស់បំព្រង។",
+    },
+    {
+      icon: QrCode,
+      title: "Integrated QR Code",
+      kh: "ភ្ជាប់ QR កូដងាយៗ",
+      desc: "អាចបន្ថែមរូបសញ្ញា QR Code ភ្ជាប់ទៅកាន់ផែនទីពិតប្រាកដ ដើម្បីបង្ហាញភ្ញៀវ ឬមិត្តភក្តិឱ្យរកទីតាំងឃើញលឿនរហ័ស។",
+    },
   ];
   const [idx, setIdx] = useState(0);
-  const timerRef = useRef<ReturnType<typeof setInterval> | undefined>(undefined);
+  const [isPaused, setIsPaused] = useState(false);
 
   useEffect(() => {
-    timerRef.current = setInterval(() => setIdx(p => (p + 1) % cards.length), 4000);
-    return () => clearInterval(timerRef.current);
-  }, [cards.length]);
-
+    if (isPaused || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    const timer = window.setInterval(() => setIdx((current) => (current + 1) % cards.length), 5000);
+    return () => window.clearInterval(timer);
+  }, [cards.length, isPaused]);
 
   return (
-    <div className="home-carousel">
+    <div
+      className="home-carousel"
+      role="region"
+      aria-roledescription="carousel"
+      aria-label="Creator features"
+      onMouseEnter={() => setIsPaused(true)}
+      onMouseLeave={() => setIsPaused(false)}
+      onFocusCapture={() => setIsPaused(true)}
+      onBlurCapture={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget)) setIsPaused(false);
+      }}
+    >
       <div className="home-carousel-track" style={{ transform: `translateX(-${idx * 100}%)` }}>
         {cards.map((card, i) => {
           const IC = card.icon;
           return (
-            <div key={i} className="home-carousel-card">
-              <div className="home-carousel-icon-box"><IC size={22} /></div>
-              <h3 className="home-carousel-title">{card.title} <span>{card.kh}</span></h3>
+            <div key={i} className="home-carousel-card" aria-hidden={i !== idx}>
+              <div className="home-carousel-icon-box">
+                <IC size={22} />
+              </div>
+              <h3 className="home-carousel-title">
+                {card.title} <span>{card.kh}</span>
+              </h3>
               <p className="home-carousel-desc">{card.desc}</p>
             </div>
           );
         })}
       </div>
-      <div className="home-carousel-dots">
-        {cards.map((_, i) => (
-          <button key={i} className={`home-carousel-dot${i === idx ? " active" : ""}`} onClick={() => setIdx(i)} />
+      <div className="home-carousel-dots" aria-label="Choose a feature">
+        {cards.map((card, i) => (
+          <button
+            key={card.title}
+            type="button"
+            className={`home-carousel-dot${i === idx ? " active" : ""}`}
+            onClick={() => setIdx(i)}
+            aria-label={`Show ${card.title}`}
+            aria-current={i === idx ? "true" : undefined}
+          />
         ))}
+        <button
+          type="button"
+          className="home-carousel-toggle"
+          onClick={() => setIsPaused((paused) => !paused)}
+          aria-label={isPaused ? "Play carousel" : "Pause carousel"}
+        >
+          {isPaused ? "Play" : "Pause"}
+        </button>
       </div>
     </div>
   );
@@ -83,34 +130,49 @@ function CarouselFeatured() {
 
 export default function HomePage() {
   const [isDark, setIsDark] = useState(true);
+  const [isNavOpen, setIsNavOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
-  const [activeProvince, setActiveProvince] = useState(provincesData[0]);
+  const toastTimerRef = useRef<number | null>(null);
+  const navRef = useRef<HTMLElement>(null);
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
-    const root = document.documentElement;
-    if (isDark) {
-      root.classList.remove("light-theme");
-      document.body.classList.remove("light-theme");
-    } else {
-      root.classList.add("light-theme");
-      document.body.classList.add("light-theme");
-    }
-  }, [isDark]);
+    return () => {
+      if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isNavOpen) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      setIsNavOpen(false);
+      menuButtonRef.current?.focus();
+    };
+    const handlePointerDown = (event: PointerEvent) => {
+      if (!navRef.current?.contains(event.target as Node)) setIsNavOpen(false);
+    };
+    document.addEventListener("keydown", handleKeyDown);
+    document.addEventListener("pointerdown", handlePointerDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.removeEventListener("pointerdown", handlePointerDown);
+    };
+  }, [isNavOpen]);
 
   const triggerToast = (msg: string) => {
+    if (toastTimerRef.current !== null) window.clearTimeout(toastTimerRef.current);
     setToast(msg);
-    setTimeout(() => setToast(null), 2500);
+    toastTimerRef.current = window.setTimeout(() => {
+      setToast(null);
+      toastTimerRef.current = null;
+    }, 2500);
   };
 
   const handleThemeToggle = () => {
     const next = !isDark;
     setIsDark(next);
     triggerToast(`ប្តូរទៅកាន់ស្ទីល ${next ? "ងងឹត (Dark Mode)" : "ភ្លឺ (Light Mode)"}`);
-  };
-
-  const handleProvinceSelect = (prov: (typeof provincesData)[0]) => {
-    setActiveProvince(prov);
-    triggerToast(`បានផ្លាស់ប្តូរទីតាំងទៅកាន់ខេត្ត ${prov.kh}`);
   };
 
   // Scroll-triggered reveal animations
@@ -133,10 +195,10 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="home-page">
+    <div className={`home-page${isDark ? "" : " light-theme"}`}>
       {/* Toast */}
       {toast && (
-        <div className="home-toast" id="toast-notification">
+        <div className="home-toast" id="toast-notification" role="status" aria-live="polite">
           <Sparkles className="home-toast-icon" />
           <span>{toast}</span>
         </div>
@@ -146,9 +208,9 @@ export default function HomePage() {
       <div className="home-vertical-tag">The Land of Smiles • កម្ពុជា</div>
 
       {/* Navigation */}
-      <nav className="home-nav">
+      <nav ref={navRef} className="home-nav" aria-label="Main navigation">
         <div className="container home-nav-container">
-          <a href="#" className="home-logo-area">
+          <Link to="/" className="home-logo-area" aria-label="TeeTang Art home">
             <div className="home-logo-icon">
               <MapPin size={20} />
             </div>
@@ -156,29 +218,41 @@ export default function HomePage() {
               TEE<span style={{ color: "var(--home-color-gold)" }}>TANG</span>.ART
               <span className="home-logo-kh">ទីតាំង</span>
             </span>
-          </a>
+          </Link>
 
-          <div className="home-nav-menu">
-            <a href="#studio" className="home-nav-item">
+          <button
+            ref={menuButtonRef}
+            type="button"
+            className="home-mobile-menu-btn"
+            onClick={() => setIsNavOpen((open) => !open)}
+            aria-expanded={isNavOpen}
+            aria-controls="home-navigation"
+            aria-label={isNavOpen ? "Close navigation" : "Open navigation"}
+          >
+            {isNavOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+
+          <div id="home-navigation" className={`home-nav-menu${isNavOpen ? " is-open" : ""}`}>
+            <a href="#studio" className="home-nav-item" onClick={() => setIsNavOpen(false)}>
               សាកល្បងរចនា
             </a>
-            <a href="#features" className="home-nav-item">
+            <a href="#features" className="home-nav-item" onClick={() => setIsNavOpen(false)}>
               មុខងារពិសេស
             </a>
-            <a href="#usecases" className="home-nav-item">
+            <a href="#usecases" className="home-nav-item" onClick={() => setIsNavOpen(false)}>
               អត្ថប្រយោជន៍
             </a>
             <button
               type="button"
               className="home-theme-toggle"
               onClick={handleThemeToggle}
-              aria-label="Toggle Theme"
+              aria-label={isDark ? "Use light theme" : "Use dark theme"}
             >
               {isDark ? <Sun size={18} /> : <Moon size={18} />}
             </button>
-            <a href="https://teetang.art" className="home-cta-button">
+            <Link to="/create" className="home-cta-button" onClick={() => setIsNavOpen(false)}>
               <Sparkles size={16} /> បង្កើតផែនទីឥឡូវនេះ
-            </a>
+            </Link>
           </div>
         </div>
       </nav>
@@ -203,11 +277,11 @@ export default function HomePage() {
           </p>
 
           <div className="home-hero-actions">
-            <a href="https://www.teetang.art/create" className="home-btn home-btn-primary">
+            <Link to="/create" className="home-btn home-btn-primary">
               <MousePointer2 size={20} /> សាកល្បងរចនាឥឡូវនេះ
-            </a>
+            </Link>
             <a
-              href="https://github.com/im4tta/teetang.art"
+              href={REPO_URL}
               target="_blank"
               rel="noreferrer"
               className="home-btn home-btn-secondary"
@@ -386,9 +460,19 @@ export default function HomePage() {
           >
             {[
               { label: "ភ្នំពេញ ស្ទីល Copper", city: "Phnom Penh", theme: "copper", icon: MapPin },
-              { label: "ភ្នំពេញ & បារីស ស្ទីល Ruby", city: "Phnom Penh", theme: "ruby", icon: Sparkles },
+              {
+                label: "ភ្នំពេញ & បារីស ស្ទីល Ruby",
+                city: "Phnom Penh",
+                theme: "ruby",
+                icon: Sparkles,
+              },
               { label: "កំពត ស្ទីល Ink", city: "Kampot", theme: "japanese-ink", icon: Zap },
-              { label: "ភ្នំពេញ&ប៉ារីស ស្ទីល Tonle Sap", city: "Phnom Penh", theme: "tonle_sap", icon: MapPin },
+              {
+                label: "ភ្នំពេញ&ប៉ារីស ស្ទីល Tonle Sap",
+                city: "Phnom Penh",
+                theme: "tonle_sap",
+                icon: MapPin,
+              },
             ].map((quick, i) => {
               const Icon = quick.icon;
               return (
@@ -548,20 +632,21 @@ export default function HomePage() {
             <span className="home-section-tag">Kingdom Of Wonder</span>
             <h2 className="home-section-h">គ្រប់ដីខ្មែរ គ្រប់រឿងរ៉ាវ</h2>
             <p className="home-section-sub">
-              ចុចលើឈ្មោះខេត្ត-ក្រុងរបស់អ្នក ដើម្បីផ្លាស់ប្តូរការរចនាផែនទីគំរូខាងលើភ្លាមៗ៖
+              ជ្រើសរើសខេត្ត-ក្រុងរបស់អ្នក ហើយចាប់ផ្តើមរចនាផែនទីដែលបានកំណត់ទីតាំងរួចជាស្រេច៖
             </p>
           </div>
 
           <div className="home-provinces-container">
-            {provincesData.map((prov, i) => (
-              <button
-                key={i}
-                type="button"
-                onClick={() => handleProvinceSelect(prov)}
-                className={`home-province-chip ${activeProvince.kh === prov.kh ? "active" : ""}`}
+            {provincesData.map((prov) => (
+              <Link
+                key={prov.en}
+                to={`/create?city=${encodeURIComponent(prov.en)}`}
+                className="home-province-chip"
+                aria-label={`Create a map for ${prov.en}`}
               >
                 {prov.kh}
-              </button>
+                <ArrowRight size={13} aria-hidden="true" />
+              </Link>
             ))}
           </div>
         </div>
@@ -577,17 +662,16 @@ export default function HomePage() {
           </p>
           <div style={{ display: "flex", justifyContent: "center", flexWrap: "wrap", gap: 16 }}>
             <a
-              href="https://github.com/im4tta/teetang.art"
+              href={REPO_URL}
               target="_blank"
               rel="noreferrer"
-              className="home-btn"
-              style={{ background: "#333", color: "#fff", border: "none" }}
+              className="home-btn home-btn-github"
             >
               <ExternalLink size={20} /> ចូលទៅកាន់ GitHub Repository
             </a>
-            <a href="https://teetang.art" className="home-btn home-btn-primary">
-              <Sparkles size={20} /> ចូលរួមប្រើប្រាស់វេបសាយដើម
-            </a>
+            <Link to="/create" className="home-btn home-btn-primary">
+              <Sparkles size={20} /> ចាប់ផ្តើមរចនាឥឡូវនេះ
+            </Link>
           </div>
         </div>
       </section>
@@ -598,7 +682,7 @@ export default function HomePage() {
           <div className="home-footer-left">
             រៀបចំឡើងដោយក្តីស្រឡាញ់ពីប្រទេសកម្ពុជា · <a href="https://teetang.art">teetang.art</a> ·
             MIT License ·{" "}
-            <a href="https://github.com/im4tta/teetang.art" target="_blank" rel="noreferrer">
+            <a href={REPO_URL} target="_blank" rel="noreferrer">
               GitHub
             </a>
           </div>
@@ -614,7 +698,19 @@ export default function HomePage() {
         onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
         aria-label="Go to top"
       >
-        <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m18 15-6-6-6 6"/></svg>
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="20"
+          height="20"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth="2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        >
+          <path d="m18 15-6-6-6 6" />
+        </svg>
       </button>
     </div>
   );

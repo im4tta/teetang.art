@@ -12,7 +12,6 @@ export { FaRedditAlien as RedditIcon } from "react-icons/fa";
 export { FaYoutube as YouTubeIcon } from "react-icons/fa";
 export { FaThreads as ThreadsIcon } from "react-icons/fa6";
 export { FaCheck as CheckIcon } from "react-icons/fa";
-export { SiKofi as KofiIcon } from "react-icons/si";
 export { FiDownload as DownloadIcon } from "react-icons/fi";
 export { FiLoader as LoaderIcon } from "react-icons/fi";
 export { FaEdit as EditIcon } from "react-icons/fa";

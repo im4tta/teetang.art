@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useExport } from "@/hooks/useExport";
 import type { ExportFormat } from "@/services/export/types";
 import { CloseIcon, DownloadIcon, LoaderIcon } from "@/components/ui/Icons";
@@ -23,17 +23,62 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
   const { isExporting, exportPoster } = useExport();
   const [isOpen, setIsOpen] = useState(false);
   const [activeFormat, setActiveFormat] = useState<ExportFormat | null>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const modalRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+  const exportingRef = useRef(false);
 
   useEffect(() => {
-    if (!isExporting && activeFormat) {
+    exportingRef.current = isExporting;
+  }, [isExporting]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    const triggerElement = triggerRef.current;
+    document.body.style.overflow = "hidden";
+    closeRef.current?.focus();
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape" && !exportingRef.current) {
+        event.preventDefault();
+        setIsOpen(false);
+        return;
+      }
+      if (event.key !== "Tab" || !modalRef.current) return;
+      const focusable = Array.from(
+        modalRef.current.querySelectorAll<HTMLElement>(
+          "button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])",
+        ),
+      );
+      if (!focusable.length) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => {
+      document.removeEventListener("keydown", handleKeyDown);
+      document.body.style.overflow = previousOverflow;
+      triggerElement?.focus();
+    };
+  }, [isOpen]);
+
+  const runExport = async (format: ExportFormat) => {
+    setActiveFormat(format);
+    try {
+      await exportPoster(format);
+    } finally {
       setActiveFormat(null);
       setIsOpen(false);
     }
-  }, [isExporting, activeFormat]);
-
-  const runExport = (format: ExportFormat) => {
-    setActiveFormat(format);
-    void exportPoster(format);
   };
 
   const handleShare = async (platform: string) => {
@@ -93,6 +138,7 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
   return (
     <>
       <button
+        ref={triggerRef}
         type="button"
         className={triggerClass}
         aria-label={t("export.exportPoster")}
@@ -110,6 +156,7 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
           onClick={() => !isExporting && setIsOpen(false)}
         >
           <div
+            ref={modalRef}
             className="export-modal"
             role="dialog"
             aria-modal="true"
@@ -119,6 +166,7 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
             <div className="export-modal-header">
               <h3 id="export-modal-title">{t("export.downloadPoster")}</h3>
               <button
+                ref={closeRef}
                 type="button"
                 className="export-modal-close"
                 onClick={() => !isExporting && setIsOpen(false)}
@@ -150,35 +198,20 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
               })}
             </div>
 
-            <div style={{ padding: "0 16px 12px" }}>
-              <p
-                style={{
-                  fontSize: "0.7rem",
-                  color: "#94A3B8",
-                  margin: "0 0 8px",
-                  textAlign: "center",
-                }}
-              >
-                Share
-              </p>
-              <div style={{ display: "flex", gap: 8, justifyContent: "center", flexWrap: "wrap" }}>
+            <div className="export-modal-share">
+              <p className="export-modal-share-label">{t("export.share")}</p>
+              <div className="export-modal-share-actions">
                 {[
-                  { id: "share", label: "Share" },
+                  { id: "share", label: t("export.share") },
                   { id: "facebook", label: "Facebook" },
                   { id: "twitter", label: "X / Twitter" },
                   { id: "telegram", label: "Telegram" },
-                  { id: "copy", label: "Copy link" },
+                  { id: "copy", label: t("export.copyLink") },
                 ].map((btn) => (
                   <button
                     key={btn.id}
                     type="button"
-                    className="general-header-text-btn"
-                    style={{
-                      flex: "1 1 auto",
-                      minWidth: 80,
-                      justifyContent: "center",
-                      fontSize: "0.65rem",
-                    }}
+                    className="general-header-text-btn export-modal-share-btn"
                     onClick={() => void handleShare(btn.id)}
                   >
                     {btn.label}

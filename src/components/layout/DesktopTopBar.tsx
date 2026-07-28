@@ -1,4 +1,4 @@
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { MapPin } from "lucide-react";
 import { InfoIcon } from "@/components/ui/Icons";
 import {
@@ -40,19 +40,15 @@ export default function DesktopTopBar({
   onTabChange,
   onAboutOpen,
 }: DesktopTopBarProps) {
-  const navigate = useNavigate();
   const { lang, toggleLang, t } = useI18n();
 
   return (
     <header className="desktop-top-bar">
       <div className="desktop-top-bar-main">
         <div className="desktop-top-bar-left">
-          <div
-            className="desktop-top-bar-brand"
-            style={{ cursor: "pointer" }}
-            onClick={() => navigate("/")}
-          >
+          <Link className="desktop-top-bar-brand" to="/" aria-label="TeeTang Art home">
             <div
+              className="desktop-top-bar-logo"
               style={{
                 width: 32,
                 height: 32,
@@ -79,7 +75,7 @@ export default function DesktopTopBar({
             >
               TEE<span style={{ color: "#D4AF37" }}>TANG</span>.ART
             </h1>
-          </div>
+          </Link>
         </div>
 
         <nav className="desktop-top-bar-nav" aria-label={t("nav.settings")}>
@@ -93,7 +89,8 @@ export default function DesktopTopBar({
                 onClick={() => onTabChange(id)}
                 title={label}
                 aria-label={label}
-                aria-current={panelOpen && activeTab === id ? "page" : undefined}
+                aria-pressed={panelOpen && activeTab === id}
+                aria-controls="desktop-settings-panel"
               >
                 <Icon className="desktop-top-icon" />
                 <span>{label}</span>
