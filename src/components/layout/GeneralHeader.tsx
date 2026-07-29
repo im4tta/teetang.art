@@ -57,7 +57,7 @@ export default function GeneralHeader({ onAboutOpen }: GeneralHeaderProps) {
               fontFamily: "'Bebas Neue', sans-serif",
               fontSize: 18,
               letterSpacing: "0.05em",
-              color: "#F5F5FA",
+              color: "var(--ink)",
               margin: 0,
               lineHeight: 1,
             }}

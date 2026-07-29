@@ -102,8 +102,7 @@ html[data-app-theme="light"]
   color: var(--ink);
 }
 
-html[data-app-theme="light"]
-  :is(.install-help-modal, .startup-location-card, .export-modal, .mobile-export-modal) {
+html[data-app-theme="light"] :is(.install-help-modal, .startup-location-card, .export-modal) {
   background: var(--modal-bg);
   border-color: var(--border);
   color: var(--ink);
@@ -116,7 +115,9 @@ html[data-app-theme="light"]
     .install-help-steps li,
     .startup-location-title,
     .startup-location-copy,
-    .export-modal-title
+    .export-modal-header h3,
+    .export-modal-share-label,
+    .export-modal-support-label
   ) {
   color: var(--ink);
 }
@@ -466,22 +467,73 @@ html[data-app-theme="light"] .startup-location-suggestions {
 }
 
 html[data-app-theme="light"]
-  :is(
-    .startup-location-suggestion,
-    .startup-location-suggestion-status,
-    .mobile-export-modal-header h3,
-    .mobile-export-support-label
-  ) {
-  color: var(--ink);
-}
-
-html[data-app-theme="light"]
-  :is(.mobile-export-modal-close, .mobile-export-social-links .general-header-social-btn) {
-  background: var(--item-bg);
-  border-color: var(--border-subtle);
+  :is(.startup-location-suggestion, .startup-location-suggestion-status) {
   color: var(--ink);
 }
 
 html[data-app-theme="light"] .startup-location-input:focus {
   background: var(--control-bg);
+}
+
+/* Active mobile chrome and export dialog light-mode corrections. */
+html[data-app-theme="light"] .general-header {
+  background: var(--panel-glass);
+  border-bottom-color: var(--border-subtle);
+  box-shadow: 0 1px 10px var(--shadow-color);
+}
+
+html[data-app-theme="light"]
+  :is(.general-header .desktop-brand-title, .general-header .desktop-brand-kicker) {
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .general-header .lang-toggle,
+    .general-header .general-header-text-btn,
+    .general-header .general-header-social-btn
+  ) {
+  background: var(--item-bg);
+  border-color: var(--border-subtle);
+  color: var(--ink);
+  box-shadow: none;
+}
+
+html[data-app-theme="light"] .mobile-location-row-wrap .dsk-loc-bar .location-search-row {
+  background: var(--raised-bg);
+  border-color: var(--border);
+  box-shadow: 0 6px 18px var(--shadow-color);
+}
+
+html[data-app-theme="light"] .mobile-location-row-wrap .dsk-loc-bar .location-input-wrap input {
+  background: transparent;
+  color: var(--ink);
+}
+
+html[data-app-theme="light"] .mobile-location-row-wrap .dsk-loc-bar .location-search-icon {
+  color: var(--text-secondary);
+}
+
+html[data-app-theme="light"] .export-modal-backdrop {
+  background: rgba(15, 23, 42, 0.2);
+}
+
+html[data-app-theme="light"] .export-modal-option--png {
+  color: #b42318;
+}
+
+html[data-app-theme="light"] .export-modal-option--pdf {
+  color: #1d4ed8;
+}
+
+html[data-app-theme="light"] .export-modal-option--svg {
+  color: #047857;
+}
+
+html[data-app-theme="light"]
+  :is(.export-modal-share-btn, .mobile-export-social-links .general-header-social-btn) {
+  background: var(--item-bg);
+  border-color: var(--border-subtle);
+  color: var(--ink);
+  box-shadow: none;
 }
