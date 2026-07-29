@@ -17,15 +17,7 @@ const BUILDING_BLEND_FACTOR = 0.14;
 const BUILDING_FILL_OPACITY = 0.84;
 const MAP_BUILDING_MIN_ZOOM_DEFAULT = 8;
 const MAP_BUILDING_MIN_ZOOM_PRESERVE = 8.2;
-
-/**
- * The only way `distanceMeters` reaches the generated style: below this
- * threshold buildings come in slightly later so fine detail survives.
- *
- * Exported so callers can memoise on the quantised side of the threshold rather
- * than on the raw distance, which changes on every pan and zoom.
- */
-export const DETAIL_PRESERVE_DISTANCE_METERS = 30_000;
+const DETAIL_PRESERVE_DISTANCE_METERS = 30_000;
 
 const MAP_WATERWAY_WIDTH_STOPS: [number, number][] = [
   [0, 0.2],
@@ -311,15 +303,7 @@ export function generateMapStyle(
           properties: {},
           geometry: {
             type: "Polygon",
-            coordinates: [
-              [
-                [-180, -90],
-                [180, -90],
-                [180, 90],
-                [-180, 90],
-                [-180, -90],
-              ],
-            ],
+            coordinates: [[[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]],
           },
         },
       },

@@ -1,4 +1,4 @@
-import * as maplibregl from "maplibre-gl";
+import maplibregl from "maplibre-gl";
 import type { Map as MaplibreMap } from "maplibre-gl";
 import type { MarkerIconDefinition, MarkerItem } from "@/services/markers/types";
 import { drawMarkersOnCanvas } from "@/services/markers/rendering";
@@ -10,11 +10,7 @@ import { drawPosterText } from "@/services/poster/renderer/typography";
 import type { ResolvedTheme } from "@/services/theme/types";
 import type { PosterShape } from "@/services/poster/clipShapes";
 import { svgClipPathElement } from "@/services/poster/clipShapes";
-import {
-  waitForMapIdle,
-  createOffscreenContainer,
-  resolveExportRenderParams,
-} from "@/services/export/exportUtils";
+import { waitForMapIdle, createOffscreenContainer, resolveExportRenderParams } from "@/services/export/exportUtils";
 
 interface LayeredSvgOptions {
   map: MaplibreMap;
@@ -129,10 +125,9 @@ export async function createLayeredSvgBlobFromMap({
 
     const exportStyle = exportMap.getStyle();
     const layerIds = (exportStyle.layers ?? []).map((layer) => layer.id);
-    const originalVisibility = new Map<string, "visible" | "none">();
+    const originalVisibility = new Map<string, string>();
     const visibleLayerIds = layerIds.filter((layerId) => {
-      const visibility =
-        exportMap.getLayoutProperty(layerId, "visibility") === "none" ? "none" : "visible";
+      const visibility = String(exportMap.getLayoutProperty(layerId, "visibility") ?? "visible");
       originalVisibility.set(layerId, visibility);
       return visibility !== "none";
     });

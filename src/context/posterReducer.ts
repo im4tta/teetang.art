@@ -5,112 +5,37 @@ import { createDefaultMarkerSettings } from "@/services/markers/helpers";
 import { featuredMarkerIcons } from "@/services/markers/iconRegistry";
 import { clamp } from "@/utils/geo/math";
 import type { Route, RouteDefaults } from "@/services/routes/types";
-import {
-  MAX_ROUTE_OPACITY,
-  MAX_ROUTE_STROKE_WIDTH,
-  MIN_ROUTE_OPACITY,
-  MIN_ROUTE_STROKE_WIDTH,
-} from "@/services/routes/constants";
+import { MAX_ROUTE_OPACITY, MAX_ROUTE_STROKE_WIDTH, MIN_ROUTE_OPACITY, MIN_ROUTE_STROKE_WIDTH } from "@/services/routes/constants";
 
 export interface PosterForm {
-  location: string;
-  latitude: string;
-  longitude: string;
-  distance: string;
-  width: string;
-  height: string;
-  theme: string;
-  theme2: string;
-  layout: string;
-  displayCity: string;
-  displayCountry: string;
-  displayContinent: string;
-  footerCity: string;
-  footerCountry: string;
-  fontFamily: string;
-  showPosterText: boolean;
-  includeCredits: boolean;
-  includeLandcover: boolean;
-  includeBuildings: boolean;
-  includeWater: boolean;
-  includeParks: boolean;
-  includeAeroway: boolean;
-  includeRail: boolean;
-  includeRoads: boolean;
-  includeRoadPath: boolean;
-  includeRoadMinorLow: boolean;
-  includeRoadOutline: boolean;
-  tileProvider: string;
-  mapShape: string;
-  footerStyle: string;
-  showBorder: boolean;
-  showCoordinates: boolean;
-  showUnderline: boolean;
-  titleAllCaps: boolean;
-  showMarkers: boolean;
-  showRoutes: boolean;
-  showQrCode: boolean;
-  qrDestination: string;
-  qrCustomUrl: string;
-  qrPosition: string;
-  logoUrl: string;
-  logoPosition: string;
-  radiusMeters: string;
-  showPois: boolean;
-  appTheme: string;
-  uiDensity: string;
-  qrSize: string;
-  qrOpacity: string;
-  qrPadding: string;
-  logoSize: string;
-  logoOpacity: string;
-  logoPadding: string;
-  qrPhone: string;
-  qrX: string;
-  qrY: string;
-  logoX: string;
-  logoY: string;
-  qrLabel: string;
-  letterSpacing: string;
-  titleAlign: string;
-  coordsFormat: string;
-  layoutMode: string;
-  location2: string;
-  latitude2: string;
-  longitude2: string;
-  distance2: string;
-  displayCity2: string;
-  displayCountry2: string;
-  displayContinent2: string;
-  propType: string;
-  propPrice: string;
-  propLandSize: string;
-  propBuildSize: string;
-  propContact: string;
-  propAgent: string;
-  propCta: string;
-  propFeatures: string;
-  propStatus: string;
-  propBedrooms: string;
-  propBathrooms: string;
-  propWebsite: string;
-  propAgentLogo: string;
-  shopOpen: string;
-  shopTagline: string;
-  shopInstagram: string;
-  shopFacebook: string;
-  shopTelegram: string;
-  shopWhatsapp: string;
-  shopPhone: string;
-  snapToRoads: boolean;
-  poiSchools: boolean;
-  poiHospitals: boolean;
-  poiMarkets: boolean;
-  poiBanks: boolean;
-  poiRestaurants: boolean;
-  focusCountry: boolean;
-  radiusLabel: string;
-  radiusStyle: string;
+  location: string; latitude: string; longitude: string; distance: string;
+  width: string; height: string; theme: string; theme2: string; layout: string;
+  displayCity: string; displayCountry: string; displayContinent: string;
+  footerCity: string; footerCountry: string; fontFamily: string;
+  showPosterText: boolean; includeCredits: boolean; includeLandcover: boolean;
+  includeBuildings: boolean; includeWater: boolean; includeParks: boolean;
+  includeAeroway: boolean; includeRail: boolean; includeRoads: boolean;
+  includeRoadPath: boolean; includeRoadMinorLow: boolean; includeRoadOutline: boolean;
+  tileProvider: string; mapShape: string; footerStyle: string;
+  showBorder: boolean; showCoordinates: boolean; showUnderline: boolean;
+  titleAllCaps: boolean; showMarkers: boolean; showRoutes: boolean;
+  showQrCode: boolean; qrDestination: string; qrCustomUrl: string; qrPosition: string;
+  logoUrl: string; logoPosition: string; radiusMeters: string; showPois: boolean;
+  appTheme: string; uiDensity: string;
+  qrSize: string; qrOpacity: string; qrPadding: string;
+  logoSize: string; logoOpacity: string; logoPadding: string;
+  qrPhone: string; qrX: string; qrY: string; logoX: string; logoY: string; qrLabel: string;
+  letterSpacing: string; titleAlign: string; coordsFormat: string; layoutMode: string;
+  location2: string; latitude2: string; longitude2: string; distance2: string;
+  displayCity2: string; displayCountry2: string; displayContinent2: string;
+  propType: string; propPrice: string; propLandSize: string; propBuildSize: string;
+  propContact: string; propAgent: string; propCta: string; propFeatures: string;
+  propStatus: string; propBedrooms: string; propBathrooms: string; propWebsite: string; propAgentLogo: string;
+  shopOpen: string; shopTagline: string; shopInstagram: string; shopFacebook: string;
+  shopTelegram: string; shopWhatsapp: string; shopPhone: string;
+  snapToRoads: boolean; poiSchools: boolean; poiHospitals: boolean;
+  poiMarkets: boolean; poiBanks: boolean; poiRestaurants: boolean;
+  focusCountry: boolean; radiusLabel: string; radiusStyle: string;
 }
 
 export interface PosterState {
@@ -159,30 +84,14 @@ export type PosterAction =
   | { type: "SET_CUSTOM_MARKER_ICONS"; icons: MarkerIconDefinition[] }
   | { type: "REMOVE_CUSTOM_MARKER_ICON"; iconId: string }
   | { type: "CLEAR_CUSTOM_MARKER_ICONS" }
-  | {
-      type: "SET_MARKER_DEFAULTS";
-      defaults: Partial<MarkerDefaults>;
-      applyToMarkers?: boolean;
-      /**
-       * When true, only markers still sitting on the previous default value are
-       * updated. Used by the theme→marker colour sync so switching themes does
-       * not wipe individually customised markers.
-       */
-      onlyUnmodified?: boolean;
-    }
+  | { type: "SET_MARKER_DEFAULTS"; defaults: Partial<MarkerDefaults>; applyToMarkers?: boolean }
   | { type: "RESET_MARKER_DEFAULTS" }
   | { type: "ADD_ROUTE"; route: Route }
   | { type: "UPDATE_ROUTE"; routeId: string; changes: Partial<Route> }
   | { type: "REMOVE_ROUTE"; routeId: string }
   | { type: "REPLACE_ROUTES"; routes: Route[] }
   | { type: "CLEAR_ROUTES" }
-  | {
-      type: "SET_ROUTE_DEFAULTS";
-      defaults: Partial<RouteDefaults>;
-      applyToRoutes?: boolean;
-      /** See `SET_MARKER_DEFAULTS.onlyUnmodified`. */
-      onlyUnmodified?: boolean;
-    };
+  | { type: "SET_ROUTE_DEFAULTS"; defaults: Partial<RouteDefaults>; applyToRoutes?: boolean };
 
 const COORD_FIELDS = new Set(["location", "latitude", "longitude"]);
 
@@ -197,7 +106,7 @@ function applyMarkerUpdate(
   markerId: string,
   changes: Partial<MarkerItem>,
 ): MarkerItem[] {
-  return markers.map((m) => {
+  return markers.map(m => {
     if (m.id !== markerId) return m;
     return {
       ...m,
@@ -240,8 +149,8 @@ function applyIconRemoval(
 ): { markers: MarkerItem[]; customMarkerIcons: MarkerIconDefinition[] } {
   const fallback = featuredMarkerIcons[0]?.id ?? "pin";
   return {
-    customMarkerIcons: customMarkerIcons.filter((i) => !removedIds.has(i.id)),
-    markers: markers.map((m) => (removedIds.has(m.iconId) ? { ...m, iconId: fallback } : m)),
+    customMarkerIcons: customMarkerIcons.filter(i => !removedIds.has(i.id)),
+    markers: markers.map(m => (removedIds.has(m.iconId) ? { ...m, iconId: fallback } : m)),
   };
 }
 
@@ -249,8 +158,12 @@ function applyIconRemoval(
  * Applies a partial update to a single route, enforcing clamped `strokeWidth`
  * and `opacity` constraints and preserving the immutable `id`.
  */
-function applyRouteUpdate(routes: Route[], routeId: string, changes: Partial<Route>): Route[] {
-  return routes.map((r) => {
+function applyRouteUpdate(
+  routes: Route[],
+  routeId: string,
+  changes: Partial<Route>,
+): Route[] {
+  return routes.map(r => {
     if (r.id !== routeId) return r;
     return {
       ...r,
@@ -273,9 +186,7 @@ export function posterReducer(state: PosterState, action: PosterAction): PosterS
   switch (action.type) {
     case "SET_FIELD": {
       const overrides = { ...state.displayNameOverrides };
-      if (COORD_FIELDS.has(action.name)) {
-        overrides.city = overrides.country = false;
-      }
+      if (COORD_FIELDS.has(action.name)) { overrides.city = overrides.country = false; }
       if (action.name === "displayCity") overrides.city = true;
       if (action.name === "displayCountry") overrides.country = true;
       return {
@@ -289,28 +200,13 @@ export function posterReducer(state: PosterState, action: PosterAction): PosterS
       return {
         ...state,
         form: { ...state.form, ...action.fields },
-        displayNameOverrides: action.resetDisplayNameOverrides
-          ? { city: false, country: false }
-          : state.displayNameOverrides,
+        displayNameOverrides: action.resetDisplayNameOverrides ? { city: false, country: false } : state.displayNameOverrides,
       };
-    case "SET_THEME":
-      return { ...state, form: { ...state.form, theme: action.themeId }, customColors: {} };
-    case "SET_THEME2":
-      return { ...state, form: { ...state.form, theme2: action.themeId } };
-    case "SET_LAYOUT":
-      return {
-        ...state,
-        form: {
-          ...state.form,
-          layout: action.layoutId,
-          width: action.widthCm,
-          height: action.heightCm,
-        },
-      };
-    case "SET_COLOR":
-      return { ...state, customColors: { ...state.customColors, [action.key]: action.value } };
-    case "RESET_COLORS":
-      return { ...state, customColors: {} };
+    case "SET_THEME": return { ...state, form: { ...state.form, theme: action.themeId }, customColors: {} };
+    case "SET_THEME2": return { ...state, form: { ...state.form, theme2: action.themeId } };
+    case "SET_LAYOUT": return { ...state, form: { ...state.form, layout: action.layoutId, width: action.widthCm, height: action.heightCm } };
+    case "SET_COLOR": return { ...state, customColors: { ...state.customColors, [action.key]: action.value } };
+    case "RESET_COLORS": return { ...state, customColors: {} };
     case "SELECT_LOCATION": {
       const city = action.location.shortLabel || action.location.city;
       return {
@@ -331,128 +227,66 @@ export function posterReducer(state: PosterState, action: PosterAction): PosterS
         },
       };
     }
-    case "SET_USER_LOCATION":
-      return { ...state, userLocation: action.location };
+    case "SET_USER_LOCATION": return { ...state, userLocation: action.location };
     case "CLEAR_LOCATION":
       return {
         ...state,
         selectedLocation: null,
         displayNameOverrides: { city: false, country: false },
-        form: {
-          ...state.form,
-          location: "",
-          displayCity: "",
-          displayCountry: "",
-          displayContinent: "",
-          footerCity: "",
-          footerCountry: "",
-        },
+        form: { ...state.form, location: "", displayCity: "", displayCountry: "", displayContinent: "", footerCity: "", footerCountry: "" },
       };
-    case "SET_LOCATION_FOCUSED":
-      return { ...state, isLocationFocused: action.focused };
-    case "SET_ERROR":
-      return { ...state, error: action.error };
-    case "SET_EXPORT_STATUS":
-      return {
-        ...state,
-        isExporting: action.exporting,
-        error: action.exporting ? "" : (action.error ?? state.error),
-      };
-    case "SET_MARKER_EDITOR_ACTIVE":
-      return {
-        ...state,
-        isMarkerEditorActive: action.active,
-        activeMarkerId: action.active ? state.activeMarkerId : null,
-      };
-    case "SET_ROUTE_DRAW_MODE":
-      return { ...state, routeDrawMode: action.active };
-    case "SET_ROUTE_EDIT_MODE":
-      return { ...state, routeEditMode: action.active };
-    case "SET_ACTIVE_MARKER":
-      return { ...state, activeMarkerId: action.markerId };
-    case "ADD_MARKER":
-      return { ...state, markers: [...state.markers, action.marker] };
+    case "SET_LOCATION_FOCUSED": return { ...state, isLocationFocused: action.focused };
+    case "SET_ERROR": return { ...state, error: action.error };
+    case "SET_EXPORT_STATUS": return { ...state, isExporting: action.exporting, error: action.exporting ? "" : (action.error ?? state.error) };
+    case "SET_MARKER_EDITOR_ACTIVE": return { ...state, isMarkerEditorActive: action.active, activeMarkerId: action.active ? state.activeMarkerId : null };
+    case "SET_ROUTE_DRAW_MODE": return { ...state, routeDrawMode: action.active };
+    case "SET_ROUTE_EDIT_MODE": return { ...state, routeEditMode: action.active };
+    case "SET_ACTIVE_MARKER": return { ...state, activeMarkerId: action.markerId };
+    case "ADD_MARKER": return { ...state, markers: [...state.markers, action.marker] };
     case "UPDATE_MARKER":
-      return {
-        ...state,
-        markers: applyMarkerUpdate(state.markers, action.markerId, action.changes),
-      };
+      return { ...state, markers: applyMarkerUpdate(state.markers, action.markerId, action.changes) };
     case "REMOVE_MARKER":
-      return {
-        ...state,
-        markers: state.markers.filter((m) => m.id !== action.markerId),
-        activeMarkerId: state.activeMarkerId === action.markerId ? null : state.activeMarkerId,
-      };
-    case "CLEAR_MARKERS":
-      return { ...state, markers: [], activeMarkerId: null, isMarkerEditorActive: false };
-    case "ADD_CUSTOM_MARKER_ICON":
-      return { ...state, customMarkerIcons: [...state.customMarkerIcons, action.icon] };
-    case "SET_CUSTOM_MARKER_ICONS":
-      return { ...state, customMarkerIcons: action.icons };
+      return { ...state, markers: state.markers.filter(m => m.id !== action.markerId), activeMarkerId: state.activeMarkerId === action.markerId ? null : state.activeMarkerId };
+    case "CLEAR_MARKERS": return { ...state, markers: [], activeMarkerId: null, isMarkerEditorActive: false };
+    case "ADD_CUSTOM_MARKER_ICON": return { ...state, customMarkerIcons: [...state.customMarkerIcons, action.icon] };
+    case "SET_CUSTOM_MARKER_ICONS": return { ...state, customMarkerIcons: action.icons };
     case "REMOVE_CUSTOM_MARKER_ICON": {
-      const removed = applyIconRemoval(
-        state.markers,
-        state.customMarkerIcons,
-        new Set([action.iconId]),
-      );
+      const removed = applyIconRemoval(state.markers, state.customMarkerIcons, new Set([action.iconId]));
       return { ...state, ...removed };
     }
     case "CLEAR_CUSTOM_MARKER_ICONS": {
-      const allCustomIds = new Set(state.customMarkerIcons.map((i) => i.id));
+      const allCustomIds = new Set(state.customMarkerIcons.map(i => i.id));
       const removed = applyIconRemoval(state.markers, state.customMarkerIcons, allCustomIds);
       return { ...state, ...removed };
     }
     case "SET_MARKER_DEFAULTS": {
-      const prev = state.markerDefaults;
-      const next = applyMarkerDefaults(prev, action.defaults);
-      const hasSize = next.size !== prev.size;
-      const hasColor = next.color !== prev.color;
-      const { onlyUnmodified } = action;
+      const next = applyMarkerDefaults(state.markerDefaults, action.defaults);
+      const hasSize = next.size !== state.markerDefaults.size;
+      const hasColor = next.color !== state.markerDefaults.color;
       return {
         ...state,
         markerDefaults: next,
         markers: action.applyToMarkers
-          ? state.markers.map((m) => ({
-              ...m,
-              ...(hasSize && (!onlyUnmodified || m.size === prev.size) ? { size: next.size } : {}),
-              ...(hasColor && (!onlyUnmodified || m.color === prev.color)
-                ? { color: next.color }
-                : {}),
-            }))
+          ? state.markers.map(m => ({ ...m, ...(hasSize ? { size: next.size } : {}), ...(hasColor ? { color: next.color } : {}) }))
           : state.markers,
       };
     }
     case "RESET_MARKER_DEFAULTS": {
       const d = createDefaultMarkerSettings();
-      return {
-        ...state,
-        markerDefaults: d,
-        markers: state.markers.map((m) => ({ ...m, size: d.size, color: d.color })),
-      };
+      return { ...state, markerDefaults: d, markers: state.markers.map(m => ({ ...m, size: d.size, color: d.color })) };
     }
-    case "ADD_ROUTE":
-      return { ...state, routes: [...state.routes, action.route] };
+    case "ADD_ROUTE": return { ...state, routes: [...state.routes, action.route] };
     case "UPDATE_ROUTE":
       return { ...state, routes: applyRouteUpdate(state.routes, action.routeId, action.changes) };
-    case "REMOVE_ROUTE":
-      return { ...state, routes: state.routes.filter((r) => r.id !== action.routeId) };
-    case "REPLACE_ROUTES":
-      return { ...state, routes: action.routes };
-    case "CLEAR_ROUTES":
-      return { ...state, routes: [] };
+    case "REMOVE_ROUTE": return { ...state, routes: state.routes.filter(r => r.id !== action.routeId) };
+    case "REPLACE_ROUTES": return { ...state, routes: action.routes };
+    case "CLEAR_ROUTES": return { ...state, routes: [] };
     case "SET_ROUTE_DEFAULTS": {
-      const { defaults: d, applyToRoutes, onlyUnmodified } = action;
-      const prev = state.routeDefaults;
+      const { defaults: d, applyToRoutes } = action;
       const next: RouteDefaults = {
         color: d.color ?? state.routeDefaults.color,
-        strokeWidth:
-          typeof d.strokeWidth === "number"
-            ? clamp(d.strokeWidth, MIN_ROUTE_STROKE_WIDTH, MAX_ROUTE_STROKE_WIDTH)
-            : state.routeDefaults.strokeWidth,
-        opacity:
-          typeof d.opacity === "number"
-            ? clamp(d.opacity, MIN_ROUTE_OPACITY, MAX_ROUTE_OPACITY)
-            : state.routeDefaults.opacity,
+        strokeWidth: typeof d.strokeWidth === "number" ? clamp(d.strokeWidth, MIN_ROUTE_STROKE_WIDTH, MAX_ROUTE_STROKE_WIDTH) : state.routeDefaults.strokeWidth,
+        opacity: typeof d.opacity === "number" ? clamp(d.opacity, MIN_ROUTE_OPACITY, MAX_ROUTE_OPACITY) : state.routeDefaults.opacity,
         lineStyle: d.lineStyle ?? state.routeDefaults.lineStyle,
         startIconId: d.startIconId ?? state.routeDefaults.startIconId,
         finishIconId: d.finishIconId ?? state.routeDefaults.finishIconId,
@@ -460,31 +294,9 @@ export function posterReducer(state: PosterState, action: PosterAction): PosterS
       return {
         ...state,
         routeDefaults: next,
-        routes: applyToRoutes
-          ? state.routes.map((r) =>
-              onlyUnmodified
-                ? {
-                    ...r,
-                    // Theme sync: only nudge routes that never diverged from the default.
-                    ...(r.color === prev.color ? { color: next.color } : {}),
-                    ...(r.strokeWidth === prev.strokeWidth
-                      ? { strokeWidth: next.strokeWidth }
-                      : {}),
-                    ...(r.opacity === prev.opacity ? { opacity: next.opacity } : {}),
-                    ...(r.lineStyle === prev.lineStyle ? { lineStyle: next.lineStyle } : {}),
-                  }
-                : {
-                    ...r,
-                    color: next.color,
-                    strokeWidth: next.strokeWidth,
-                    opacity: next.opacity,
-                    lineStyle: next.lineStyle,
-                  },
-            )
-          : state.routes,
+        routes: applyToRoutes ? state.routes.map(r => ({ ...r, color: next.color, strokeWidth: next.strokeWidth, opacity: next.opacity, lineStyle: next.lineStyle })) : state.routes,
       };
     }
-    default:
-      return state;
+    default: return state;
   }
 }

@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type CSSProperties } from "react";
-import * as maplibregl from "maplibre-gl";
+import maplibregl from "maplibre-gl";
 import type { StyleSpecification } from "maplibre-gl";
 import "maplibre-gl/dist/maplibre-gl.css";
 import type { MapInstanceRef } from "@/services/map/types";
@@ -24,12 +24,6 @@ interface MapPreviewProps {
   radiusMeters?: number;
   radiusStyle?: string;
   radiusLabel?: string;
-  /**
-   * Fires with the live map instance on mount and with `null` on unmount.
-   * Needed because `mapRef` keeps a stable identity, so a ref alone gives
-   * consumers no signal that the underlying map was recreated.
-   */
-  onMapReady?: (map: maplibregl.Map | null) => void;
 }
 
 /**
@@ -55,7 +49,6 @@ export default function MapPreview({
   radiusMeters = 0,
   radiusStyle = "dashed",
   radiusLabel = "",
-  onMapReady,
 }: MapPreviewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isSyncing = useRef(false);
@@ -63,19 +56,12 @@ export default function MapPreview({
   const prevStyleRef = useRef<StyleSpecification | null>(null);
   const onMoveEndRef = useRef(onMoveEnd);
   const onMoveRef = useRef(onMove);
-  const onMapReadyRef = useRef(onMapReady);
   const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
 
   useEffect(() => {
     onMoveEndRef.current = onMoveEnd;
     onMoveRef.current = onMove;
-    onMapReadyRef.current = onMapReady;
-  }, [onMoveEnd, onMove, onMapReady]);
-
-  useEffect(() => {
-    onMapReadyRef.current?.(mapInstance);
-    return () => onMapReadyRef.current?.(null);
-  }, [mapInstance]);
+  }, [onMoveEnd, onMove]);
 
   // ── Mount: create map instance ───────────────────────────────────────────
   useEffect(() => {

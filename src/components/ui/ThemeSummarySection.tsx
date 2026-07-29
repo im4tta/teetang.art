@@ -5,7 +5,7 @@ import { EditIcon } from "@/components/ui/Icons";
 import type { ThemeOption, ThemeGroup } from "@/services/theme/types";
 
 interface ThemeSummarySectionProps {
-  listRef?: RefObject<HTMLDivElement | null>;
+  listRef?: RefObject<HTMLDivElement>;
   themeOptions: ThemeOption[];
   themeGroups: ThemeGroup[];
   selectedThemeId: string;
@@ -37,8 +37,9 @@ export default function ThemeSummarySection({
       : (themeGroups.find((group) => group.id === activeGroupId)?.options ?? themeOptions);
 
   useEffect(() => {
-    const selectedCard =
-      resolvedListRef.current?.querySelector<HTMLElement>(".theme-card.is-selected");
+    const selectedCard = resolvedListRef.current?.querySelector<HTMLElement>(
+      ".theme-card.is-selected",
+    );
     selectedCard?.scrollIntoView({ behavior: "auto", block: "nearest", inline: "start" });
   }, [activeGroupId, resolvedListRef, selectedThemeId]);
 

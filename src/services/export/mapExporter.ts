@@ -1,11 +1,7 @@
-import * as maplibregl from "maplibre-gl";
+import maplibregl from "maplibre-gl";
 import type { Map as MaplibreMap } from "maplibre-gl";
 import type { MarkerProjectionInput } from "@/services/markers/types";
-import {
-  waitForMapIdle,
-  createOffscreenContainer,
-  resolveExportRenderParams,
-} from "@/services/export/exportUtils";
+import { waitForMapIdle, createOffscreenContainer, resolveExportRenderParams } from "@/services/export/exportUtils";
 
 export interface CapturedMapResult {
   canvas: HTMLCanvasElement;

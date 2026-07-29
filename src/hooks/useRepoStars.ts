@@ -64,16 +64,15 @@ export function useRepoStars(repoApiUrl: string): UseRepoStarsReturn {
 
   useEffect(() => {
     if (!finalUrl) return;
-    const apiUrl: string = finalUrl;
 
     let cancelled = false;
 
     async function fetchRepoStars() {
-      let request = inFlightRequests.get(apiUrl);
+      let request = inFlightRequests.get(finalUrl);
       if (!request) {
         request = (async () => {
           try {
-            const response = await fetchAdapter.get(apiUrl, {
+            const response = await fetchAdapter.get(finalUrl, {
               headers: { Accept: "application/vnd.github+json" },
             });
 
@@ -89,22 +88,22 @@ export function useRepoStars(repoApiUrl: string): UseRepoStarsReturn {
             const stars = Number(raw);
             if (Number.isFinite(stars) && stars >= 0) {
               const normalized = Math.floor(stars);
-              writeCachedStars(apiUrl, normalized);
+              writeCachedStars(finalUrl, normalized);
               return normalized;
             }
             return null;
           } catch {
             return null;
           } finally {
-            inFlightRequests.delete(apiUrl);
+            inFlightRequests.delete(finalUrl);
           }
         })();
-        inFlightRequests.set(apiUrl, request);
+        inFlightRequests.set(finalUrl, request);
       }
 
       const stars = await request;
       if (!cancelled) {
-        setCompletedRequest({ url: apiUrl, stars });
+        setCompletedRequest({ url: finalUrl, stars });
       }
     }
 
