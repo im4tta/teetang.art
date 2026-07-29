@@ -192,6 +192,7 @@ export default function AppShell() {
     const density = state.form.uiDensity || "comfortable";
     document.documentElement.setAttribute("data-app-theme", theme);
     document.documentElement.setAttribute("data-ui-density", density);
+    document.documentElement.classList.toggle("light-theme", theme === "light");
     document.body.classList.toggle("light-theme", theme === "light");
     document.body.classList.toggle("compact-ui", density === "compact");
   }, [state.form.appTheme, state.form.uiDensity]);

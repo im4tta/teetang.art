@@ -897,7 +897,7 @@
   border: 1px solid var(--border);
   border-radius: 12px;
   background: var(--panel);
-  color: #f5f5fa;
+  color: var(--ink);
   font-family: "Noto Sans Khmer", "Battambang", "Inter", sans-serif;
   box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -4px;
 }
@@ -930,14 +930,14 @@
   font-size: 0.6rem;
   text-transform: uppercase;
   letter-spacing: 0.03em;
-  color: #94a3b8;
+  color: var(--text-secondary);
 }
 
 .settings-info-row dd {
   margin: 0;
   font-size: 0.78rem;
   font-family: "Noto Sans Khmer", "Battambang", "Inter", sans-serif;
-  color: #f5f5fa;
+  color: var(--ink);
 }
 
 /* Export button inside map controls (inline instead of floating) */

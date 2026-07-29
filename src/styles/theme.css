@@ -1,0 +1,487 @@
+/* Final theme layer: keep editor chrome consistent after component and
+   responsive styles. Poster artwork keeps its own user-selected colors. */
+
+html[data-app-theme="light"] .app-shell {
+  color: var(--ink);
+}
+
+html[data-app-theme="light"] body,
+html[data-app-theme="light"] .app-shell,
+html[data-app-theme="light"] .mobile-app-main,
+html[data-app-theme="light"] .mobile-preview-section,
+html[data-app-theme="light"] .app-main {
+  background-color: var(--surface);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .settings-panel,
+    .preview-panel,
+    .inspector-card,
+    .info-panel-group,
+    .accordion-item,
+    .accordion-item.accordion-item--open,
+    .accordion-body,
+    .desktop-left-panel,
+    .desktop-user-guide,
+    .desktop-user-guide-panel
+  ) {
+  background: var(--raised-bg);
+  border-color: var(--border);
+  color: var(--ink);
+  box-shadow: 0 16px 34px var(--shadow-color);
+}
+
+html[data-app-theme="light"]
+  :is(.panel-hdr, .accordion-header, .settings-section-header, .info-panel-header) {
+  background: var(--control-strong-bg);
+  border-color: var(--border-subtle);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"] .accordion-header:hover {
+  background: var(--item-hover-bg);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .accordion-icon,
+    .accordion-step-badge,
+    .settings-credits-text,
+    .app-copy,
+    .inspector-copy,
+    .inspector-card p,
+    .info-panel-section p,
+    .user-guide-text,
+    .footer-links-note,
+    .hug-copy
+  ) {
+  color: var(--text-secondary);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .accordion-header:hover .accordion-step-badge,
+    .accordion-header.is-open .accordion-step-badge
+  ) {
+  border-color: var(--strong-line);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .github-badge,
+    .footer-link,
+    .user-guide-row,
+    .settings-links,
+    .settings-link-btn,
+    .settings-option-card,
+    .theme-group-chip,
+    .layout-option-card,
+    .theme-option-card
+  ) {
+  background: var(--item-bg);
+  border-color: var(--border-subtle);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .github-badge,
+    .footer-link,
+    .user-guide-row,
+    .settings-link-btn,
+    .settings-option-card,
+    .theme-group-chip,
+    .layout-option-card,
+    .theme-option-card
+  ):hover {
+  background: var(--item-hover-bg);
+  border-color: var(--strong-line);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(.install-help-modal, .startup-location-card, .export-modal, .mobile-export-modal) {
+  background: var(--modal-bg);
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .install-help-modal-title,
+    .install-help-modal-text,
+    .install-help-steps li,
+    .startup-location-title,
+    .startup-location-copy,
+    .export-modal-title
+  ) {
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .install-help-modal-close,
+    .install-help-step-icon,
+    .startup-location-action,
+    .export-modal-close
+  ) {
+  background: var(--item-bg);
+  border-color: var(--border-subtle);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(
+    input:not([type="color"]):not([type="range"]):not([type="checkbox"]):not([type="radio"]),
+    select,
+    textarea,
+    .location-input-wrap,
+    .location-suggestions,
+    .dsk-loc-coords,
+    .map-dimension-field,
+    .logo-upload-field
+  ) {
+  background-color: var(--control-bg);
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"] :is(input, textarea)::placeholder {
+  color: var(--text-muted);
+  opacity: 0.85;
+}
+
+html[data-app-theme="light"]
+  :is(
+    label,
+    legend,
+    .section-summary-label,
+    .field-hint,
+    .settings-link-hint,
+    .theme-card-description,
+    .layout-summary-description,
+    .theme-summary-label,
+    .theme-summary-label-name,
+    .layout-summary-label,
+    .layout-summary-label-name,
+    .theme-active-label
+  ) {
+  color: var(--text-secondary);
+}
+
+html[data-app-theme="light"] .mobile-nav {
+  background: var(--nav-bg);
+  border-color: var(--border);
+  box-shadow: 0 8px 28px var(--shadow-color);
+}
+
+html[data-app-theme="light"] .mobile-nav-tab {
+  color: var(--text-secondary);
+}
+
+html[data-app-theme="light"] .mobile-nav-tab.is-active {
+  background: rgba(180, 35, 24, 0.1);
+  color: var(--accent);
+}
+
+html[data-app-theme="light"] .mobile-nav-fade {
+  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.9) 70%, #fff 100%);
+}
+
+html[data-app-theme="light"] .mobile-nav-fade::after {
+  border-color: var(--text-secondary);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .mobile-drawer-sheet,
+    .mobile-drawer-content,
+    .mobile-location-row-wrap .dsk-loc-bar,
+    .mobile-marker-size-bar,
+    .mobile-user-guide
+  ) {
+  background: var(--sheet-bg);
+  border-color: var(--border-subtle);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"] .mobile-drawer-content,
+html[data-app-theme="light"] .mobile-drawer-content .settings-panel {
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  .mobile-drawer-content
+  :is(h1, h2, h3, h4, p, label, legend, dt, dd, output) {
+  color: inherit;
+}
+
+html[data-app-theme="light"]
+  .mobile-drawer-content
+  :is(
+    .field-hint,
+    .section-summary-label,
+    .theme-card-description,
+    .layout-summary-description,
+    .settings-link-hint,
+    .theme-group-chip,
+    .settings-option-card
+  ) {
+  color: var(--text-secondary);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .mobile-drawer-close,
+    .mobile-nav-settings,
+    .mobile-location-row-wrap .location-row-icon-btn,
+    .mobile-marker-size-bar button
+  ) {
+  background: var(--item-bg);
+  border-color: var(--border-subtle);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"] .mobile-location-row-wrap .dsk-loc-bar .location-input-wrap input,
+html[data-app-theme="light"] .mobile-location-row-wrap .dsk-loc-bar .dsk-loc-coords input {
+  background: var(--control-bg);
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  .mobile-location-row-wrap
+  .dsk-loc-bar
+  :is(.location-clear-btn, .location-suggestion, .dsk-loc-coords label) {
+  color: var(--text-secondary);
+}
+
+html[data-app-theme="light"]
+  .mobile-location-row-wrap
+  .dsk-loc-bar
+  :is(.location-suggestions, .dsk-loc-coords) {
+  background: var(--overlay-bg);
+  border-color: var(--border-subtle);
+  box-shadow: 0 8px 24px var(--shadow-color);
+}
+
+html[data-app-theme="light"] .mobile-drawer-handle::after,
+html[data-app-theme="light"] .mobile-drawer-grabber {
+  background: var(--strong-line);
+}
+
+html[data-app-theme="light"] .updates-modal {
+  background: linear-gradient(156deg, rgba(255, 255, 255, 0.99), rgba(241, 245, 249, 0.99));
+  border-color: var(--border);
+  color: var(--ink);
+  box-shadow: 0 28px 64px var(--shadow-color);
+}
+
+html[data-app-theme="light"] .updates-modal-close {
+  background: var(--item-bg);
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(.updates-released-on, .updates-point-text, .updates-point-label, .updates-point-description) {
+  color: var(--text-secondary);
+}
+
+html[data-app-theme="light"] :is(.updates-point, .updates-preview-image) {
+  background: var(--item-bg);
+  border-color: var(--border-subtle);
+}
+
+html[data-app-theme="light"] :is(.export-fab, .general-header-text-btn) {
+  background: var(--raised-bg);
+  border-color: var(--border);
+  color: var(--ink);
+  box-shadow: 0 8px 24px var(--shadow-color);
+}
+
+html[data-app-theme="light"] :is(.export-fab, .general-header-text-btn):hover:not(:disabled) {
+  background: var(--item-hover-bg);
+  border-color: var(--strong-line);
+  color: var(--ink);
+}
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  html[data-app-theme="light"],
+  html[data-app-theme="light"] body {
+    background-color: var(--surface);
+  }
+}
+
+/* Legacy form controls still contain dark-palette literals. Normalize them
+   here so every settings label and card remains readable in light mode. */
+html[data-app-theme="light"] :is(.panel-block, .theme-section, .map-details-card) {
+  background: var(--panel-glass);
+  border-color: var(--border-subtle);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"] :is(.panel-block:hover, .theme-section:hover) {
+  border-color: var(--strong-line);
+}
+
+html[data-app-theme="light"] :is(.seg, .theme-select) {
+  background-color: var(--control-strong-bg);
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"] .seg-btn.active {
+  background: var(--raised-bg);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .panel-block h2,
+    .panel-hdr h2,
+    .section-label,
+    .ios-toggle-label,
+    .seg-btn,
+    .ctrl-label,
+    .font-pill,
+    .field > label,
+    .size-btn,
+    .distance-slider-meta,
+    .map-details-subtitle,
+    .credits-hint,
+    .theme-note,
+    .theme-active-label,
+    .layout-active-label,
+    .layout-inline-group h3,
+    .color-editor-target-name,
+    .layout-card-meta
+  ) {
+  color: var(--text-secondary);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .panel-hdr h2,
+    .theme-summary-label,
+    .theme-summary-label-name,
+    .layout-summary-label,
+    .layout-summary-label-name,
+    .layout-card-name
+  ) {
+  color: var(--ink);
+}
+
+html[data-app-theme="light"] :is(.font-pill:hover, .size-btn:hover) {
+  border-color: var(--strong-line);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(.font-pill.active, .size-btn.active, .settings-option-card.is-active) {
+  color: var(--accent);
+}
+
+html[data-app-theme="light"]
+  :is(
+    button.location-current-btn,
+    button.theme-customize-btn,
+    button.theme-edit-done-btn,
+    .quick-loc-btn,
+    .btn-ghost
+  ) {
+  background: var(--item-bg);
+  border-color: var(--border-subtle);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(
+    button.location-current-btn,
+    button.theme-customize-btn,
+    button.theme-edit-done-btn,
+    .quick-loc-btn,
+    .btn-ghost
+  ):hover:not(:disabled) {
+  background: var(--item-hover-bg);
+  border-color: var(--strong-line);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"] :is(.layout-card, button.color-editor-target) {
+  background: var(--raised-bg);
+  border-color: var(--border);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .layout-card.is-selected,
+    .layout-card:not(.is-selected):not(:disabled):hover,
+    button.color-editor-target:not(:disabled):hover
+  ) {
+  background: var(--item-bg);
+  border-color: var(--strong-line);
+}
+
+html[data-app-theme="light"]
+  :is(.theme-card-description, .layout-summary-description, .layout-card-description) {
+  color: var(--text-secondary);
+}
+
+html[data-app-theme="light"] :is(.location-suggestion, .location-suggestion-status) {
+  color: var(--ink);
+}
+
+html[data-app-theme="light"] .location-suggestion:hover,
+html[data-app-theme="light"] .location-suggestion:focus-visible {
+  background: var(--item-hover-bg);
+}
+
+html[data-app-theme="light"] .support-modal {
+  border-color: var(--border);
+  box-shadow: 0 18px 42px var(--shadow-color);
+}
+
+html[data-app-theme="light"] .support-modal__body {
+  background: linear-gradient(180deg, rgba(180, 35, 24, 0.05), var(--modal-bg));
+}
+
+html[data-app-theme="light"]
+  :is(
+    .support-modal__headline,
+    .support-modal__text,
+    .support-modal__text strong,
+    .support-modal__close
+  ) {
+  color: var(--ink);
+}
+
+html[data-app-theme="light"] .startup-location-suggestions {
+  background: var(--overlay-bg);
+  border-color: var(--border);
+}
+
+html[data-app-theme="light"]
+  :is(
+    .startup-location-suggestion,
+    .startup-location-suggestion-status,
+    .mobile-export-modal-header h3,
+    .mobile-export-support-label
+  ) {
+  color: var(--ink);
+}
+
+html[data-app-theme="light"]
+  :is(.mobile-export-modal-close, .mobile-export-social-links .general-header-social-btn) {
+  background: var(--item-bg);
+  border-color: var(--border-subtle);
+  color: var(--ink);
+}
+
+html[data-app-theme="light"] .startup-location-input:focus {
+  background: var(--control-bg);
+}
