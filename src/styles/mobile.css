@@ -1801,3 +1801,91 @@
     outline-offset: 4px;
   }
 }
+
+/* Mobile drawer polish: content-sized sheets, complete light theme, and a
+   simpler summary view without customize/settings buttons. */
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  /* Short tabs should stop after their content instead of reserving 52vh. Long
+     tabs remain scrollable up to the existing cap; swipe-expanded sheets keep
+     their full-height rule. */
+  .mobile-drawer-sheet:not(.is-expanded) {
+    height: auto;
+    max-height: min(52vh, 520px);
+  }
+
+  .mobile-drawer-content {
+    min-height: 0;
+    background: var(--sheet-bg);
+  }
+
+  .mobile-drawer-content .settings-panel {
+    background: transparent;
+    backdrop-filter: none;
+    -webkit-backdrop-filter: none;
+  }
+
+  /* Remove the mobile theme/layout customize pencils while retaining Done
+     controls and all desktop customization tools. */
+  .mobile-drawer-sheet .theme-customize-btn[aria-label^="Customize"] {
+    display: none;
+  }
+
+  .light-theme .mobile-drawer-sheet {
+    border-top-color: var(--border-subtle);
+  }
+
+  .light-theme .mobile-drawer-close {
+    color: var(--ink);
+    background: var(--item-bg);
+    border-color: var(--border-subtle);
+  }
+
+  .light-theme .mobile-drawer-grabber {
+    background: var(--strong-line);
+  }
+
+  .light-theme .settings-panel--mobile-focused .panel-hdr {
+    border-bottom-color: var(--border-subtle);
+  }
+
+  .light-theme .settings-panel--mobile-focused .panel-hdr h2,
+  .light-theme .mobile-drawer-content .panel-hdr h2,
+  .light-theme .mobile-drawer-content .theme-summary-label,
+  .light-theme .mobile-drawer-content .theme-summary-label-name,
+  .light-theme .mobile-drawer-content .layout-summary-label,
+  .light-theme .mobile-drawer-content .layout-summary-label-name,
+  .light-theme .mobile-drawer-content .theme-active-label {
+    color: var(--ink);
+  }
+
+  .light-theme .mobile-drawer-content .theme-card-description,
+  .light-theme .mobile-drawer-content .layout-summary-description,
+  .light-theme .mobile-drawer-content .theme-group-chip,
+  .light-theme .mobile-drawer-content .settings-option-card,
+  .light-theme .mobile-drawer-content .settings-link-hint {
+    color: var(--text-secondary);
+  }
+
+  .light-theme .mobile-drawer-content .theme-group-chip,
+  .light-theme .mobile-drawer-content .settings-option-card,
+  .light-theme .mobile-drawer-content .settings-links,
+  .light-theme .mobile-drawer-content .settings-link-btn {
+    background: var(--item-bg);
+    border-color: var(--border-subtle);
+  }
+
+  .light-theme .mobile-drawer-content .theme-group-chip:hover,
+  .light-theme .mobile-drawer-content .settings-option-card:hover,
+  .light-theme .mobile-drawer-content .settings-link-btn:hover {
+    color: var(--ink);
+    border-color: var(--strong-line);
+  }
+
+  .light-theme .mobile-drawer-content .theme-group-chip.is-active {
+    color: #0d1622;
+  }
+
+  .light-theme .mobile-drawer-content .settings-link-btn {
+    color: var(--ink);
+  }
+}
