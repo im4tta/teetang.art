@@ -1,5 +1,6 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { Analytics } from "@vercel/analytics/react";
 import HomePage from "@/pages/HomePage";
 import { loadEditorPage } from "@/pages/editorLoader";
 
@@ -28,6 +29,7 @@ export default function App() {
           }
         />
       </Routes>
+      <Analytics />
     </BrowserRouter>
   );
 }
