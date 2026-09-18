@@ -37,6 +37,11 @@ export const APP_VERSION = String(env.VITE_APP_VERSION ?? "0.0.0").trim();
 export const UPDATES_URL = String(env.VITE_UPDATES_URL ?? "/updates.json").trim();
 export const INSTALL_DIAGNOSTICS_ENABLED = false;
 
+/* CARTO raster basemaps require an API key, otherwise tiles render with an
+   "API key required" watermark. See https://carto.com/basemaps/apikey */
+export const CARTO_API_KEY = String(env.VITE_CARTO_API_KEY ?? "").trim();
+const CARTO_KEY_PARAM = CARTO_API_KEY ? `?key=${CARTO_API_KEY}` : "";
+
 export interface FontOption {
   value: string;
   label: string;
@@ -79,24 +84,24 @@ export const TILE_PROVIDERS: TileProvider[] = [
     id: "carto-streets",
     label: "Street (Google-like)",
     type: "raster",
-    url: "https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png",
-    attribution: "© CARTO",
+    url: `https://a.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}.png${CARTO_KEY_PARAM}`,
+    attribution: "© CARTO © OpenStreetMap contributors",
     maxZoom: 20,
   },
   {
     id: "carto-light",
     label: "Light (Minimal)",
     type: "raster",
-    url: "https://a.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png",
-    attribution: "© CARTO",
+    url: `https://a.basemaps.cartocdn.com/rastertiles/light_all/{z}/{x}/{y}.png${CARTO_KEY_PARAM}`,
+    attribution: "© CARTO © OpenStreetMap contributors",
     maxZoom: 20,
   },
   {
     id: "carto-dark",
     label: "Dark",
     type: "raster",
-    url: "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png",
-    attribution: "© CARTO",
+    url: `https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png${CARTO_KEY_PARAM}`,
+    attribution: "© CARTO © OpenStreetMap contributors",
     maxZoom: 20,
   },
   {
