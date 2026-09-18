@@ -593,10 +593,8 @@
   font-size: 0.85cqh;
   text-align: right;
   opacity: 0.55;
-  max-width: 48%;
-  white-space: normal;
+  white-space: nowrap;
   line-height: 1.15;
-  overflow-wrap: anywhere;
 }
 
 .poster-credits {
@@ -606,10 +604,8 @@
   font-size: 0.85cqh;
   text-align: left;
   opacity: 0.55;
-  max-width: 48%;
-  white-space: normal;
+  white-space: nowrap;
   line-height: 1.15;
-  overflow-wrap: anywhere;
 }
 
 @media (max-width: 980px) {

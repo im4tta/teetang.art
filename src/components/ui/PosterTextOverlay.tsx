@@ -6,18 +6,32 @@ import {
   TEXT_DIVIDER_Y_RATIO,
   TEXT_COUNTRY_Y_RATIO,
   TEXT_COORDS_Y_RATIO,
-  TEXT_EDGE_MARGIN_RATIO,
   CITY_FONT_BASE_PX,
   COUNTRY_FONT_BASE_PX,
   COORDS_FONT_BASE_PX,
   ATTRIBUTION_FONT_BASE_PX,
+  TITLE_BAND_TOP_EM,
+  TITLE_BAND_BOTTOM_EM,
   formatCityLabel,
   computeCityFontScale,
   computeAttributionColor,
   getShapeTextYOffset,
-  getShapeAttributionX,
+  resolveFooterLayout,
 } from "@/services/poster/textLayout";
 import type { PosterShape } from "@/services/poster/clipShapes";
+
+const OSM_ATTRIBUTION = "\u00a9 OpenStreetMap contributors";
+
+let footerMeasureCtx: CanvasRenderingContext2D | null | undefined;
+
+function measureFooterText(text: string, font: string): number {
+  if (footerMeasureCtx === undefined) {
+    footerMeasureCtx = document.createElement("canvas").getContext("2d");
+  }
+  if (!footerMeasureCtx) return 0;
+  footerMeasureCtx.font = font;
+  return footerMeasureCtx.measureText(text).width;
+}
 
 interface PosterTextOverlayProps {
   city: string;
@@ -34,6 +48,7 @@ interface PosterTextOverlayProps {
   titleAllCaps: boolean;
   showUnderline?: boolean;
   shape?: PosterShape;
+  aspect?: number;
   letterSpacing?: string;
   titleAlign?: string;
   coordsFormat?: string;
@@ -62,6 +77,7 @@ export default function PosterTextOverlay({
   titleAlign = "center",
   showUnderline = true,
   coordsFormat = "decimal",
+  aspect = 1,
 }: PosterTextOverlayProps) {
   const toCqMin = (px: number) => (px / TEXT_DIMENSION_REFERENCE_PX) * 100;
 
@@ -75,14 +91,43 @@ export default function PosterTextOverlay({
 
   const cityLabel = formatCityLabel(city);
   const countryLabel = titleAllCaps ? country.toUpperCase() : country;
-  const cityFontSize = `${toCqMin(CITY_FONT_BASE_PX) * computeCityFontScale(city)}cqmin`;
-  const countryFontSize = `${toCqMin(COUNTRY_FONT_BASE_PX)}cqmin`;
-  const coordsFontSize = `${toCqMin(COORDS_FONT_BASE_PX)}cqmin`;
-  const attributionFontSize = `${toCqMin(ATTRIBUTION_FONT_BASE_PX)}cqmin`;
+  const cityFontUnits = toCqMin(CITY_FONT_BASE_PX) * computeCityFontScale(city);
+  const countryFontUnits = toCqMin(COUNTRY_FONT_BASE_PX);
+  const coordsFontUnits = toCqMin(COORDS_FONT_BASE_PX);
+  const attributionFontUnits = toCqMin(ATTRIBUTION_FONT_BASE_PX);
   const attributionColor = computeAttributionColor(textColor, landColor, showOverlay);
   const attributionOpacity = showOverlay ? 0.55 : 0.9;
   const yOffset = getShapeTextYOffset(shape);
-  const LIVE_ATTR_EXTRA_MARGIN_RATIO = 0.005;
+
+  // Solve the footer in the 0.01cqmin unit space the CSS above uses, so the
+  // preview and the canvas export agree on where the credits end up.
+  const posterAspect = shape === "rectangle" || shape === "rounded" ? aspect : 1;
+  const widthUnits = posterAspect >= 1 ? 100 * posterAspect : 100;
+  const heightUnits = posterAspect >= 1 ? 100 : 100 / posterAspect;
+  const creditLabel = `\u00a9 ${APP_CREDIT_URL}`;
+  const measureFont = `300 100px ${bodyFont}`;
+  const emToUnits = (text: string) =>
+    (measureFooterText(text, measureFont) / 100) * attributionFontUnits;
+  const footer = resolveFooterLayout({
+    shape,
+    width: widthUnits,
+    height: heightUnits,
+    fontSize: attributionFontUnits,
+    leftTextWidth: includeCredits ? emToUnits(creditLabel) : 0,
+    rightTextWidth: emToUnits(OSM_ATTRIBUTION),
+    titleBand: showPosterText
+      ? {
+          top: (TEXT_CITY_Y_RATIO + yOffset) * heightUnits - cityFontUnits * TITLE_BAND_TOP_EM,
+          bottom:
+            (TEXT_COORDS_Y_RATIO + yOffset) * heightUnits + coordsFontUnits * TITLE_BAND_BOTTOM_EM,
+        }
+      : undefined,
+  });
+  const attributionBottom = `${(1 - footer.attributionY / heightUnits) * 100}%`;
+  const creditBottom = `${(1 - footer.creditY / heightUnits) * 100}%`;
+  const spreadRight = `${(1 - footer.rightX / widthUnits) * 100}%`;
+  const spreadLeft = `${(footer.leftX / widthUnits) * 100}%`;
+  const stackedCenter = `${(footer.centerX / widthUnits) * 100}%`;
 
   const alignmentStyle: React.CSSProperties = {
     textAlign: titleAlign as any,
@@ -101,7 +146,7 @@ export default function PosterTextOverlay({
             style={{
               fontFamily: titleFont,
               top: `${(TEXT_CITY_Y_RATIO + yOffset) * 100}%`,
-              fontSize: cityFontSize,
+              fontSize: `${cityFontUnits}cqmin`,
               letterSpacing: ls,
               ...alignmentStyle,
             }}
@@ -122,7 +167,7 @@ export default function PosterTextOverlay({
             style={{
               fontFamily: titleFont,
               top: `${(TEXT_COUNTRY_Y_RATIO + yOffset) * 100}%`,
-              fontSize: countryFontSize,
+              fontSize: `${countryFontUnits}cqmin`,
               letterSpacing: ls,
               ...alignmentStyle,
             }}
@@ -135,7 +180,7 @@ export default function PosterTextOverlay({
               style={{
                 fontFamily: bodyFont,
                 top: `${(TEXT_COORDS_Y_RATIO + yOffset) * 100}%`,
-                fontSize: coordsFontSize,
+                fontSize: `${coordsFontUnits}cqmin`,
                 letterSpacing: ls,
                 ...alignmentStyle,
               }}
@@ -154,12 +199,14 @@ export default function PosterTextOverlay({
           fontFamily: bodyFont,
           color: attributionColor,
           opacity: attributionOpacity,
-          fontSize: attributionFontSize,
-          bottom: `${(TEXT_EDGE_MARGIN_RATIO + yOffset * 0.5 + LIVE_ATTR_EXTRA_MARGIN_RATIO) * 100}%`,
-          right: `${(1 - getShapeAttributionX(shape, true)) * 100}%`,
+          fontSize: `${attributionFontUnits}cqmin`,
+          bottom: attributionBottom,
+          ...(footer.stacked
+            ? { left: stackedCenter, transform: "translateX(-50%)", textAlign: "center" as const }
+            : { right: spreadRight, textAlign: "right" as const }),
         }}
       >
-        &copy; OpenStreetMap contributors
+        {OSM_ATTRIBUTION}
       </span>
 
       {includeCredits && (
@@ -169,12 +216,18 @@ export default function PosterTextOverlay({
             fontFamily: bodyFont,
             color: attributionColor,
             opacity: attributionOpacity,
-            fontSize: attributionFontSize,
-            bottom: `${(TEXT_EDGE_MARGIN_RATIO + yOffset * 0.5 + LIVE_ATTR_EXTRA_MARGIN_RATIO) * 100}%`,
-            left: `${getShapeAttributionX(shape, false) * 100}%`,
+            fontSize: `${attributionFontUnits}cqmin`,
+            bottom: creditBottom,
+            ...(footer.stacked
+              ? {
+                  left: stackedCenter,
+                  transform: "translateX(-50%)",
+                  textAlign: "center" as const,
+                }
+              : { left: spreadLeft, textAlign: "left" as const }),
           }}
         >
-          © {APP_CREDIT_URL}
+          {creditLabel}
         </span>
       )}
     </div>

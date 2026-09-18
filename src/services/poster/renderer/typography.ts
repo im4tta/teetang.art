@@ -12,12 +12,14 @@ import {
   COUNTRY_FONT_BASE_PX,
   COORDS_FONT_BASE_PX,
   ATTRIBUTION_FONT_BASE_PX,
+  TITLE_BAND_TOP_EM,
+  TITLE_BAND_BOTTOM_EM,
   formatCityLabel,
   computeCityFontScale,
   computeDualCityFontScale,
   computeAttributionColor,
   getShapeTextYOffset,
-  getShapeAttributionX,
+  resolveFooterLayout,
   containsKhmer,
   KHMER_OPTICAL_SHIFT_X_EM,
 } from "@/services/poster/textLayout";
@@ -284,6 +286,7 @@ export function drawPosterText(
   const dimScale = Math.max(0.45, Math.min(width, height) / TEXT_DIMENSION_REFERENCE_PX);
   const attributionFontSize = ATTRIBUTION_FONT_BASE_PX * dimScale;
   const yOffset = getShapeTextYOffset(shape) * height;
+  let titleBand: { top: number; bottom: number } | undefined;
 
   if (showPosterText) {
     const cityLabel = formatCityLabel(city);
@@ -327,29 +330,41 @@ export function drawPosterText(
         : formatCoordinates(center.lat, center.lon);
     drawTextWithAlignment(coordText, width * 0.5, coordinatesY, coordinateFontSize, coordFont);
     ctx.globalAlpha = 1;
+
+    titleBand = {
+      top: cityY - cityFontSize * TITLE_BAND_TOP_EM,
+      bottom: coordinatesY + coordinateFontSize * TITLE_BAND_BOTTOM_EM,
+    };
   }
 
-  const attrRightX = width * getShapeAttributionX(shape, true);
-  const attrLeftX = width * getShapeAttributionX(shape, false);
-  const attrY = height * (1 - TEXT_EDGE_MARGIN_RATIO) + yOffset * 0.5;
+  const creditText = includeCredits ? `\u00a9 ${APP_CREDIT_URL}` : "";
+  const attributionText = "\u00a9 OpenStreetMap contributors";
+
+  ctx.letterSpacing = "0px";
+  ctx.font = `300 ${attributionFontSize}px ${bodyFontFamily}`;
+  const footer = resolveFooterLayout({
+    shape,
+    width,
+    height,
+    fontSize: attributionFontSize,
+    leftTextWidth: creditText ? ctx.measureText(creditText).width : 0,
+    rightTextWidth: ctx.measureText(attributionText).width,
+    titleBand,
+  });
 
   ctx.fillStyle = attributionColor;
   ctx.globalAlpha = attributionAlpha;
-  ctx.textAlign = "right";
   ctx.textBaseline = "bottom";
-  ctx.letterSpacing = "0px";
-  ctx.font = `300 ${attributionFontSize}px ${bodyFontFamily}`;
-  ctx.fillText("\u00a9 OpenStreetMap contributors", attrRightX, attrY);
-  ctx.globalAlpha = 1;
+  ctx.textAlign = footer.stacked ? "center" : "right";
+  ctx.fillText(
+    attributionText,
+    footer.stacked ? footer.centerX : footer.rightX,
+    footer.attributionY,
+  );
 
-  if (includeCredits) {
-    ctx.fillStyle = attributionColor;
-    ctx.globalAlpha = attributionAlpha;
-    ctx.textAlign = "left";
-    ctx.textBaseline = "bottom";
-    ctx.letterSpacing = "0px";
-    ctx.font = `300 ${attributionFontSize}px ${bodyFontFamily}`;
-    ctx.fillText(`© ${APP_CREDIT_URL}`, attrLeftX, attrY);
-    ctx.globalAlpha = 1;
+  if (creditText) {
+    ctx.textAlign = footer.stacked ? "center" : "left";
+    ctx.fillText(creditText, footer.stacked ? footer.centerX : footer.leftX, footer.creditY);
   }
+  ctx.globalAlpha = 1;
 }

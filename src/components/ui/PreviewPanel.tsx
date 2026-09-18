@@ -523,6 +523,7 @@ export default function PreviewPanel() {
                   titleAllCaps={form.titleAllCaps}
                   showUnderline={form.showUnderline}
                   shape={form.mapShape as PosterShape}
+                  aspect={Number.isFinite(aspect) && aspect > 0 ? aspect : 1}
                   letterSpacing={form.letterSpacing}
                   titleAlign={form.titleAlign}
                   coordsFormat={form.coordsFormat}
