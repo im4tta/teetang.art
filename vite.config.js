@@ -1,11 +1,9 @@
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 import react from "@vitejs/plugin-react";
 import path from "path";
 import fs from "fs";
 
-const packageJson = JSON.parse(
-  fs.readFileSync(path.resolve(__dirname, "package.json"), "utf8"),
-);
+const packageJson = JSON.parse(fs.readFileSync(path.resolve(__dirname, "package.json"), "utf8"));
 const appVersion = String(packageJson.version ?? "0.0.0");
 const MAPLIBRE_DEP_PACKAGES = new Set([
   "earcut",
@@ -34,7 +32,7 @@ function getPackageName(id) {
   return parts[0];
 }
 
-export default defineConfig({
+const baseConfig = {
   plugins: [react()],
   define: {
     "import.meta.env.VITE_APP_VERSION": JSON.stringify(appVersion),
@@ -81,4 +79,29 @@ export default defineConfig({
       "@": path.resolve(__dirname, "src"),
     },
   },
+};
+
+/**
+ * Dev/preview stand-in for the `api/carto` edge function: CARTO raster tiles
+ * are requested on the app's own origin so CARTO_API_KEY stays server-side.
+ */
+function cartoProxy(apiKey) {
+  return {
+    "/api/carto": {
+      target: "https://a.basemaps.cartocdn.com",
+      changeOrigin: true,
+      rewrite: (requestPath) =>
+        `${requestPath.replace(/^\/api\/carto/, "")}?key=${encodeURIComponent(apiKey ?? "")}`,
+    },
+  };
+}
+
+export default defineConfig(({ mode }) => {
+  const proxy = cartoProxy(loadEnv(mode, process.cwd(), "").CARTO_API_KEY);
+
+  return {
+    ...baseConfig,
+    server: { proxy },
+    preview: { proxy },
+  };
 });

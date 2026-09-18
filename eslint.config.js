@@ -7,6 +7,13 @@ import tseslint from "typescript-eslint";
 export default tseslint.config(
   { ignores: ["dist", "node_modules"] },
   {
+    // Server-side functions (Vercel/edge) run in a Node-like scope.
+    files: ["api/**/*.{ts,tsx}"],
+    languageOptions: {
+      globals: globals.node,
+    },
+  },
+  {
     extends: [js.configs.recommended, ...tseslint.configs.recommended],
     files: ["**/*.{ts,tsx}"],
     languageOptions: {
