@@ -206,4 +206,6 @@ export const en = {
   "embed.copied": "Copied!",
   "design.new": "New poster",
   "design.newConfirm": "Start a new poster? Your current design will be cleared.",
+  "design.undo": "Undo",
+  "design.redo": "Redo",
 } satisfies Record<string, string>;

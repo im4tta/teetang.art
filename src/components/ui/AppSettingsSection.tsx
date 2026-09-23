@@ -1,4 +1,5 @@
 import NewPosterButton from "@/components/ui/NewPosterButton";
+import UndoRedoButtons from "@/components/ui/UndoRedoButtons";
 import {
   SunIcon,
   MoonIcon,
@@ -58,6 +59,7 @@ export default function AppSettingsSection({ form, onChange }: Props) {
       <div className="settings-group" style={{ marginTop: 20 }}>
         <p className="section-summary-label">Poster</p>
         <div className="settings-link-grid">
+          <UndoRedoButtons className="settings-link-btn" withLabel />
           <NewPosterButton className="settings-link-btn" withLabel />
         </div>
       </div>

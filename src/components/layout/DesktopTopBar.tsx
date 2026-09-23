@@ -14,6 +14,7 @@ import { useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
 import DesktopLocationBar from "@/components/layout/DesktopLocationBar";
 import NewPosterButton from "@/components/ui/NewPosterButton";
+import UndoRedoButtons from "@/components/ui/UndoRedoButtons";
 
 interface DesktopTopBarProps {
   activeTab: MobileTab;
@@ -105,6 +106,7 @@ export default function DesktopTopBar({
           <div className="desktop-top-search">
             <DesktopLocationBar />
           </div>
+          <UndoRedoButtons className="desktop-top-about-btn" />
           <NewPosterButton className="desktop-top-about-btn" />
           <button
             type="button"

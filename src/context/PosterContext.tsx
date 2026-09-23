@@ -8,13 +8,9 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import {
-  posterReducer,
-  type PosterState,
-  type PosterAction,
-  type PosterForm,
-} from "@/context/posterReducer";
+import { type PosterState, type PosterAction, type PosterForm } from "@/context/posterReducer";
 import { INITIAL_STATE } from "@/context/posterDefaults";
+import { createHistory, posterHistoryReducer } from "@/context/posterHistory";
 import { getTheme } from "@/services/theme/themeRepository";
 import type { ResolvedTheme } from "@/services/theme/types";
 import { applyThemeColorOverrides } from "@/services/theme/colorPaths";
@@ -59,6 +55,8 @@ interface PosterCtxValue {
   mapStyle2: StyleSpecification;
   mapRef: MapInstanceRef;
   mapRef2: MapInstanceRef;
+  canUndo: boolean;
+  canRedo: boolean;
 }
 
 const PosterContext = createContext<PosterCtxValue | null>(null);
@@ -74,7 +72,10 @@ export function PosterProvider({ children }: { children: ReactNode }) {
       autoLocate: !draft && !linkSetsLocation(window.location.search),
     };
   });
-  const [state, dispatch] = useReducer(posterReducer, initial.state);
+  const [history, dispatch] = useReducer(posterHistoryReducer, initial.state, createHistory);
+  const state = history.present;
+  const canUndo = history.past.length > 0;
+  const canRedo = history.future.length > 0;
   const mapRef = useRef(null) as MapInstanceRef;
   const mapRef2 = useRef(null) as MapInstanceRef;
   const lastThemeTextRef = useRef<string | null>(null);
@@ -222,8 +223,20 @@ export function PosterProvider({ children }: { children: ReactNode }) {
       mapStyle2,
       mapRef,
       mapRef2,
+      canUndo,
+      canRedo,
     }),
-    [state, selectedTheme, selectedTheme2, effectiveTheme, effectiveTheme2, mapStyle, mapStyle2],
+    [
+      state,
+      selectedTheme,
+      selectedTheme2,
+      effectiveTheme,
+      effectiveTheme2,
+      mapStyle,
+      mapStyle2,
+      canUndo,
+      canRedo,
+    ],
   );
 
   return (

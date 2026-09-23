@@ -210,4 +210,6 @@ export const km: TranslationDict = {
   "embed.copied": "បានចម្លង!",
   "design.new": "ផ្ទាំងថ្មី",
   "design.newConfirm": "ចាប់ផ្ដើមផ្ទាំងថ្មី? ការរចនាបច្ចុប្បន្នរបស់អ្នកនឹងត្រូវលុបចោល។",
+  "design.undo": "មិនធ្វើវិញ",
+  "design.redo": "ធ្វើវិញ",
 };
