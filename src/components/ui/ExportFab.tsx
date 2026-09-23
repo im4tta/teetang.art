@@ -4,9 +4,10 @@ import type { ExportFormat } from "@/services/export/types";
 import { CloseIcon, DownloadIcon, LoaderIcon } from "@/components/ui/Icons";
 import SocialLinkGroup from "@/components/ui/SocialLinkGroup";
 import { useI18n } from "@/context/i18n/context";
+import type { TranslationKey } from "@/context/i18n/types";
 import { usePosterContext } from "@/context/PosterContext";
 
-const FORMAT_OPTIONS: { format: ExportFormat; labelKey: string }[] = [
+const FORMAT_OPTIONS: { format: ExportFormat; labelKey: TranslationKey }[] = [
   { format: "png", labelKey: "export.png" },
   { format: "pdf", labelKey: "export.pdf" },
   { format: "svg", labelKey: "export.rsvg" },
@@ -178,7 +179,7 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
 
             <div className="export-modal-actions">
               {FORMAT_OPTIONS.map(({ format, labelKey }) => {
-                const label = t(labelKey as any);
+                const label = t(labelKey);
                 return (
                   <button
                     key={labelKey}

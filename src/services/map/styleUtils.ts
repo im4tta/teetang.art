@@ -17,8 +17,10 @@ export function applyIncrementalStyleUpdate(
     if (!prevLayer) continue;
 
     // Diff paint properties
-    const nextPaint = (layer as Record<string, unknown>).paint as Record<string, unknown> | undefined;
-    const prevPaint = (prevLayer as Record<string, unknown>).paint as Record<string, unknown> | undefined;
+    const nextPaint = (layer as Record<string, unknown>).paint as
+      Record<string, unknown> | undefined;
+    const prevPaint = (prevLayer as Record<string, unknown>).paint as
+      Record<string, unknown> | undefined;
     if (nextPaint) {
       for (const key of Object.keys(nextPaint)) {
         if (JSON.stringify(nextPaint[key]) !== JSON.stringify(prevPaint?.[key])) {
@@ -28,8 +30,10 @@ export function applyIncrementalStyleUpdate(
     }
 
     // Diff layout properties
-    const nextLayout = (layer as Record<string, unknown>).layout as Record<string, unknown> | undefined;
-    const prevLayout = (prevLayer as Record<string, unknown>).layout as Record<string, unknown> | undefined;
+    const nextLayout = (layer as Record<string, unknown>).layout as
+      Record<string, unknown> | undefined;
+    const prevLayout = (prevLayer as Record<string, unknown>).layout as
+      Record<string, unknown> | undefined;
     if (nextLayout) {
       for (const key of Object.keys(nextLayout)) {
         if (JSON.stringify(nextLayout[key]) !== JSON.stringify(prevLayout?.[key])) {
@@ -49,11 +53,4 @@ export function applyIncrementalStyleUpdate(
       );
     }
   }
-}
-
-export function styleLayersChanged(prev: StyleSpecification, next: StyleSpecification): boolean {
-  const prevIds = prev.layers.map(l => l.id).sort();
-  const nextIds = next.layers.map(l => l.id).sort();
-  if (prevIds.length !== nextIds.length) return true;
-  return prevIds.some((id, i) => id !== nextIds[i]);
 }

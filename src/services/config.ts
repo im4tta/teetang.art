@@ -23,15 +23,9 @@ export const [DEFAULT_LAT, DEFAULT_LON] = [11.5564, 104.9282];
 export const [DEFAULT_CITY, DEFAULT_COUNTRY] = ["Phnom Penh", "Cambodia"];
 
 const env = import.meta.env;
-export const SOCIAL_LINKEDIN = env.VITE_SOCIAL_LINKEDIN ?? "";
 export const SOCIAL_INSTAGRAM =
   env.VITE_SOCIAL_INSTAGRAM ?? "https://www.instagram.com/teetang.art";
-export const SOCIAL_REDDIT = env.VITE_SOCIAL_REDDIT ?? "";
-export const SOCIAL_THREADS = env.VITE_SOCIAL_THREADS ?? "";
-export const SOCIAL_YOUTUBE = env.VITE_SOCIAL_YOUTUBE ?? "";
 export const ABA_ACCOUNT = env.VITE_ABA_ACCOUNT ?? "103456789";
-export const DEVELOPER_NAME = env.VITE_DEVELOPER_NAME ?? "";
-export const DEVELOPER_PROFILE_URL = env.VITE_DEVELOPER_PROFILE_URL ?? "";
 export const APP_CREDIT_URL = env.VITE_APP_CREDIT_URL ?? "teetang.art";
 export const APP_VERSION = String(env.VITE_APP_VERSION ?? "0.0.0").trim();
 export const UPDATES_URL = String(env.VITE_UPDATES_URL ?? "/updates.json").trim();
@@ -112,7 +106,6 @@ export const TILE_PROVIDERS: TileProvider[] = [
     maxZoom: 19,
   },
 ];
-export const DEFAULT_TILE_PROVIDER = "openfreemap";
 
 export const RADIUS_OPTIONS = [
   { value: "0", label: "None" },

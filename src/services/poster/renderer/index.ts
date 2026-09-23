@@ -462,7 +462,3 @@ export async function compositeDualExport(
     size: { width, height, requestedWidth: width, requestedHeight: height, downscaleFactor: 1 },
   };
 }
-
-export { resolveCanvasSize } from "@/services/poster/renderer/canvas";
-export { applyFades } from "@/services/poster/renderer/layers";
-export { drawPosterText } from "@/services/poster/renderer/typography";

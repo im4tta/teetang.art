@@ -12,13 +12,3 @@ export interface Location {
 }
 
 export interface SearchResult extends Location {}
-
-/** Place types that represent actual settlements */
-export const SETTLEMENT_TYPES = new Set([
-  "city",
-  "town",
-  "village",
-  "hamlet",
-  "municipality",
-  "locality",
-]);

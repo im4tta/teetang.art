@@ -603,7 +603,7 @@ export default function PreviewPanel() {
       <div className="map-controls" aria-label="Map controls">
         <PickerModal
           open={isUserGuideOpen}
-          title={t("nav.userGuide" as any)}
+          title={t("nav.userGuide")}
           onClose={() => setIsUserGuideOpen(false)}
         >
           <UserGuide />
@@ -630,7 +630,7 @@ export default function PreviewPanel() {
               type="button"
               className="map-control-btn user-guide-btn"
               onClick={() => setIsUserGuideOpen(true)}
-              aria-label={t("nav.userGuide" as any)}
+              aria-label={t("nav.userGuide")}
             >
               <InfoIcon />
             </button>

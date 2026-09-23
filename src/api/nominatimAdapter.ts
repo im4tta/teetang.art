@@ -2,7 +2,10 @@ import type { ICache } from "@/services/cache/ports";
 import type { IHttp } from "@/api/http/ports";
 import type { IGeocodePort } from "@/services/location/ports";
 import type { SearchResult } from "@/services/location/types";
-import { normalizeLocationResult, parseLocationResponseItems } from "@/services/location/locationParser";
+import {
+  normalizeLocationResult,
+  parseLocationResponseItems,
+} from "@/services/location/locationParser";
 import { GEOCODE_TTL_MS, LOCATION_SEARCH_TTL_MS } from "@/services/location/constants";
 import {
   getGeocodeCacheKey,
@@ -15,15 +18,7 @@ const inFlightSearchRequests = new Map<string, Promise<SearchResult[]>>();
 const inFlightReverseRequests = new Map<string, Promise<SearchResult>>();
 
 export function createNominatimAdapter(http: IHttp, cache: ICache): IGeocodePort {
-  let acceptLanguage = "en";
-
-  function setLanguage(lang: string) {
-    acceptLanguage = lang === "km" ? "km" : "en";
-  }
-
-  function buildHeaders(): Record<string, string> {
-    return { Accept: "application/json", "Accept-Language": acceptLanguage };
-  }
+  const headers = { Accept: "application/json", "Accept-Language": "en" };
 
   async function searchLocations(
     query: string,
@@ -51,7 +46,7 @@ export function createNominatimAdapter(http: IHttp, cache: ICache): IGeocodePort
       `format=jsonv2&addressdetails=1&limit=${normalizedLimit}&q=${encodeURIComponent(lookup)}`;
 
     const promise = http
-      .get(url, { headers: buildHeaders(), signal }, 16_000)
+      .get(url, { headers, signal }, 16_000)
       .then(async (response) => {
         const data = await response.json();
         const results = parseLocationResponseItems(data);
@@ -91,19 +86,6 @@ export function createNominatimAdapter(http: IHttp, cache: ICache): IGeocodePort
     return first;
   }
 
-  async function geocodeCity(
-    city: string,
-    country: string,
-  ): Promise<{ lat: number; lon: number; displayName: string }> {
-    const lookup = `${city}, ${country}`.trim();
-    const location = await geocodeLocation(lookup);
-    return {
-      lat: location.lat,
-      lon: location.lon,
-      displayName: location.label,
-    };
-  }
-
   async function reverseGeocode(lat: number, lon: number): Promise<SearchResult> {
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
       throw new Error("Latitude and longitude are required.");
@@ -127,7 +109,7 @@ export function createNominatimAdapter(http: IHttp, cache: ICache): IGeocodePort
       `format=jsonv2&addressdetails=1&zoom=10&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lon))}`;
 
     const promise = http
-      .get(url, { headers: buildHeaders() }, 16_000)
+      .get(url, { headers }, 16_000)
       .then(async (response) => {
         const data = await response.json();
         const normalized = normalizeLocationResult(data);
@@ -145,5 +127,5 @@ export function createNominatimAdapter(http: IHttp, cache: ICache): IGeocodePort
     return promise;
   }
 
-  return { setLanguage, searchLocations, geocodeLocation, reverseGeocode, geocodeCity };
+  return { searchLocations, geocodeLocation, reverseGeocode };
 }

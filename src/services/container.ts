@@ -18,19 +18,12 @@ const nominatim = createNominatimAdapter(fetchAdapter, localStorageCache);
 export const searchLocations = nominatim.searchLocations;
 export const geocodeLocation = nominatim.geocodeLocation;
 export const reverseGeocodeCoordinates = nominatim.reverseGeocode;
-export const setGeocodeLanguage = nominatim.setLanguage;
 
 /* ── Fonts ── */
 
 export const ensureGoogleFont = googleFontsAdapter.ensureFont.bind(googleFontsAdapter);
 
-/* ── Poster compositing ── */
-
-export { compositeExport } from "@/services/poster/renderer";
-
 /* ── Export helpers ── */
-
-export { captureMapAsCanvas } from "@/services/export/mapExporter";
 
 export { createPngBlob } from "@/services/export/pngExporter";
 export { createLayeredSvgBlobFromMap } from "@/services/export/layeredSvgExporter";
@@ -40,7 +33,3 @@ export { createPdfBlobFromCanvas } from "@/services/export/pdfExporter";
 export { createPosterFilename } from "@/services/export/filenameGenerator";
 
 export { triggerDownloadBlob } from "@/services/export/fileDownloader";
-
-/* ── Routes ── */
-
-export { drawRoutesOnCanvas } from "@/services/routes/rendering";

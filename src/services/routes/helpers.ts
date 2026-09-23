@@ -3,29 +3,14 @@ import type { Coordinate } from "@/utils/geo/types";
 import type { MarkerItem } from "@/services/markers/types";
 import {
   DEFAULT_ROUTE_COLOR,
-  DEFAULT_ROUTE_ENDPOINT_SIZE,
   DEFAULT_ROUTE_FINISH_ICON_ID,
   DEFAULT_ROUTE_OPACITY,
   DEFAULT_ROUTE_START_ICON_ID,
   DEFAULT_ROUTE_STROKE_WIDTH,
 } from "@/services/routes/constants";
-import type {
-  ParsedGpx,
-  Route,
-  RouteBounds,
-  RouteDefaults,
-  RouteEndpointMarker,
-  RouteSource,
-} from "@/services/routes/types";
+import type { Route, RouteBounds, RouteDefaults } from "@/services/routes/types";
 
 const METERS_PER_DEGREE_LAT = 111_320;
-
-function createId(prefix: string): string {
-  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
-    return `${prefix}-${crypto.randomUUID()}`;
-  }
-  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
-}
 
 export function createDefaultRouteSettings(): RouteDefaults {
   return {
@@ -35,54 +20,6 @@ export function createDefaultRouteSettings(): RouteDefaults {
     lineStyle: "solid",
     startIconId: DEFAULT_ROUTE_START_ICON_ID,
     finishIconId: DEFAULT_ROUTE_FINISH_ICON_ID,
-  };
-}
-
-export function getGpxUploadLabel(filename: string): string {
-  const baseName = filename.replace(/\.[^.]+$/, "").trim();
-  return baseName || "Route";
-}
-
-export function createRouteEndpointMarker(input: {
-  iconId: string;
-  defaults: RouteDefaults;
-}): RouteEndpointMarker {
-  return {
-    iconId: input.iconId,
-    color: input.defaults.color,
-    size: DEFAULT_ROUTE_ENDPOINT_SIZE,
-  };
-}
-
-export function createRoute(input: {
-  parsed: ParsedGpx;
-  defaults: RouteDefaults;
-  source?: RouteSource;
-  label?: string;
-  sourceFilename?: string;
-}): Route {
-  const source = input.source ?? "gpx";
-  return {
-    id: createId(source),
-    label: input.label ?? input.parsed.label,
-    source,
-    sourceFilename: input.sourceFilename,
-    segments: input.parsed.segments,
-    waypoints: [],
-    color: input.defaults.color,
-    strokeWidth: input.defaults.strokeWidth,
-    opacity: input.defaults.opacity,
-    lineStyle: input.defaults.lineStyle,
-    visible: true,
-    showEndpoints: true,
-    startMarker: createRouteEndpointMarker({
-      iconId: input.defaults.startIconId,
-      defaults: input.defaults,
-    }),
-    finishMarker: createRouteEndpointMarker({
-      iconId: input.defaults.finishIconId,
-      defaults: input.defaults,
-    }),
   };
 }
 
@@ -147,15 +84,6 @@ export function boundsHalfWidthMeters(bounds: RouteBounds): number {
   return (Math.max(latMeters, lonMeters) / 2) * padding;
 }
 
-export function unionBounds(a: RouteBounds, b: RouteBounds): RouteBounds {
-  return {
-    minLat: Math.min(a.minLat, b.minLat),
-    maxLat: Math.max(a.maxLat, b.maxLat),
-    minLon: Math.min(a.minLon, b.minLon),
-    maxLon: Math.max(a.maxLon, b.maxLon),
-  };
-}
-
 export function routeBounds(route: Route): RouteBounds | null {
   let minLat = Infinity;
   let maxLat = -Infinity;
@@ -176,16 +104,6 @@ export function routeBounds(route: Route): RouteBounds | null {
   return hasPoint ? { minLat, maxLat, minLon, maxLon } : null;
 }
 
-export function combinedRoutesBounds(routes: Route[], extra?: RouteBounds): RouteBounds | null {
-  let acc: RouteBounds | null = extra ? { ...extra } : null;
-  for (const route of routes) {
-    const bounds = routeBounds(route);
-    if (!bounds) continue;
-    acc = acc ? unionBounds(acc, bounds) : bounds;
-  }
-  return acc;
-}
-
 export function routeLengthMeters(route: Route): number {
   let total = 0;
   for (const segment of route.segments) {
@@ -194,13 +112,4 @@ export function routeLengthMeters(route: Route): number {
     }
   }
   return total;
-}
-
-export function readFileAsText(file: File): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload = () => resolve(String(reader.result ?? ""));
-    reader.onerror = () => reject(new Error("Could not read GPX file."));
-    reader.readAsText(file);
-  });
 }
