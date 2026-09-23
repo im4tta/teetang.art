@@ -65,7 +65,7 @@ export function useMapRecenter({
     const country = String(target.country ?? "").trim();
     const continent = String(target.continent ?? "").trim();
     const label = String(target.label ?? "").trim() || DEFAULT_LOCATION_LABEL;
-    const shortLabel = String((target as any).shortLabel ?? "").trim();
+    const shortLabel = String(target.shortLabel ?? "").trim();
 
     map.stop();
     map.jumpTo({ bearing: 0, pitch: 0 });
@@ -101,7 +101,7 @@ export function useMapRecenter({
     void reverseGeocodeCoordinates(target.lat, target.lon).then((r) => {
       dispatch({ type: "SET_USER_LOCATION", location: r });
       const rc = String(r.city ?? "").trim() || DEFAULT_CITY;
-      const rs = String((r as any).shortLabel ?? "").trim();
+      const rs = String(r.shortLabel ?? "").trim();
       dispatch({
         type: "SET_FORM_FIELDS",
         resetDisplayNameOverrides: true,

@@ -1,4 +1,5 @@
 import type { ThemeColorKey } from "@/services/theme/types";
+import { useI18n } from "@/context/i18n/context";
 
 interface ColorTarget {
   key: ThemeColorKey;
@@ -24,9 +25,10 @@ export default function ThemeColorEditor({
   colorTargets,
   onTargetSelect,
 }: ThemeColorEditorProps) {
+  const { t } = useI18n();
   return (
     <section className="panel-block color-editor-screen">
-      <h2>Color Editor</h2>
+      <h2>{t("theme.colorEditor")}</h2>
 
       <div className="color-editor-header">
         <p className="theme-active-label">Editing: {activeColorLabel}</p>

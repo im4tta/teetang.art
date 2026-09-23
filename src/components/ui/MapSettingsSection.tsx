@@ -12,6 +12,7 @@ import { CheckIcon, EditIcon } from "@/components/ui/Icons";
 import type { ResolvedTheme, ThemeGroup } from "@/services/theme/types";
 import type { LayoutGroup } from "@/services/layout/types";
 import { useColorEditorState } from "@/hooks/useColorEditorState";
+import { useI18n } from "@/context/i18n/context";
 
 interface MapSettingsForm {
   theme: string;
@@ -67,6 +68,7 @@ export default function MapSettingsSection({
   onResetColors,
   onColorEditorActiveChange,
 }: MapSettingsSectionProps) {
+  const { t } = useI18n();
   const [isThemeEditing, setIsThemeEditing] = useState(false);
   const [isLayoutEditing, setIsLayoutEditing] = useState(false);
   const themeListRef = useRef<HTMLDivElement | null>(null);
@@ -95,8 +97,8 @@ export default function MapSettingsSection({
 
   const selectedLayoutDescription =
     selectedLayoutOption.id === "custom"
-      ? "Your custom layout."
-      : selectedLayoutOption.description?.trim() || "No description available.";
+      ? t("layout.customDescription")
+      : selectedLayoutOption.description?.trim() || t("theme.noDescription");
 
   function handleThemeSelect(themeId: string) {
     onThemeChange(themeId);
@@ -145,13 +147,16 @@ export default function MapSettingsSection({
 
   useEffect(() => {
     onColorEditorActiveChange?.(false);
-    return () => { onColorEditorActiveChange?.(false); };
+    return () => {
+      onColorEditorActiveChange?.(false);
+    };
   }, [onColorEditorActiveChange]);
 
   useEffect(() => {
     if (activeMobileTab !== "theme") return;
     const frameId = window.requestAnimationFrame(() => {
-      const selectedThemeCard = themeListRef.current?.querySelector<HTMLElement>(".theme-card.is-selected");
+      const selectedThemeCard =
+        themeListRef.current?.querySelector<HTMLElement>(".theme-card.is-selected");
       selectedThemeCard?.scrollIntoView({ behavior: "auto", block: "nearest", inline: "start" });
     });
     return () => window.cancelAnimationFrame(frameId);
@@ -160,7 +165,9 @@ export default function MapSettingsSection({
   useEffect(() => {
     if (activeMobileTab !== "layout" || isLayoutEditing) return;
     const frameId = window.requestAnimationFrame(() => {
-      const selectedLayoutCard = layoutGroupsRef.current?.querySelector<HTMLElement>(".layout-card.is-selected");
+      const selectedLayoutCard = layoutGroupsRef.current?.querySelector<HTMLElement>(
+        ".layout-card.is-selected",
+      );
       selectedLayoutCard?.scrollIntoView({ behavior: "auto", block: "nearest", inline: "start" });
     });
     return () => window.cancelAnimationFrame(frameId);
@@ -173,16 +180,20 @@ export default function MapSettingsSection({
     <section className="panel-block">
       {showTheme ? (
         <div className="map-settings-theme-part">
-          <h2>Theme</h2>
+          <h2>{t("theme")}</h2>
 
           {isThemeEditing ? (
             colorEditor.activeColorKey ? (
               <section className="panel-block color-editor-screen">
-                <h2>Color Editor</h2>
+                <h2>{t("theme.colorEditor")}</h2>
                 <div className="color-editor-header">
                   <p className="theme-active-label">Editing: {colorEditor.activeColorLabel}</p>
                   <div className="theme-edit-actions">
-                    <button type="button" className="theme-edit-done-btn" onClick={colorEditor.clearColorPickerState}>
+                    <button
+                      type="button"
+                      className="theme-edit-done-btn"
+                      onClick={colorEditor.clearColorPickerState}
+                    >
                       Done
                     </button>
                   </div>
@@ -193,7 +204,12 @@ export default function MapSettingsSection({
                   suggestedColors={editorChoices.suggestedColors}
                   moreColors={editorChoices.moreColors}
                   onChange={(color: string) => onColorChange(colorEditor.editorKey, color)}
-                  onResetColor={() => colorEditor.handleResetSingleColor(colorEditor.editorKey as ThemeColorKey, onColorChange)}
+                  onResetColor={() =>
+                    colorEditor.handleResetSingleColor(
+                      colorEditor.editorKey as ThemeColorKey,
+                      onColorChange,
+                    )
+                  }
                   canResetColor={colorEditor.canResetEditorColor}
                 />
               </section>
@@ -223,7 +239,7 @@ export default function MapSettingsSection({
 
       {showLayout ? (
         <div className="map-settings-layout-part">
-          <h2>Layout</h2>
+          <h2>{t("layout")}</h2>
           <div className="layout-summary-head">
             <div className="layout-summary-copy">
               <p className="layout-summary-label">
@@ -233,12 +249,26 @@ export default function MapSettingsSection({
               <p className="layout-summary-description">{selectedLayoutDescription}</p>
             </div>
             {isLayoutEditing ? (
-              <button type="button" className="theme-customize-btn" onClick={handleDoneLayoutEditor} aria-label="Done editing layout">
-                <span className="theme-customize-icon" aria-hidden="true"><CheckIcon /></span>
+              <button
+                type="button"
+                className="theme-customize-btn"
+                onClick={handleDoneLayoutEditor}
+                aria-label={t("doneEditing")}
+              >
+                <span className="theme-customize-icon" aria-hidden="true">
+                  <CheckIcon />
+                </span>
               </button>
             ) : (
-              <button type="button" className="theme-customize-btn" onClick={handleOpenLayoutEditor} aria-label="Customize layout size">
-                <span className="theme-customize-icon" aria-hidden="true"><EditIcon /></span>
+              <button
+                type="button"
+                className="theme-customize-btn"
+                onClick={handleOpenLayoutEditor}
+                aria-label={t("layout.customize")}
+              >
+                <span className="theme-customize-icon" aria-hidden="true">
+                  <EditIcon />
+                </span>
               </button>
             )}
           </div>

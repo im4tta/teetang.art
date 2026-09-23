@@ -10,7 +10,11 @@ import { drawPosterText } from "@/services/poster/renderer/typography";
 import type { ResolvedTheme } from "@/services/theme/types";
 import type { PosterShape } from "@/services/poster/clipShapes";
 import { svgClipPathElement } from "@/services/poster/clipShapes";
-import { waitForMapIdle, createOffscreenContainer, resolveExportRenderParams } from "@/services/export/exportUtils";
+import {
+  waitForMapIdle,
+  createOffscreenContainer,
+  resolveExportRenderParams,
+} from "@/services/export/exportUtils";
 
 interface LayeredSvgOptions {
   map: MaplibreMap;

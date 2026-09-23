@@ -2,6 +2,7 @@ import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { REPO_URL } from "@/services/config";
 import { preloadEditorPage } from "@/pages/editorLoader";
+import { readDraftTitle } from "@/context/posterDraft";
 import "@/styles/home-page.css";
 import {
   Sparkles,
@@ -90,6 +91,19 @@ const showcaseSamples = [
   },
 ] as const;
 
+const HOME_THEME_KEY = "teetangart.homeTheme";
+
+/** The visitor's last choice, else their device's light/dark setting. */
+function readPrefersDark(): boolean {
+  try {
+    const stored = localStorage.getItem(HOME_THEME_KEY);
+    if (stored === "dark" || stored === "light") return stored === "dark";
+  } catch {
+    // Storage unavailable; fall back to the device setting.
+  }
+  return !window.matchMedia("(prefers-color-scheme: light)").matches;
+}
+
 function CarouselFeatured() {
   const cards = [
     {
@@ -174,7 +188,8 @@ function CarouselFeatured() {
 }
 
 export default function HomePage() {
-  const [isDark, setIsDark] = useState(true);
+  const [isDark, setIsDark] = useState(readPrefersDark);
+  const [draftTitle] = useState(readDraftTitle);
   const [isNavOpen, setIsNavOpen] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
   const toastTimerRef = useRef<number | null>(null);
@@ -217,6 +232,11 @@ export default function HomePage() {
   const handleThemeToggle = () => {
     const next = !isDark;
     setIsDark(next);
+    try {
+      localStorage.setItem(HOME_THEME_KEY, next ? "dark" : "light");
+    } catch {
+      // Not remembered; the toggle still works for this visit.
+    }
     triggerToast(`ប្តូរទៅកាន់ស្ទីល ${next ? "ងងឹត (Dark Mode)" : "ភ្លឺ (Light Mode)"}`);
   };
 
@@ -335,7 +355,8 @@ export default function HomePage() {
 
           <div className="home-hero-actions">
             <Link to="/create" className="home-btn home-btn-primary">
-              <MousePointer2 size={20} /> សាកល្បងរចនាឥឡូវនេះ
+              <MousePointer2 size={20} />{" "}
+              {draftTitle ? `បន្តរចនាផ្ទាំង ${draftTitle}` : "សាកល្បងរចនាឥឡូវនេះ"}
             </Link>
             <a
               href={REPO_URL}

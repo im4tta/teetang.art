@@ -168,7 +168,10 @@ export type PosterAction =
   | { type: "REPLACE_ROUTES"; routes: Route[] }
   | { type: "CLEAR_ROUTES" }
   | { type: "SET_ROUTE_DEFAULTS"; defaults: Partial<RouteDefaults>; applyToRoutes?: boolean }
-  | { type: "RESET_DESIGN" };
+  | { type: "RESET_DESIGN" }
+  // Handled by posterHistoryReducer.
+  | { type: "UNDO" }
+  | { type: "REDO" };
 
 const COORD_FIELDS = new Set(["location", "latitude", "longitude"]);
 

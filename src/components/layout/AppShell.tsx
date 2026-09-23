@@ -18,9 +18,10 @@ import { useSwipeDown } from "@/hooks/useSwipeDown";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { CheckIcon } from "@/components/ui/Icons";
 import SupportModal from "@/components/ui/SupportModal";
-import { SUPPORT_PROMPT_EVENT, type SupportPromptState } from "@/hooks/useExport";
+import { SUPPORT_PROMPT_EVENT, type SupportPromptState } from "@/services/export/supportPrompt";
 import DotField from "@/components/layout/DotField";
 import DesktopLocationBar from "@/components/layout/DesktopLocationBar";
+import { useUndoShortcuts } from "@/hooks/useUndoShortcuts";
 
 const AboutModal = lazy(() => import("@/components/ui/AboutModal"));
 const SettingsPanel = lazy(() => import("@/components/ui/SettingsPanel"));
@@ -99,6 +100,7 @@ function SettingsDrawer({ mobileTab, onClose }: { mobileTab: MobileTab; onClose:
 
 export default function AppShell() {
   const { t } = useI18n();
+  useUndoShortcuts();
   const { state, dispatch } = usePosterContext();
   const { isMarkerEditorActive } = state;
   const activeMarker =

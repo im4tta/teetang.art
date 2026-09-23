@@ -428,3 +428,10 @@ button.install-prompt-dismiss:hover {
   height: 1.05em;
   color: currentColor;
 }
+
+.desktop-top-about-btn:disabled,
+.settings-link-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}

@@ -71,3 +71,19 @@ export function saveDraft(draft: Draft): void {
     }
   }
 }
+
+/** The saved poster's title, for offering to continue it; null when there is no draft. */
+export function readDraftTitle(): string | null {
+  try {
+    const saved = JSON.parse(localStorage.getItem(DRAFT_KEY) ?? "null");
+    if (!isRecord(saved) || !isRecord(saved.form)) return null;
+    const { displayCity, location } = saved.form;
+    return (
+      String(displayCity || location || "")
+        .trim()
+        .slice(0, 40) || null
+    );
+  } catch {
+    return null;
+  }
+}

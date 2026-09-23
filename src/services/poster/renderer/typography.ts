@@ -85,8 +85,8 @@ export function drawDualPosterText(
       ctx.font = font;
       ctx.textAlign = "center";
       const metrics = ctx.measureText(text);
-      const left = (metrics as any).actualBoundingBoxLeft;
-      const right = (metrics as any).actualBoundingBoxRight;
+      const left = metrics.actualBoundingBoxLeft;
+      const right = metrics.actualBoundingBoxRight;
       const baseX =
         typeof left === "number" && typeof right === "number" ? cx - (right - left) / 2 : cx;
       const khmerShift = containsKhmer(text) ? fontSize * KHMER_OPTICAL_SHIFT_X_EM : 0;
@@ -260,8 +260,8 @@ export function drawPosterText(
 
     if (align === "center") {
       const metrics = ctx.measureText(text);
-      const left = (metrics as any).actualBoundingBoxLeft;
-      const right = (metrics as any).actualBoundingBoxRight;
+      const left = metrics.actualBoundingBoxLeft;
+      const right = metrics.actualBoundingBoxRight;
       const baseX =
         typeof left === "number" && typeof right === "number" ? x - (right - left) / 2 : x;
       const khmerShift = containsKhmer(text) ? fontSize * KHMER_OPTICAL_SHIFT_X_EM : 0;

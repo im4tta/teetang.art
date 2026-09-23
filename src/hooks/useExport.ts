@@ -2,29 +2,16 @@ import { useCallback, useMemo } from "react";
 import { usePosterContext } from "@/context/PosterContext";
 import { localStorageCache } from "@/services/cache/localStorageCache";
 import type { ExportFormat } from "@/services/export/types";
-import { captureMapAsCanvas } from "@/services/export/mapExporter";
-import { compositeExport, compositeDualExport } from "@/services/poster/renderer";
-import { resolveCanvasSize } from "@/services/poster/renderer/canvas";
 import { getAllMarkerIcons } from "@/services/markers/iconRegistry";
-import {
-  ensureGoogleFont,
-  createPngBlob,
-  createPdfBlobFromCanvas,
-  createLayeredSvgBlobFromMap,
-  createPosterFilename,
-  triggerDownloadBlob,
-} from "@/services/container";
+import { ensureGoogleFont } from "@/services/container";
+import { createPosterFilename } from "@/services/export/filenameGenerator";
+import { triggerDownloadBlob } from "@/services/export/fileDownloader";
+import { SUPPORT_PROMPT_EVENT, type SupportPromptVariant } from "@/services/export/supportPrompt";
 import { CM_PER_INCH, DEFAULT_POSTER_WIDTH_CM, DEFAULT_POSTER_HEIGHT_CM } from "@/services/config";
 import { getQrCodeDataUrl } from "@/utils/qrCode";
 import { resolveQrTarget } from "@/services/share/posterLink";
 import type { PosterForm } from "@/context/posterReducer";
-
-export const SUPPORT_PROMPT_EVENT = "teetangart:support-prompt";
-export type SupportPromptVariant = "first" | "milestone";
-export interface SupportPromptState {
-  posterNumber: number;
-  variant: SupportPromptVariant;
-}
+import type { PosterShape } from "@/services/poster/clipShapes";
 
 const EXPORT_KEY = "teetangart.poster.count";
 const EXPORT_TTL = 365 * 24 * 60 * 60 * 1000;
@@ -85,6 +72,15 @@ export function useExport() {
     async (format: ExportFormat): Promise<{ blob: Blob; filename: string }> => {
       const map = mapRef.current;
       if (!map) throw new Error("Map is not ready.");
+      const {
+        captureMapAsCanvas,
+        compositeExport,
+        compositeDualExport,
+        resolveCanvasSize,
+        createPngBlob,
+        createPdfBlobFromCanvas,
+        createLayeredSvgBlobFromMap,
+      } = await import("@/services/export/pipeline");
       if (form.showPosterText && form.fontFamily.trim()) {
         await ensureGoogleFont(form.fontFamily.trim());
       }
@@ -133,7 +129,7 @@ export function useExport() {
           markers,
           markerIcons,
           routes: visibleRoutes,
-          mapShape: form.mapShape as any,
+          mapShape: form.mapShape as PosterShape,
         });
         return {
           blob,
@@ -203,7 +199,7 @@ export function useExport() {
           markerIcons,
           ...overlayProps,
           routes: visibleRoutes,
-          mapShape: form.mapShape as any,
+          mapShape: form.mapShape as PosterShape,
           qrUrl,
           titleAlign: form.titleAlign,
           showBorder: form.showBorder,

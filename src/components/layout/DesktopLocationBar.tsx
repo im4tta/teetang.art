@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/locationSectionConstants";
 import type { SearchResult } from "@/services/location/types";
 import { MyLocationIcon, LocationIcon, SearchIcon } from "@/components/ui/Icons";
+import { useI18n } from "@/context/i18n/context";
 
 /**
  * Desktop floating location bar.
@@ -19,6 +20,7 @@ import { MyLocationIcon, LocationIcon, SearchIcon } from "@/components/ui/Icons"
  * Clicking the pin icon shows/hides the lat/lon coordinate fields.
  */
 export default function DesktopLocationBar() {
+  const { t } = useI18n();
   const { state, dispatch, mapRef } = usePosterContext();
   const {
     handleChange,
@@ -71,7 +73,7 @@ export default function DesktopLocationBar() {
                   <button
                     type="button"
                     className="location-clear-btn"
-                    aria-label="Clear location"
+                    aria-label={t("location.clearLocation")}
                     onMouseDown={(e) => e.preventDefault()}
                     onClick={handleClearLocation}
                   >
@@ -88,8 +90,8 @@ export default function DesktopLocationBar() {
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={handleUseCurrentLocation}
                 disabled={isLocatingUser}
-                aria-label="Use current location"
-                title="Use current location"
+                aria-label={t("location.useCurrent")}
+                title={t("location.useCurrent")}
               >
                 <MyLocationIcon className="location-current-icon" />
               </button>
@@ -98,8 +100,8 @@ export default function DesktopLocationBar() {
                 className={`icon-only-btn location-row-icon-btn${showCoords ? " is-active" : ""}`}
                 onMouseDown={(e) => e.preventDefault()}
                 onClick={() => setShowCoords((v) => !v)}
-                aria-label="Toggle coordinate fields"
-                title="Show/hide lat & lon"
+                aria-label={t("location.toggleCoords")}
+                title={t("location.toggleCoords")}
               >
                 <LocationIcon />
               </button>
@@ -123,7 +125,7 @@ export default function DesktopLocationBar() {
                 </li>
               ))}
               {isLocationSearching ? (
-                <li className="location-suggestion-status">Searching...</li>
+                <li className="location-suggestion-status">{t("location.searching")}</li>
               ) : null}
             </ul>
           ) : null}
@@ -135,7 +137,7 @@ export default function DesktopLocationBar() {
 
         <div className="dsk-loc-coords">
           <label>
-            Latitude
+            {t("location.latitude")}
             <input
               className="form-control-tall"
               name="latitude"
@@ -145,7 +147,7 @@ export default function DesktopLocationBar() {
             />
           </label>
           <label>
-            Longitude
+            {t("location.longitude")}
             <input
               className="form-control-tall"
               name="longitude"

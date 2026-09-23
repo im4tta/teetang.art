@@ -16,6 +16,8 @@ import {
   shareOrCopy,
 } from "@/services/share/posterLink";
 import { POSTER_SHAPES } from "@/services/poster/clipShapes";
+import { POSITION_OPTIONS } from "@/components/ui/positionOptions";
+import type { FormChangeHandler } from "@/hooks/useFormHandlers";
 
 function Toggle({
   label,
@@ -26,7 +28,7 @@ function Toggle({
   label: string;
   name: string;
   checked: boolean;
-  onChange: (e: any) => void;
+  onChange: FormChangeHandler;
 }) {
   return (
     <div className="ios-toggle-row">
@@ -50,7 +52,7 @@ function Field({
   label: string;
   name: string;
   value: string;
-  onChange: (e: any) => void;
+  onChange: FormChangeHandler;
   type?: string;
   placeholder?: string;
 }) {
@@ -86,7 +88,7 @@ function Slider({
   max: string;
   step: string;
   unit?: string;
-  onChange: (e: any) => void;
+  onChange: FormChangeHandler;
 }) {
   return (
     <>
@@ -121,7 +123,7 @@ function SelectField({
   label: string;
   name: string;
   value: string;
-  onChange: (e: any) => void;
+  onChange: FormChangeHandler;
   children: React.ReactNode;
 }) {
   return (
@@ -138,7 +140,7 @@ function SelectField({
 
 interface Props {
   form: PosterForm;
-  onChange: (e: any) => void;
+  onChange: FormChangeHandler;
   fontOptions: FontOption[];
 }
 
@@ -551,7 +553,7 @@ export default function TypographySection({ form, onChange, fontOptions }: Props
   );
 }
 
-function QRSection({ form, onChange }: { form: PosterForm; onChange: (e: any) => void }) {
+function QRSection({ form, onChange }: { form: PosterForm; onChange: FormChangeHandler }) {
   const { dispatch } = usePosterContext();
   const { t } = useI18n();
 
@@ -584,7 +586,7 @@ function QRSection({ form, onChange }: { form: PosterForm; onChange: (e: any) =>
             <option value="apple-maps">Apple Maps</option>
             <option value="whatsapp">WhatsApp</option>
             <option value="telegram">Telegram</option>
-            <option value="teetang-landing">Tee Tang Landing</option>
+            <option value="teetang-landing">{t("qr.teetangLink")}</option>
             <option value="custom">{t("qr.customUrl")}</option>
           </SelectField>
           {form.qrDestination === "custom" && (
@@ -618,16 +620,9 @@ function QRSection({ form, onChange }: { form: PosterForm; onChange: (e: any) =>
               });
             }}
           >
-            {[
-              ["bottom-right", "Bottom Right"],
-              ["bottom-left", "Bottom Left"],
-              ["top-right", "Top Right"],
-              ["top-left", "Top Left"],
-              ["center", t("text.center")],
-              ["custom", "Custom"],
-            ].map(([v, l]) => (
+            {POSITION_OPTIONS.map(([v, key]) => (
               <option key={v} value={v}>
-                {l}
+                {t(key)}
               </option>
             ))}
           </SelectField>
@@ -696,7 +691,7 @@ function QRSection({ form, onChange }: { form: PosterForm; onChange: (e: any) =>
               name="qrLabel"
               value={form.qrLabel}
               onChange={onChange}
-              placeholder="Scan to navigate"
+              placeholder={t("qr.labelPlaceholder")}
             />
           </label>
           <button
@@ -720,9 +715,7 @@ function EmbedWidgetSection({ form }: { form: PosterForm }) {
   return (
     <section className="panel-block">
       <p className="section-summary-label">{t("embed.widget")}</p>
-      <p style={{ fontSize: "0.7rem", color: "#94A3B8", margin: "0 0 8px" }}>
-        Copy this code to embed the poster on any website.
-      </p>
+      <p style={{ fontSize: "0.7rem", color: "#94A3B8", margin: "0 0 8px" }}>{t("embed.hint")}</p>
       <pre
         style={{
           fontSize: "0.6rem",

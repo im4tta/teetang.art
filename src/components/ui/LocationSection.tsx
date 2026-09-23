@@ -8,6 +8,7 @@ import {
 } from "@/components/ui/locationSectionConstants";
 import { MyLocationIcon, ClockIcon } from "@/components/ui/Icons";
 import { readSearchHistory, clearSearchHistory } from "@/utils/searchHistory";
+import { useI18n } from "@/context/i18n/context";
 
 interface LocationSectionProps {
   form: PosterForm;
@@ -40,6 +41,7 @@ export default function LocationSection({
   isLocatingUser,
   locationPermissionMessage,
 }: LocationSectionProps) {
+  const { t } = useI18n();
   const hasLocationValue = form.location.trim().length > 0;
   const [history, setHistory] = useState(readSearchHistory());
 
@@ -73,7 +75,7 @@ export default function LocationSection({
 
   return (
     <section className="panel-block">
-      <h2>Location</h2>
+      <h2>{t("location")}</h2>
       <label>
         Location
         <div className="location-autocomplete">
@@ -96,7 +98,7 @@ export default function LocationSection({
                 <button
                   type="button"
                   className="location-clear-btn"
-                  aria-label="Clear location"
+                  aria-label={t("location.clearLocation")}
                   onMouseDown={(event) => event.preventDefault()}
                   onClick={onClearLocation}
                 >
@@ -110,8 +112,8 @@ export default function LocationSection({
               onMouseDown={(event) => event.preventDefault()}
               onClick={onUseCurrentLocation}
               disabled={isLocatingUser}
-              aria-label="Use current location"
-              title="Use current location"
+              aria-label={t("location.useCurrent")}
+              title={t("location.useCurrent")}
             >
               <MyLocationIcon />
             </button>
@@ -133,7 +135,7 @@ export default function LocationSection({
                 </li>
               ))}
               {isLocationSearching ? (
-                <li className="location-suggestion-status">Searching...</li>
+                <li className="location-suggestion-status">{t("location.searching")}</li>
               ) : null}
             </ul>
           ) : null}
@@ -182,7 +184,7 @@ export default function LocationSection({
       </label>
       <div className="field-grid keep-two-mobile">
         <label>
-          Latitude (optional)
+          {t("location.latOptional")}
           <input
             className="form-control-tall"
             name="latitude"
@@ -192,7 +194,7 @@ export default function LocationSection({
           />
         </label>
         <label>
-          Longitude (optional)
+          {t("location.lonOptional")}
           <input
             className="form-control-tall"
             name="longitude"
