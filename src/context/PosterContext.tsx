@@ -112,14 +112,31 @@ export function PosterProvider({ children }: { children: ReactNode }) {
     dispatch({ type: "SET_ROUTE_DEFAULTS", defaults: { color }, applyToRoutes: true });
   }, [effectiveTheme.ui.text]);
 
-  const { form, customColors, markers, routes, markerDefaults, routeDefaults } = state;
+  const {
+    form,
+    customColors,
+    markers,
+    routes,
+    markerDefaults,
+    routeDefaults,
+    displayNameOverrides,
+  } = state;
   useEffect(() => {
     const timer = window.setTimeout(
-      () => saveDraft({ form, customColors, markers, routes, markerDefaults, routeDefaults }),
+      () =>
+        saveDraft({
+          form,
+          customColors,
+          markers,
+          routes,
+          markerDefaults,
+          routeDefaults,
+          displayNameOverrides,
+        }),
       400,
     );
     return () => window.clearTimeout(timer);
-  }, [form, customColors, markers, routes, markerDefaults, routeDefaults]);
+  }, [form, customColors, markers, routes, markerDefaults, routeDefaults, displayNameOverrides]);
 
   // Load/save custom marker icons
   useEffect(() => {

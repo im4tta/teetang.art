@@ -10,7 +10,13 @@ const HEAVY_FIELDS = ["logoUrl", "propAgentLogo"] as const;
 
 type Draft = Pick<
   PosterState,
-  "form" | "customColors" | "markers" | "routes" | "markerDefaults" | "routeDefaults"
+  | "form"
+  | "customColors"
+  | "markers"
+  | "routes"
+  | "markerDefaults"
+  | "routeDefaults"
+  | "displayNameOverrides"
 >;
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
@@ -44,6 +50,11 @@ export function loadDraft(defaults: PosterState): PosterState | null {
     routes: Array.isArray(saved.routes) ? (saved.routes as Draft["routes"]) : defaults.routes,
     markerDefaults: { ...defaults.markerDefaults, ...(saved.markerDefaults as object) },
     routeDefaults: { ...defaults.routeDefaults, ...(saved.routeDefaults as object) },
+    // Remembers which titles the user typed so reverse geocoding keeps them.
+    displayNameOverrides: {
+      ...defaults.displayNameOverrides,
+      ...(saved.displayNameOverrides as object),
+    },
   };
 }
 

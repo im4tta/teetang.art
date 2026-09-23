@@ -133,9 +133,14 @@ export default function AppShell() {
         heightCm: formatLayoutCm(layout.heightCm),
       });
     }
-    if (Object.keys(link.fields).length) {
-      dispatch({ type: "SET_FORM_FIELDS", fields: link.fields, resetDisplayNameOverrides: true });
+    const { displayCity, displayCountry, ...fields } = link.fields;
+    if (Object.keys(fields).length) {
+      dispatch({ type: "SET_FORM_FIELDS", fields, resetDisplayNameOverrides: true });
     }
+    // Set titles as user edits so reverse geocoding the new spot keeps them.
+    if (displayCity) dispatch({ type: "SET_FIELD", name: "displayCity", value: displayCity });
+    if (displayCountry)
+      dispatch({ type: "SET_FIELD", name: "displayCountry", value: displayCountry });
     const query = link.geocodeQuery;
     if (query) {
       geocodeLocation(query)
