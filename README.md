@@ -18,6 +18,8 @@
 - 🎨 **Custom styles** — full color control over land, water, roads, and labels
 - 📍 **Markers & routes** — annotate your map with custom pins and paths
 - 🖨️ **Print-ready export** — high-resolution output ready for print or framing
+- 🔗 **Share links** — every design has a `teetang.art/create?…` link (and QR code) that reopens it
+- 💾 **Autosave** — your poster is kept in the browser and restored on your next visit
 - 📱 **PWA** — installable on desktop and mobile, works offline
 - 🔒 **No account required** — no sign-up, no watermarks, fully free
 
