@@ -1,4 +1,12 @@
-import { SunIcon, MoonIcon, MaximizeIcon, MinimizeIcon, StyleIcon, LayoutIcon } from "@/components/ui/Icons";
+import NewPosterButton from "@/components/ui/NewPosterButton";
+import {
+  SunIcon,
+  MoonIcon,
+  MaximizeIcon,
+  MinimizeIcon,
+  StyleIcon,
+  LayoutIcon,
+} from "@/components/ui/Icons";
 
 interface Props {
   form: any;
@@ -6,13 +14,19 @@ interface Props {
 }
 
 export default function AppSettingsSection({ form, onChange }: Props) {
-  const opt = (name: string, value: string, Icon: React.ComponentType<{ className?: string }>, label: string) => (
+  const opt = (
+    name: string,
+    value: string,
+    Icon: React.ComponentType<{ className?: string }>,
+    label: string,
+  ) => (
     <button
       type="button"
       className={`settings-option-card${form[name] === value ? " is-active" : ""}`}
       onClick={() => onChange({ target: { name, value } })}
     >
-      <Icon className="option-card-icon" /><span>{label}</span>
+      <Icon className="option-card-icon" />
+      <span>{label}</span>
     </button>
   );
 
@@ -42,6 +56,12 @@ export default function AppSettingsSection({ form, onChange }: Props) {
         </div>
       </div>
       <div className="settings-group" style={{ marginTop: 20 }}>
+        <p className="section-summary-label">Poster</p>
+        <div className="settings-link-grid">
+          <NewPosterButton className="settings-link-btn" withLabel />
+        </div>
+      </div>
+      <div className="settings-group" style={{ marginTop: 20 }}>
         <p className="section-summary-label">Quick Links</p>
         <div className="settings-links">
           <p className="settings-link-hint">Jump to specific design settings:</p>
@@ -51,9 +71,14 @@ export default function AppSettingsSection({ form, onChange }: Props) {
                 key={sec}
                 type="button"
                 className="settings-link-btn"
-                onClick={() => document.querySelector(`[data-section="${sec}"]`)?.scrollIntoView({ behavior: "smooth" })}
+                onClick={() =>
+                  document
+                    .querySelector(`[data-section="${sec}"]`)
+                    ?.scrollIntoView({ behavior: "smooth" })
+                }
               >
-                <Icon /><span>{label}</span>
+                <Icon />
+                <span>{label}</span>
               </button>
             ))}
           </div>

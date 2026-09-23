@@ -4,6 +4,9 @@ import { useSearchParams } from "react-router-dom";
 import { usePosterContext } from "@/context/PosterContext";
 import { useI18n } from "@/context/i18n/context";
 import { geocodeLocation } from "@/services/container";
+import { parsePosterLink } from "@/services/share/posterLink";
+import { getLayoutOption } from "@/services/layout/layoutRepository";
+import { formatLayoutCm } from "@/services/layout/layoutMatcher";
 import { MAX_MARKER_SIZE, MIN_MARKER_SIZE } from "@/services/markers/constants";
 import GeneralHeader from "@/components/layout/GeneralHeader";
 import DesktopTopBar from "@/components/layout/DesktopTopBar";
@@ -12,6 +15,7 @@ import PreviewPanel from "@/components/ui/PreviewPanel";
 import MobileNavBar, { type MobileTab } from "@/components/layout/MobileNavBar";
 import InstallPrompt from "@/components/ui/InstallPrompt";
 import { useSwipeDown } from "@/hooks/useSwipeDown";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { CheckIcon } from "@/components/ui/Icons";
 import SupportModal from "@/components/ui/SupportModal";
 import { SUPPORT_PROMPT_EVENT, type SupportPromptState } from "@/hooks/useExport";
@@ -31,34 +35,10 @@ function SettingsDrawer({ mobileTab, onClose }: { mobileTab: MobileTab; onClose:
     onExpand: () => setExpanded(true),
   });
 
-  useEffect(() => {
-    closeButtonRef.current?.focus();
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") {
-        event.preventDefault();
-        onClose();
-        return;
-      }
-      if (event.key !== "Tab" || !sheetRef.current) return;
-      const focusable = Array.from(
-        sheetRef.current.querySelectorAll<HTMLElement>(
-          "button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), a[href]",
-        ),
-      );
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-    document.addEventListener("keydown", handleKeyDown);
-    return () => document.removeEventListener("keydown", handleKeyDown);
-  }, [onClose, sheetRef]);
+  useFocusTrap(sheetRef, onClose);
+  // Focus the close button once when the drawer opens; re-running this on
+  // every render would pull focus out of the field being typed in.
+  useEffect(() => closeButtonRef.current?.focus(), []);
 
   useEffect(() => {
     const background = Array.from(
@@ -136,31 +116,43 @@ export default function AppShell() {
   const [aboutOpen, setAboutOpen] = useState(false);
   const [supportPrompt, setSupportPrompt] = useState<SupportPromptState | null>(null);
 
-  const [searchParams] = useSearchParams();
+  // Apply a shared /create?… link once, then drop it from the address bar so a
+  // later refresh reopens the saved draft instead of re-applying the link.
+  const [searchParams, setSearchParams] = useSearchParams();
   useEffect(() => {
-    const city = searchParams.get("city");
-    const theme = searchParams.get("theme");
-    let cancelled = false;
-    async function apply() {
-      if (theme) dispatch({ type: "SET_THEME", themeId: theme });
-      if (city) {
-        try {
-          const r = await geocodeLocation(city);
-          if (!cancelled) dispatch({ type: "SELECT_LOCATION", location: r });
-        } catch {
-          if (!cancelled)
-            dispatch({
-              type: "SET_FORM_FIELDS",
-              fields: { displayCity: city, displayCountry: "Cambodia" },
-            });
-        }
-      }
+    const link = parsePosterLink(searchParams);
+    if (!link) return;
+    setSearchParams({}, { replace: true });
+    if (link.theme) dispatch({ type: "SET_THEME", themeId: link.theme });
+    const layout = link.layout ? getLayoutOption(link.layout) : null;
+    if (layout) {
+      dispatch({
+        type: "SET_LAYOUT",
+        layoutId: layout.id,
+        widthCm: formatLayoutCm(layout.widthCm),
+        heightCm: formatLayoutCm(layout.heightCm),
+      });
     }
-    void apply();
-    return () => {
-      cancelled = true;
-    };
-  }, [searchParams, dispatch]);
+    const { displayCity, displayCountry, ...fields } = link.fields;
+    if (Object.keys(fields).length) {
+      dispatch({ type: "SET_FORM_FIELDS", fields, resetDisplayNameOverrides: true });
+    }
+    // Set titles as user edits so reverse geocoding the new spot keeps them.
+    if (displayCity) dispatch({ type: "SET_FIELD", name: "displayCity", value: displayCity });
+    if (displayCountry)
+      dispatch({ type: "SET_FIELD", name: "displayCountry", value: displayCountry });
+    const query = link.geocodeQuery;
+    if (query) {
+      geocodeLocation(query)
+        .then((location) => dispatch({ type: "SELECT_LOCATION", location }))
+        .catch(() =>
+          dispatch({
+            type: "SET_FORM_FIELDS",
+            fields: { displayCity: query, displayCountry: "Cambodia" },
+          }),
+        );
+    }
+  }, [searchParams, setSearchParams, dispatch]);
 
   useEffect(() => {
     const handler = (e: Event) => setSupportPrompt((e as CustomEvent<SupportPromptState>).detail);

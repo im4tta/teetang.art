@@ -17,10 +17,10 @@ export const TEXT_COORDS_Y_RATIO = 0.93;
 export const TEXT_EDGE_MARGIN_RATIO = 0.005;
 
 /** City text scales down when labels get long. */
-export const CITY_TEXT_SHRINK_THRESHOLD = 10;
+const CITY_TEXT_SHRINK_THRESHOLD = 10;
 
 export const CITY_FONT_BASE_PX = 250;
-export const CITY_FONT_MIN_PX = 110;
+const CITY_FONT_MIN_PX = 110;
 export const COUNTRY_FONT_BASE_PX = 92;
 export const COORDS_FONT_BASE_PX = 58;
 export const ATTRIBUTION_FONT_BASE_PX = 50;
@@ -32,7 +32,7 @@ export const ATTRIBUTION_FONT_BASE_PX = 50;
 export const TITLE_BAND_TOP_EM = 0.4;
 export const TITLE_BAND_BOTTOM_EM = 0.45;
 
-export function isLatinScript(text: string | undefined | null): boolean {
+function isLatinScript(text: string | undefined | null): boolean {
   if (!text) {
     return true;
   }

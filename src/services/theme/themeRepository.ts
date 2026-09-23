@@ -315,9 +315,9 @@ const discoveredThemeNames = Object.keys(themesByName);
 const preferredThemeNames = preferredThemeOrder.filter((id) => discoveredThemeNames.includes(id));
 const remainingThemeNames = discoveredThemeNames.filter((id) => !preferredThemeOrder.includes(id));
 
-export const themeNames = [...preferredThemeNames, ...remainingThemeNames];
+const themeNames = [...preferredThemeNames, ...remainingThemeNames];
 
-export function getThemePalette(theme: unknown): string[] {
+function getThemePalette(theme: unknown): string[] {
   const normalizedTheme = normalizeTheme(theme);
   return DISPLAY_PALETTE_KEYS.map((key) =>
     String(getThemeColorByPath(normalizedTheme, key) ?? "").trim(),

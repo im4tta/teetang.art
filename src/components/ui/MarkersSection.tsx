@@ -872,6 +872,3 @@ export default function MarkersSection() {
     </section>
   );
 }
-
-// LogoUploadField has moved to its own file — re-exported here for backward compatibility.
-export { LogoUploadField } from "@/components/ui/LogoUploadField";

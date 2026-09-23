@@ -1,12 +1,9 @@
 export const GEOLOCATION_TIMEOUT_MS = 8_000;
 
-export const MAP_BUTTON_ZOOM_STEP = 0.5;
 export const MAP_BUTTON_ZOOM_DURATION_MS = 280;
 
 export const MAP_CENTER_SYNC_EPSILON = 0.0000005;
 export const MAP_ZOOM_SYNC_EPSILON = 0.0008;
-
-export const DISTANCE_SLIDER_STEP_METERS = 100;
 
 /**
  * Over-zoom settings for poster workflow:

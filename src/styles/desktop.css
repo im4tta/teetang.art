@@ -21,12 +21,7 @@
 
 /* ── Default: hide desktop-only elements (mobile-first) ── */
 
-.desktop-header,
-.desktop-nav-bar,
 .desktop-settings-slide,
-.desktop-export-fab,
-.desktop-install-badge,
-.desktop-settings-deco,
 .desktop-left-panel {
   display: none;
 }
@@ -237,10 +232,6 @@
     height: 13px;
   }
 
-  .desktop-top-tab.is-icon {
-    padding: 6px 10px;
-  }
-
   .desktop-top-bar-right {
     display: flex;
     align-items: center;
@@ -287,29 +278,6 @@
   .desktop-top-about-btn:hover {
     background: rgba(255, 255, 255, 0.08);
     color: #f5f5fa;
-  }
-
-  .tb-location-display {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .tb-sep {
-    width: 1px;
-    height: 16px;
-    background: rgba(255, 255, 255, 0.14);
-    flex-shrink: 0;
-  }
-
-  .tb-loc-label {
-    font-size: 13px;
-    color: rgba(245, 245, 247, 0.6);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
   .desktop-brand {
@@ -444,83 +412,6 @@
   }
 
   /* ── Desktop vertical nav bar ── */
-
-  .desktop-nav-bar {
-    grid-area: dnav;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    padding: 10px 0;
-    gap: 3px;
-    background: rgba(24, 24, 26, 0.9);
-    backdrop-filter: blur(24px);
-    -webkit-backdrop-filter: blur(24px);
-    border-right: 1px solid rgba(255, 159, 10, 0.05);
-    box-shadow: inset -1px 0 0 rgba(255, 255, 255, 0.02);
-    overflow-y: auto;
-    scrollbar-width: none;
-    z-index: 40;
-  }
-
-  .desktop-nav-bar::-webkit-scrollbar {
-    display: none;
-  }
-
-  .desktop-nav-tab {
-    flex-shrink: 0;
-    width: 52px;
-    height: 52px;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    padding: 4px 0;
-    border: none;
-    border-radius: 26px;
-    background: transparent;
-    color: rgba(245, 245, 247, 0.42);
-    font-size: 0.48rem;
-    font-weight: 500;
-    font-family: "Noto Sans Khmer", sans-serif;
-    letter-spacing: 0.04em;
-    cursor: pointer;
-    transition:
-      background 0.15s,
-      color 0.15s;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .desktop-nav-tab:hover {
-    transform: none;
-    filter: none;
-    background: rgba(255, 255, 255, 0.06);
-    color: rgba(245, 245, 247, 0.72);
-  }
-
-  .desktop-nav-tab.is-active {
-    background: rgba(192, 57, 43, 0.12);
-    color: var(--accent);
-  }
-
-  .desktop-nav-icon {
-    width: 18px;
-    height: 18px;
-  }
-
-  .desktop-nav-label {
-    line-height: 1;
-    font-size: 0.48rem;
-  }
-
-  .desktop-nav-tab--settings {
-    margin-top: auto;
-    margin-bottom: 6px;
-  }
-
-  .desktop-nav-tab--settings:disabled {
-    opacity: 1;
-  }
 
   /* ── Desktop left panel: floating fixed container (location bar + settings) ── */
 
@@ -1121,103 +1012,13 @@
     flex-wrap: nowrap;
   }
 
-  .app-shell > .preview-panel > .map-controls > .map-control-hint {
-    position: absolute;
-    top: 50%;
-    left: calc(100% + 10px);
-    transform: translateY(-50%);
-    white-space: nowrap;
-    margin: 0;
-  }
-
   /* Desktop right panel — wraps settings card + sidebar ad */
-  .app-shell > .preview-panel .desktop-right-panel {
-    position: absolute;
-    top: 14px;
-    left: 14px;
-    width: 260px;
-    z-index: 16;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
 
   /* Desktop settings info summary card on right side */
-  .app-shell > .preview-panel .settings-info-card {
-    display: grid;
-    position: static;
-    width: auto;
-    margin: 0;
-    padding: 8px 10px;
-    border-radius: 10px;
-    background: rgba(20, 20, 25, 0.92);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.32);
-    font-family: "Noto Sans Khmer", "Battambang", sans-serif;
-  }
-
-  .app-shell > .preview-panel .settings-info-card .settings-info-title {
-    font-size: 0.68rem;
-    margin: 0 0 5px;
-  }
-
-  .app-shell > .preview-panel .settings-info-card .settings-info-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(3, auto);
-    gap: 5px 8px;
-  }
-
-  .app-shell > .preview-panel .settings-info-card .settings-info-row dt {
-    font-size: 0.55rem;
-  }
-
-  .app-shell > .preview-panel .settings-info-card .settings-info-row dd {
-    font-size: 0.72rem;
-  }
 
   /* Compact pill-shaped theme cards in right panel */
-  .app-shell > .preview-panel .desktop-right-panel .theme-card {
-    min-height: 32px;
-    height: 32px;
-    border-radius: 999px;
-  }
-
-  .app-shell > .preview-panel .desktop-right-panel .theme-card .theme-card-palette {
-    min-height: 32px;
-    height: 32px;
-  }
-
-  .app-shell > .preview-panel .desktop-right-panel .theme-card .theme-card-swatch {
-    min-height: 32px;
-    height: 32px;
-  }
-
-  .app-shell > .preview-panel .desktop-right-panel .theme-card .theme-card-name {
-    font-size: 0.55rem;
-    bottom: 4px;
-    line-height: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-  }
 
   /* Compact theme card list in right panel */
-  .app-shell > .preview-panel .desktop-right-panel .theme-card-list {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    overflow-y: auto;
-    max-height: 200px;
-    padding-right: 2px;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-  }
-
-  .app-shell > .preview-panel .desktop-right-panel .theme-card-list::-webkit-scrollbar {
-    display: none;
-  }
 
   /* Compact pill-shaped theme cards in desktop settings slide (left panel) */
   .desktop-settings-slide .theme-card {
@@ -1289,10 +1090,6 @@
   }
 
   /* ── Hide mobile-only elements on desktop ── */
-
-  .app-header {
-    display: none;
-  }
 
   .mobile-location-row-wrap,
   .mobile-export-fab-trigger {
@@ -1469,10 +1266,6 @@
     display: block;
   }
 
-  .mobile-persistent-footer {
-    display: none;
-  }
-
   /* Keep install prompt outside the desktop grid flow for full visibility. */
   .app-shell > .install-prompt {
     position: fixed;
@@ -1569,226 +1362,17 @@
 
   /* ── Desktop Install Badge (floating, bottom-left, above settings deco) ── */
 
-  .desktop-install-badge {
-    display: flex;
-    position: fixed;
-    bottom: 62px;
-    left: 18px;
-    z-index: 30;
-    align-items: center;
-    gap: 8px;
-    padding: 7px 10px 7px 12px;
-    background: rgba(9, 16, 24, 0.94);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    border: 1px solid rgba(94, 174, 212, 0.3);
-    border-radius: 12px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.42);
-    animation: badge-slide-in 0.3s cubic-bezier(0.32, 0.72, 0, 1);
-  }
-
-  @keyframes badge-slide-in {
-    from {
-      transform: translateY(8px);
-      opacity: 0;
-    }
-
-    to {
-      transform: translateY(0);
-      opacity: 1;
-    }
-  }
-
-  .desktop-install-badge-btn {
-    display: flex;
-    align-items: center;
-    gap: 7px;
-    padding: 0;
-    border: none;
-    background: transparent;
-    color: #b0cfe5;
-    font-size: 0.76rem;
-    font-weight: 600;
-    font-family: "Spline Sans Mono", monospace;
-    cursor: pointer;
-    transition: color 0.15s;
-    white-space: nowrap;
-  }
-
-  .desktop-install-badge-btn:hover {
-    transform: none;
-    filter: none;
-    color: #dff3ff;
-  }
-
-  .desktop-install-badge-icon {
-    width: 15px;
-    height: 15px;
-    opacity: 0.75;
-    flex-shrink: 0;
-  }
-
-  .desktop-install-badge-dismiss {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 20px;
-    height: 20px;
-    flex-shrink: 0;
-    border: 1px solid rgba(146, 176, 200, 0.2);
-    border-radius: 6px;
-    background: transparent;
-    color: rgba(180, 205, 225, 0.48);
-    font-size: 0.75rem;
-    cursor: pointer;
-    padding: 0;
-    transition:
-      background 0.15s,
-      color 0.15s,
-      border-color 0.15s;
-  }
-
-  .desktop-install-badge-dismiss:hover {
-    transform: none;
-    filter: none;
-    background: rgba(255, 90, 70, 0.14);
-    color: #ff9985;
-    border-color: rgba(255, 90, 70, 0.38);
-  }
-
   /* ── Desktop Export FAB (floating, bottom-right) ── */
 
-  .desktop-export-fab {
-    display: flex;
-    position: fixed;
-    bottom: 52px;
-    right: 18px;
-    z-index: 30;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 6px;
-  }
-
   /* Flyout buttons appear above PNG on hover */
-  .desktop-export-flyout {
-    display: flex;
-    flex-direction: column;
-    gap: 5px;
-    max-height: 0;
-    overflow: hidden;
-    opacity: 0;
-    pointer-events: none;
-    transform: translateY(6px);
-    transition:
-      max-height 0.25s cubic-bezier(0.4, 0, 0.2, 1),
-      opacity 0.2s ease,
-      transform 0.2s ease;
-  }
-
-  .desktop-export-fab:hover .desktop-export-flyout,
-  .desktop-export-fab:focus-within .desktop-export-flyout,
-  .desktop-export-fab.is-exporting .desktop-export-flyout {
-    max-height: 180px;
-    opacity: 1;
-    pointer-events: auto;
-    transform: translateY(0);
-  }
-
-  .desktop-export-btn {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 132px;
-    gap: 8px;
-    padding: 8px 14px;
-    border: 1px solid transparent;
-    border-radius: 10px;
-    font-family: "Spline Sans Mono", monospace;
-    font-size: 0.74rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    cursor: pointer;
-    white-space: nowrap;
-    box-shadow: 0 3px 10px rgba(0, 0, 0, 0.3);
-    transition:
-      background 0.15s,
-      border-color 0.15s,
-      color 0.15s;
-  }
-
-  .desktop-export-btn:disabled {
-    opacity: 0.55;
-    cursor: default;
-  }
 
   /* Primary = PNG/Download — white/light, like browser-default generate-btn */
-  .desktop-export-btn--primary {
-    background: rgba(232, 242, 251, 0.96);
-    border-color: rgba(180, 210, 235, 0.55);
-    color: #0d1f2e;
-  }
-
-  .desktop-export-btn--primary:hover:not(:disabled) {
-    transform: none;
-    filter: none;
-    background: rgba(220, 236, 250, 1);
-    border-color: rgba(140, 185, 220, 0.8);
-    color: #091826;
-  }
 
   /* PDF — dark warm/brown, like mobile .ghost but darker */
-  .desktop-export-btn--pdf {
-    background: rgba(48, 22, 8, 0.92);
-    border-color: rgba(255, 142, 94, 0.36);
-    color: #ffc6aa;
-  }
-
-  .desktop-export-btn--pdf:hover:not(:disabled) {
-    transform: none;
-    filter: none;
-    background: rgba(65, 30, 10, 0.96);
-    border-color: rgba(255, 142, 94, 0.64);
-    color: #ffd5be;
-  }
 
   /* SVG — solid dark green, like mobile export-map-btn */
-  .desktop-export-btn--svg {
-    background: linear-gradient(135deg, rgba(42, 126, 79, 0.96), rgba(29, 103, 64, 0.96));
-    border-color: rgba(120, 221, 161, 0.56);
-    color: #effff5;
-  }
-
-  .desktop-export-btn--svg:hover:not(:disabled) {
-    transform: none;
-    filter: none;
-    background: linear-gradient(135deg, rgba(50, 141, 89, 0.98), rgba(34, 117, 73, 0.98));
-    border-color: rgba(147, 235, 183, 0.88);
-    color: #f0fff6;
-  }
 
   /* Label swap: "Download" by default, "PNG" on FAB hover */
-  .desktop-export-label-hover {
-    display: none;
-  }
-
-  .desktop-export-fab:hover .desktop-export-label-hover,
-  .desktop-export-fab:focus-within .desktop-export-label-hover,
-  .desktop-export-fab.is-exporting .desktop-export-label-hover {
-    display: inline;
-  }
-
-  .desktop-export-fab:hover .desktop-export-label-default,
-  .desktop-export-fab:focus-within .desktop-export-label-default,
-  .desktop-export-fab.is-exporting .desktop-export-label-default {
-    display: none;
-  }
-
-  .desktop-export-btn-icon {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-  }
 
   .is-spinning {
     animation: spin 0.9s linear infinite;
@@ -1810,31 +1394,6 @@
   }
 
   /* ── Decorative settings icon (bottom-left, no functionality) ── */
-
-  .desktop-settings-deco {
-    display: flex;
-    position: fixed;
-    bottom: 18px;
-    left: 18px;
-    z-index: 20;
-    align-items: center;
-    justify-content: center;
-    width: 34px;
-    height: 34px;
-    border: 1px solid rgba(146, 176, 200, 0.14);
-    border-radius: 10px;
-    background: rgba(9, 16, 24, 0.72);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    pointer-events: none;
-    user-select: none;
-  }
-
-  .desktop-settings-deco-icon {
-    width: 16px;
-    height: 16px;
-    color: rgba(156, 195, 218, 0.3);
-  }
 
   /* ── Desktop panel-view mode ── */
 

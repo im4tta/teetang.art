@@ -26,6 +26,18 @@ interface MapPreviewProps {
   radiusLabel?: string;
 }
 
+function isSameView(
+  view: { lng: number; lat: number; zoom: number },
+  lng: number,
+  lat: number,
+  zoom: number,
+) {
+  return (
+    Math.max(Math.abs(view.lng - lng), Math.abs(view.lat - lat)) < MAP_CENTER_SYNC_EPSILON &&
+    Math.abs(view.zoom - zoom) < MAP_ZOOM_SYNC_EPSILON
+  );
+}
+
 /**
  * MapLibre preview wrapper.
  *
@@ -54,6 +66,10 @@ export default function MapPreview({
   const isSyncing = useRef(false);
   const hasMountedStyleRef = useRef(false);
   const prevStyleRef = useRef<StyleSpecification | null>(null);
+  // The view the map was last told to show. Resizes and style loads also fire
+  // `moveend`; reporting those would write this possibly stale view back over
+  // a newer location (geolocation, a shared link) that is still being applied.
+  const lastSyncedViewRef = useRef({ lng: center[0], lat: center[1], zoom });
   const onMoveEndRef = useRef(onMoveEnd);
   const onMoveRef = useRef(onMove);
   const [mapInstance, setMapInstance] = useState<maplibregl.Map | null>(null);
@@ -89,7 +105,11 @@ export default function MapPreview({
     map.on("moveend", () => {
       if (isSyncing.current) return;
       const c = map.getCenter();
-      onMoveEndRef.current?.([c.lng, c.lat], map.getZoom());
+      const z = map.getZoom();
+      const last = lastSyncedViewRef.current;
+      if (isSameView(last, c.lng, c.lat, z)) return;
+      lastSyncedViewRef.current = { lng: c.lng, lat: c.lat, zoom: z };
+      onMoveEndRef.current?.([c.lng, c.lat], z);
     });
     map.on("move", () => {
       if (isSyncing.current) return;
@@ -163,14 +183,11 @@ export default function MapPreview({
     const map = mapRef.current;
     if (!map) return;
 
-    const currentCenter = map.getCenter();
-    const centerDelta = Math.max(
-      Math.abs(currentCenter.lng - center[0]),
-      Math.abs(currentCenter.lat - center[1]),
-    );
-    const zoomDelta = Math.abs(map.getZoom() - zoom);
-
-    if (centerDelta < MAP_CENTER_SYNC_EPSILON && zoomDelta < MAP_ZOOM_SYNC_EPSILON) return;
+    lastSyncedViewRef.current = { lng: center[0], lat: center[1], zoom };
+    const current = map.getCenter();
+    if (isSameView({ lng: current.lng, lat: current.lat, zoom: map.getZoom() }, ...center, zoom)) {
+      return;
+    }
 
     isSyncing.current = true;
     map.jumpTo({ center, zoom });

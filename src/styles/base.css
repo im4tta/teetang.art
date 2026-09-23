@@ -160,16 +160,6 @@ html[data-app-theme="light"] {
   }
 }
 
-@keyframes bg-pulse {
-  0%,
-  100% {
-    opacity: 0.4;
-  }
-  50% {
-    opacity: 0.7;
-  }
-}
-
 html,
 body {
   margin: 0;

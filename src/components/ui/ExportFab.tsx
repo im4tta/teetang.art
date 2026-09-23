@@ -1,12 +1,24 @@
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useExport } from "@/hooks/useExport";
 import type { ExportFormat } from "@/services/export/types";
 import { CloseIcon, DownloadIcon, LoaderIcon } from "@/components/ui/Icons";
 import SocialLinkGroup from "@/components/ui/SocialLinkGroup";
 import { useI18n } from "@/context/i18n/context";
+import type { TranslationKey } from "@/context/i18n/types";
 import { usePosterContext } from "@/context/PosterContext";
+import { useFocusTrap } from "@/hooks/useFocusTrap";
+import { buildPosterLink, copyText, shareOrCopy } from "@/services/share/posterLink";
 
-const FORMAT_OPTIONS: { format: ExportFormat; labelKey: string }[] = [
+type ShareTarget = "share" | "facebook" | "twitter" | "telegram" | "copy";
+
+const openPopup = (url: string) => window.open(url, "_blank", "noopener,noreferrer");
+
+/** Whether the browser's share sheet accepts image files (most phones do). */
+const canShareImages = () =>
+  typeof navigator.canShare === "function" &&
+  navigator.canShare({ files: [new File([""], "poster.png", { type: "image/png" })] });
+
+const FORMAT_OPTIONS: { format: ExportFormat; labelKey: TranslationKey }[] = [
   { format: "png", labelKey: "export.png" },
   { format: "pdf", labelKey: "export.pdf" },
   { format: "svg", labelKey: "export.rsvg" },
@@ -20,13 +32,19 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
   const { t } = useI18n();
   const { state } = usePosterContext();
   const { form } = state;
-  const { isExporting, exportPoster } = useExport();
+  const { isExporting, exportPoster, renderPosterFile } = useExport();
   const [isOpen, setIsOpen] = useState(false);
   const [activeFormat, setActiveFormat] = useState<ExportFormat | null>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const modalRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const exportingRef = useRef(false);
+  const [shareFeedback, setShareFeedback] = useState<{ id: ShareTarget; label: string } | null>(
+    null,
+  );
+  // An image rendered for sharing whose share sheet the browser refused to open
+  // (the click's user activation expired while rendering); shared on the next tap.
+  const [pendingImage, setPendingImage] = useState<File | null>(null);
 
   useEffect(() => {
     exportingRef.current = isExporting;
@@ -39,37 +57,16 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
     document.body.style.overflow = "hidden";
     closeRef.current?.focus();
 
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape" && !exportingRef.current) {
-        event.preventDefault();
-        setIsOpen(false);
-        return;
-      }
-      if (event.key !== "Tab" || !modalRef.current) return;
-      const focusable = Array.from(
-        modalRef.current.querySelectorAll<HTMLElement>(
-          "button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled])",
-        ),
-      );
-      if (!focusable.length) return;
-      const first = focusable[0];
-      const last = focusable[focusable.length - 1];
-      if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-      } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-      }
-    };
-
-    document.addEventListener("keydown", handleKeyDown);
     return () => {
-      document.removeEventListener("keydown", handleKeyDown);
       document.body.style.overflow = previousOverflow;
       triggerElement?.focus();
     };
   }, [isOpen]);
+
+  const closeModal = useCallback(() => {
+    if (!exportingRef.current) setIsOpen(false);
+  }, []);
+  useFocusTrap(modalRef, closeModal, isOpen);
 
   const runExport = async (format: ExportFormat) => {
     setActiveFormat(format);
@@ -81,55 +78,51 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
     }
   };
 
-  const handleShare = async (platform: string) => {
-    const city = form.displayCity || form.location || "My location";
-    const lat = form.latitude;
-    const lon = form.longitude;
-    const mapUrl = `https://www.google.com/maps/search/?api=1&query=${lat},${lon}`;
-    const text = `Check out this map poster for ${city}: ${mapUrl}`;
-    const encoded = encodeURIComponent(text);
+  const handleShare = async (target: ShareTarget) => {
+    const city = form.displayCity || form.location || "my place";
+    const url = buildPosterLink(form);
+    const text = t("export.shareText").replace("{city}", city);
+    const title = `${city} · Tee Tang Art`;
+    const flash = (label: string) => {
+      setShareFeedback({ id: target, label });
+      window.setTimeout(() => setShareFeedback(null), 2500);
+    };
 
-    switch (platform) {
+    switch (target) {
       case "share": {
-        if (typeof navigator !== "undefined" && "share" in navigator) {
+        const image = pendingImage ?? (canShareImages() ? await renderPosterFile() : null);
+        setPendingImage(null);
+        if (image) {
           try {
-            await (navigator as Navigator & { share: (data: any) => Promise<void> }).share({
-              title: `Map poster for ${city}`,
-              text,
-              url: mapUrl,
-            });
-            break;
-          } catch {
-            // fall back to copy
+            await navigator.share({ title, text: `${text} ${url}`, files: [image] });
+            return;
+          } catch (error) {
+            if (error instanceof DOMException && error.name === "AbortError") return;
+            if (error instanceof DOMException && error.name === "NotAllowedError") {
+              setPendingImage(image);
+              flash(t("export.tapToShareImage"));
+              return;
+            }
           }
         }
-        await navigator.clipboard.writeText(text);
-        break;
+        if ((await shareOrCopy({ title, text, url })) === "copied") flash(t("export.linkCopied"));
+        return;
       }
       case "facebook":
-        window.open(
-          `https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(mapUrl)}`,
-          "_blank",
-          "noopener,noreferrer",
-        );
-        break;
+        openPopup(`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(url)}`);
+        return;
       case "twitter":
-        window.open(
-          `https://twitter.com/intent/tweet?text=${encoded}`,
-          "_blank",
-          "noopener,noreferrer",
+        openPopup(
+          `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`,
         );
-        break;
+        return;
       case "telegram":
-        window.open(
-          `https://t.me/share/url?url=${encodeURIComponent(mapUrl)}&text=${encodeURIComponent(text)}`,
-          "_blank",
-          "noopener,noreferrer",
+        openPopup(
+          `https://t.me/share/url?url=${encodeURIComponent(url)}&text=${encodeURIComponent(text)}`,
         );
-        break;
+        return;
       case "copy":
-        await navigator.clipboard.writeText(text);
-        break;
+        if ((await copyText(url)) === "copied") flash(t("export.linkCopied"));
     }
   };
 
@@ -178,7 +171,7 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
 
             <div className="export-modal-actions">
               {FORMAT_OPTIONS.map(({ format, labelKey }) => {
-                const label = t(labelKey as any);
+                const label = t(labelKey);
                 return (
                   <button
                     key={labelKey}
@@ -201,20 +194,24 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
             <div className="export-modal-share">
               <p className="export-modal-share-label">{t("export.share")}</p>
               <div className="export-modal-share-actions">
-                {[
-                  { id: "share", label: t("export.share") },
-                  { id: "facebook", label: "Facebook" },
-                  { id: "twitter", label: "X / Twitter" },
-                  { id: "telegram", label: "Telegram" },
-                  { id: "copy", label: t("export.copyLink") },
-                ].map((btn) => (
+                {(
+                  [
+                    { id: "share", label: t("export.share") },
+                    { id: "facebook", label: "Facebook" },
+                    { id: "twitter", label: "X / Twitter" },
+                    { id: "telegram", label: "Telegram" },
+                    { id: "copy", label: t("export.copyLink") },
+                  ] satisfies { id: ShareTarget; label: string }[]
+                ).map((btn) => (
                   <button
                     key={btn.id}
                     type="button"
                     className="general-header-text-btn export-modal-share-btn"
                     onClick={() => void handleShare(btn.id)}
+                    disabled={isExporting}
+                    aria-live="polite"
                   >
-                    {btn.label}
+                    {shareFeedback?.id === btn.id ? shareFeedback.label : btn.label}
                   </button>
                 ))}
               </div>

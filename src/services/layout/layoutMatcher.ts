@@ -2,7 +2,7 @@ import { clamp } from "@/utils/geo/math";
 import { CUSTOM_LAYOUT_ID } from "@/services/layout/types";
 import type { Layout } from "@/services/layout/types";
 
-export function matchesLayoutSize(
+function matchesLayoutSize(
   layoutOption: Layout,
   widthCm: number,
   heightCm: number,

@@ -1,7 +1,3 @@
-.inspector-card {
-  padding: 12px;
-}
-
 .info-panel-group {
   padding: 14px;
   display: grid;
@@ -13,7 +9,6 @@
   padding-top: 12px;
 }
 
-.inspector-card h3,
 .info-panel-section h3 {
   margin: 0 0 8px;
   font-family: "Space Grotesk", "Inter", sans-serif;
@@ -23,21 +18,6 @@
   color: var(--accent);
 }
 
-.swatch-row {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 7px;
-  margin-bottom: 8px;
-}
-
-.swatch {
-  aspect-ratio: 1 / 1;
-  border-radius: 7px;
-  border: 1px solid rgba(255, 255, 255, 0.15);
-}
-
-.inspector-copy,
-.inspector-card p,
 .info-panel-section p {
   margin: 0;
   font-size: 0.83rem;
@@ -46,16 +26,8 @@
   color: #f5f5fa;
 }
 
-.inspector-card p + p,
 .info-panel-section p + p {
   margin-top: 7px;
-}
-
-.repo-actions {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
 }
 
 .github-badge {
@@ -82,18 +54,6 @@
   border-color: rgba(192, 57, 43, 0.5);
   background: rgba(255, 255, 255, 0.1);
   color: #ffffff;
-}
-
-.stars-badge {
-  color: #f59e0b;
-  border-color: rgba(245, 158, 11, 0.38);
-}
-
-.stars-badge:hover,
-.stars-badge:focus-visible {
-  color: #ffd78f;
-  border-color: rgba(245, 158, 11, 0.78);
-  background: rgba(245, 158, 11, 0.1);
 }
 
 .badge-icon {
@@ -149,46 +109,6 @@
 
 /* ── Info panel responsiveness ── */
 
-.footer-links {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-  margin-top: 10px;
-}
-
-.footer-link {
-  display: inline-flex;
-  align-items: center;
-  padding: 6px 10px;
-  border-radius: 999px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.05);
-  color: #f5f5fa;
-  text-decoration: none;
-  font-size: 0.78rem;
-  font-weight: 600;
-  line-height: 1;
-  transition:
-    border-color 0.16s ease,
-    background-color 0.16s ease,
-    color 0.16s ease;
-}
-
-.footer-link:hover,
-.footer-link:focus-visible {
-  border-color: rgba(192, 57, 43, 0.5);
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-}
-
-.footer-links-note {
-  margin: 0;
-  font-family: "JetBrains Mono", "Space Grotesk", monospace;
-  font-size: 0.76rem;
-  color: #94a3b8;
-  opacity: 0.8;
-}
-
 /* ── Help Us Grow section ── */
 
 .hug-copy {
@@ -225,66 +145,4 @@
   flex-wrap: wrap;
 }
 
-.hug-credits-note {
-  display: inline-flex;
-  align-items: center;
-  gap: 7px;
-  font-size: 0.8rem;
-  color: #22c55e;
-  font-weight: 500;
-}
-
-.hug-check-icon {
-  flex: 0 0 auto;
-  width: 12px;
-  height: 12px;
-  color: #10b981;
-}
-
 /* ── Social media badges ── */
-
-.social-links-row {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  margin-top: 4px;
-}
-
-.social-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 36px;
-  height: 36px;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.05);
-  color: #f5f5fa;
-  text-decoration: none;
-  flex: 0 0 auto;
-  transition:
-    border-color 0.16s ease,
-    background-color 0.16s ease,
-    color 0.16s ease,
-    transform 0.12s ease;
-}
-
-a.social-badge:hover,
-a.social-badge:focus-visible {
-  border-color: rgba(192, 57, 43, 0.5);
-  background: rgba(255, 255, 255, 0.1);
-  color: #ffffff;
-  transform: translateY(-1px);
-}
-
-.social-badge--inactive {
-  opacity: 0.35;
-  cursor: default;
-}
-
-.social-icon {
-  width: 16px;
-  height: 16px;
-  flex: 0 0 auto;
-}

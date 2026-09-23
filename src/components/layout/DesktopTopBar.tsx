@@ -11,7 +11,9 @@ import {
 } from "@/components/ui/Icons";
 import type { MobileTab } from "@/components/layout/MobileNavBar";
 import { useI18n } from "@/context/i18n/context";
+import type { TranslationKey } from "@/context/i18n/types";
 import DesktopLocationBar from "@/components/layout/DesktopLocationBar";
+import NewPosterButton from "@/components/ui/NewPosterButton";
 
 interface DesktopTopBarProps {
   activeTab: MobileTab;
@@ -22,7 +24,7 @@ interface DesktopTopBarProps {
 
 const tabs: {
   id: MobileTab;
-  labelKey: string;
+  labelKey: TranslationKey;
   Icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { id: "theme", labelKey: "nav.theme", Icon: ThemeIcon },
@@ -80,7 +82,7 @@ export default function DesktopTopBar({
 
         <nav className="desktop-top-bar-nav" aria-label={t("nav.settings")}>
           {tabs.map(({ id, labelKey, Icon }) => {
-            const label = t(labelKey as any);
+            const label = t(labelKey);
             return (
               <button
                 key={id}
@@ -103,6 +105,7 @@ export default function DesktopTopBar({
           <div className="desktop-top-search">
             <DesktopLocationBar />
           </div>
+          <NewPosterButton className="desktop-top-about-btn" />
           <button
             type="button"
             className="desktop-top-lang-btn"

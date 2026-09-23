@@ -11,6 +11,7 @@ import {
 } from "@/components/ui/Icons";
 import { MapPin } from "lucide-react";
 import { useI18n } from "@/context/i18n/context";
+import type { TranslationKey } from "@/context/i18n/types";
 
 export type MobileTab =
   | "settings"
@@ -25,7 +26,7 @@ export type MobileTab =
 
 const TABS: {
   id: MobileTab;
-  labelKey: string;
+  labelKey: TranslationKey;
   Icon: React.ComponentType<{ className?: string }>;
 }[] = [
   { id: "location", labelKey: "nav.location", Icon: LocationIcon },
@@ -103,7 +104,7 @@ export default function MobileNavBar({
                   aria-pressed={isLoc ? isLocationVisible : isActive}
                 >
                   <Icon className="mobile-nav-icon" />
-                  <span className="mobile-nav-label">{t(labelKey as any)}</span>
+                  <span className="mobile-nav-label">{t(labelKey)}</span>
                 </button>
               );
             })}

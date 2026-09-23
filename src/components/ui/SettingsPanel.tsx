@@ -6,6 +6,7 @@ import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { useMapSync } from "@/hooks/useMapSync";
 import type { MobileTab } from "@/components/layout/MobileNavBar";
 import { useI18n } from "@/context/i18n/context";
+import type { TranslationKey } from "@/context/i18n/types";
 import LocationSection from "@/components/ui/LocationSection";
 import AppSettingsSection from "@/components/ui/AppSettingsSection";
 import MapSettingsSection from "@/components/ui/MapSettingsSection";
@@ -35,7 +36,7 @@ type SectionId =
 
 const SECTIONS: {
   id: SectionId;
-  labelKey: string;
+  labelKey: TranslationKey;
   step: string;
   Icon: React.ComponentType<{ className?: string }>;
 }[] = [
@@ -172,7 +173,7 @@ export default function SettingsPanel({
       <form className="settings-panel settings-panel--desktop" onSubmit={(e) => e.preventDefault()}>
         <div className="panel-view" data-panel={desktopActivePanel}>
           <div className="panel-hdr">
-            <h2>{t(section.labelKey as any)}</h2>
+            <h2>{t(section.labelKey)}</h2>
           </div>
           <div className="section">{renderSection(section.id)}</div>
         </div>
@@ -191,7 +192,7 @@ export default function SettingsPanel({
       >
         <div className="panel-view" data-panel={mobileTab}>
           <div className="panel-hdr">
-            <h2>{t(section.labelKey as any)}</h2>
+            <h2>{t(section.labelKey)}</h2>
           </div>
           <div className="section">{renderSection(section.id)}</div>
         </div>
@@ -215,7 +216,7 @@ export default function SettingsPanel({
           >
             <span className="accordion-step-badge">{s.step}</span>
             <s.Icon className="accordion-icon" />
-            <span className="accordion-label">{t(s.labelKey as any)}</span>
+            <span className="accordion-label">{t(s.labelKey)}</span>
             <ChevronDownIcon className="accordion-chevron" />
           </button>
           <div className={`accordion-body${openSections.has(s.id) ? " is-open" : ""}`}>

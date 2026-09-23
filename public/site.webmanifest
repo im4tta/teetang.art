@@ -27,5 +27,24 @@
       "type": "image/png",
       "purpose": "any maskable"
     }
+  ],
+  "lang": "km",
+  "categories": [
+    "design",
+    "graphics",
+    "travel"
+  ],
+  "shortcuts": [
+    {
+      "name": "Create a map poster",
+      "short_name": "Create",
+      "url": "/create",
+      "icons": [
+        {
+          "src": "/assets/icons/logo-192x192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
   ]
 }

@@ -85,7 +85,7 @@ export function parseHex(hex: string): RGB | null {
 
 // ─── RGB / HSL Conversion ────────────────────────────────────────────────────
 
-export function rgbToHexColor({ r, g, b }: RGB): string {
+function rgbToHexColor({ r, g, b }: RGB): string {
   return `#${[r, g, b]
     .map((v) =>
       clamp(Math.round(Number(v) || 0), 0, 255)
@@ -95,7 +95,7 @@ export function rgbToHexColor({ r, g, b }: RGB): string {
     .join("")}`;
 }
 
-export function rgbToHsl({ r, g, b }: RGB): HSL {
+function rgbToHsl({ r, g, b }: RGB): HSL {
   const red = clamp(r, 0, 255) / 255;
   const green = clamp(g, 0, 255) / 255;
   const blue = clamp(b, 0, 255) / 255;
@@ -132,7 +132,7 @@ function hueToRgb(p: number, q: number, t: number): number {
   return p;
 }
 
-export function hslToRgb({ h, s, l }: HSL): RGB {
+function hslToRgb({ h, s, l }: HSL): RGB {
   const hue = ((h % 1) + 1) % 1;
   const saturation = clamp(s, 0, 1);
   const lightness = clamp(l, 0, 1);
@@ -153,10 +153,6 @@ export function hslToRgb({ h, s, l }: HSL): RGB {
     g: Math.round(hueToRgb(p, q, hue) * 255),
     b: Math.round(hueToRgb(p, q, hue - 1 / 3) * 255),
   };
-}
-
-export function hslToHexColor(hsl: HSL): string {
-  return rgbToHexColor(hslToRgb(hsl));
 }
 
 export function shiftHexColor(
@@ -211,7 +207,7 @@ export function blendHex(hexA: string, hexB: string, weight = 0.5): string {
   return `#${r}${g}${bChannel}`;
 }
 
-export function relativeLuminance(hex: string): number {
+function relativeLuminance(hex: string): number {
   const rgb = parseHex(hex);
   if (!rgb) return 0;
   const channel = (v: number) => {
@@ -221,7 +217,7 @@ export function relativeLuminance(hex: string): number {
   return 0.2126 * channel(rgb.r) + 0.7152 * channel(rgb.g) + 0.0722 * channel(rgb.b);
 }
 
-export function isLightHex(hex: string): boolean {
+function isLightHex(hex: string): boolean {
   return relativeLuminance(hex) > 0.45;
 }
 

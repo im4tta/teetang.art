@@ -48,30 +48,3 @@ export function buildTelegramUrl(username: string): string {
   const clean = username.replace(/^@/, "").trim();
   return clean ? `https://t.me/${clean}` : "";
 }
-
-/**
- * Build a Tee Tang hosted landing page URL.
- */
-export function buildTeeTangUrl(lat: number, lon: number, city?: string): string {
-  const slug = (city || "place")
-    .toLowerCase()
-    .replace(/\s+/g, "-")
-    .replace(/[^a-z0-9-]/g, "");
-  return `https://teetangart.com/place/${slug}-${lat.toFixed(4)}-${lon.toFixed(4)}`;
-}
-
-/**
- * Preload a QR code image so it's ready for canvas export.
- */
-export function preloadQrImage(url: string): Promise<HTMLImageElement> {
-  return new Promise((resolve, reject) => {
-    const img = new Image();
-    // Data URLs don't need crossOrigin; external URLs do
-    if (!url.startsWith("data:")) {
-      img.crossOrigin = "anonymous";
-    }
-    img.onload = () => resolve(img);
-    img.onerror = reject;
-    img.src = url;
-  });
-}

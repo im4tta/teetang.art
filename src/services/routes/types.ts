@@ -43,10 +43,3 @@ export interface RouteBounds {
   minLon: number;
   maxLon: number;
 }
-
-export interface ParsedGpx {
-  label: string;
-  segments: Coordinate[][];
-  bounds: RouteBounds;
-  pointCount: number;
-}

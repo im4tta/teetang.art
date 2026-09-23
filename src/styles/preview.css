@@ -296,10 +296,6 @@
   touch-action: pan-x pan-y;
 }
 
-.swipe-overlay.is-disabled {
-  pointer-events: none;
-}
-
 .route-draw-hint {
   position: absolute;
   bottom: 12px;
@@ -632,24 +628,12 @@
   margin-bottom: 8px;
 }
 
-.map-controls-section {
-  margin-top: 5px;
-}
-
 .map-control-group {
   display: flex;
   flex-wrap: nowrap;
   justify-content: center;
   gap: 6px;
   align-items: center;
-}
-
-.map-control-slider-row {
-  width: min(560px, 100%);
-  display: grid;
-  grid-template-columns: auto minmax(180px, 1fr) auto;
-  align-items: center;
-  gap: 8px;
 }
 
 .map-control-slider {
@@ -763,11 +747,6 @@
   justify-content: center;
 }
 
-.map-control-btn--marker-toggle {
-  min-width: 150px;
-  justify-content: center;
-}
-
 .map-control-sub-group {
   display: flex;
   gap: 4px;
@@ -845,97 +824,6 @@
     rgba(192, 57, 43, 0.15) 0px 8px 10px -6px;
 }
 
-.map-control-btn--marker-reset {
-  background: rgba(73, 45, 34, 0.84);
-  border-color: rgba(255, 177, 142, 0.58);
-  color: #ffd7c2;
-}
-
-.map-control-btn--marker-reset:hover:not(:disabled) {
-  background: rgba(96, 58, 43, 0.92);
-  border-color: rgba(255, 177, 142, 0.85);
-}
-
-.map-control-btn--danger {
-  background: rgba(82, 44, 36, 0.82);
-  border-color: rgba(255, 152, 129, 0.44);
-  color: #ffd5cb;
-}
-
-.map-control-btn--danger:hover:not(:disabled) {
-  background: rgba(97, 53, 44, 0.92);
-  border-color: rgba(255, 152, 129, 0.72);
-}
-
-.map-control-hint {
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  margin: 0;
-  padding: 4px 8px;
-  border-radius: 7px;
-  background: rgba(8, 18, 28, 0.42);
-  font-family: "Spline Sans Mono", monospace;
-  font-size: 0.7rem;
-  color: rgba(156, 195, 218, 0.7);
-  text-align: center;
-  white-space: pre-line;
-}
-
-.map-control-hint-icon {
-  flex-shrink: 0;
-  font-size: 0.8em;
-}
-
-.settings-info-card {
-  margin: 8px;
-  padding: 10px 12px;
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  background: var(--panel);
-  color: var(--ink);
-  font-family: "Noto Sans Khmer", "Battambang", "Inter", sans-serif;
-  box-shadow: rgba(0, 0, 0, 0.1) 0px 4px 6px -4px;
-}
-
-.settings-info-title {
-  margin: 0 0 6px;
-  font-size: 0.72rem;
-  font-family: "Space Grotesk", "Noto Sans Khmer", "Battambang", "Inter", sans-serif;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--accent);
-}
-
-.settings-info-list {
-  margin: 0;
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 6px 12px;
-}
-
-.settings-info-row {
-  margin: 0;
-  display: grid;
-  gap: 1px;
-}
-
-.settings-info-row dt {
-  margin: 0;
-  font-family: "Space Grotesk", "Noto Sans Khmer", "Battambang", "Inter", sans-serif;
-  font-size: 0.6rem;
-  text-transform: uppercase;
-  letter-spacing: 0.03em;
-  color: var(--text-secondary);
-}
-
-.settings-info-row dd {
-  margin: 0;
-  font-size: 0.78rem;
-  font-family: "Noto Sans Khmer", "Battambang", "Inter", sans-serif;
-  color: var(--ink);
-}
-
 /* Export button inside map controls (inline instead of floating) */
 .map-controls .export-fab-trigger-desktop {
   position: static;
@@ -995,18 +883,9 @@
     font-size: 0.74rem;
   }
 
-  .map-control-btn--mode,
-  .map-control-btn--marker-toggle {
+  .map-control-btn--mode {
     min-width: 0;
     justify-content: flex-start;
-  }
-
-  .map-control-hint {
-    font-size: 0.65rem;
-  }
-
-  .map-control-slider-row {
-    grid-template-columns: auto minmax(120px, 1fr) auto;
   }
 }
 

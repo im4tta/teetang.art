@@ -6,10 +6,7 @@ html[data-app-theme="light"] .app-shell {
 }
 
 html[data-app-theme="light"] body,
-html[data-app-theme="light"] .app-shell,
-html[data-app-theme="light"] .mobile-app-main,
-html[data-app-theme="light"] .mobile-preview-section,
-html[data-app-theme="light"] .app-main {
+html[data-app-theme="light"] .app-shell {
   background-color: var(--surface);
   color: var(--ink);
 }
@@ -335,11 +332,6 @@ html[data-app-theme="light"] :is(.seg, .theme-select) {
   color: var(--ink);
 }
 
-html[data-app-theme="light"] .seg-btn.active {
-  background: var(--raised-bg);
-  color: var(--ink);
-}
-
 html[data-app-theme="light"]
   :is(
     .panel-block h2,
@@ -461,18 +453,9 @@ html[data-app-theme="light"]
   color: var(--ink);
 }
 
-html[data-app-theme="light"] .startup-location-suggestions {
-  background: var(--overlay-bg);
-  border-color: var(--border);
-}
-
 html[data-app-theme="light"]
   :is(.startup-location-suggestion, .startup-location-suggestion-status) {
   color: var(--ink);
-}
-
-html[data-app-theme="light"] .startup-location-input:focus {
-  background: var(--control-bg);
 }
 
 /* Active mobile chrome and export dialog light-mode corrections. */

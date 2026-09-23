@@ -9,6 +9,7 @@ import {
 } from "react";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { usePosterContext } from "@/context/PosterContext";
+import type { PosterForm } from "@/context/posterReducer";
 import { useMapSync, distanceToZoom, resolveZoomBounds, zoomToDistance } from "@/hooks/useMapSync";
 import MapPreview from "@/components/ui/MapPreview";
 import MarkerOverlay from "@/components/ui/MarkerOverlay";
@@ -21,7 +22,7 @@ import DualPosterTextOverlay from "@/components/ui/DualPosterTextOverlay";
 import PosterMediaOverlay from "@/components/ui/PosterMediaOverlay";
 import { clamp } from "@/utils/geo/math";
 import { getContrastBorderColor } from "@/utils/color";
-import type { PosterShape } from "@/services/poster/clipShapes";
+import { POSTER_SHAPES, type PosterShape } from "@/services/poster/clipShapes";
 import UserGuide from "@/components/ui/UserGuide";
 import PickerModal from "@/components/ui/PickerModal";
 import { useI18n } from "@/context/i18n/context";
@@ -34,14 +35,8 @@ import {
   DEFAULT_DISTANCE_METERS,
 } from "@/services/config";
 import { ensureGoogleFont, reverseGeocodeCoordinates } from "@/services/container";
-import {
-  buildGoogleMapsUrl,
-  buildWhatsAppUrl,
-  buildAppleMapsUrl,
-  buildTelegramUrl,
-  buildTeeTangUrl,
-  getQrCodeDataUrl,
-} from "@/utils/qrCode";
+import { getQrCodeDataUrl } from "@/utils/qrCode";
+import { resolveQrTarget } from "@/services/share/posterLink";
 import {
   createCustomLayoutOption,
   formatLayoutDimensions,
@@ -62,39 +57,16 @@ const UNLOCK_HINT = `${LOCKED_HINT}\nClick to unlock map editing.`;
 const RECENTER_HINT = "Recenter map to the current location";
 const COUNTRY_VIEW_ZOOM = 10;
 const CONTINENT_VIEW_ZOOM = 6;
-const SHAPES = [
-  "rectangle",
-  "rounded",
-  "circle",
-  "diamond",
-  "hexagon",
-  "star",
-  "triangle",
-  "heart",
-];
 
-function buildQrData(form: any): string {
-  const lat = Number(form.latitude) || 0,
-    lon = Number(form.longitude) || 0;
-  switch (form.qrDestination) {
-    case "custom":
-      return String(form.qrCustomUrl || "").trim();
-    case "whatsapp":
-      return buildWhatsAppUrl(form.qrPhone || "");
-    case "telegram":
-      return buildTelegramUrl(form.qrPhone || "");
-    case "apple-maps":
-      return buildAppleMapsUrl(lat, lon);
-    case "teetang-landing":
-      return buildTeeTangUrl(lat, lon, form.displayCity);
-    default:
-      return buildGoogleMapsUrl(lat, lon);
-  }
+/** The item `step` places after `current` in `list`, wrapping around at either end. */
+function cycle<T extends string>(list: readonly T[], current: string, step: number): T {
+  const index = list.indexOf(current as T);
+  return list[(index + step + list.length) % list.length];
 }
 
-function getPois(form: any): string[] {
+function getPois(form: PosterForm): string[] {
   return ["poiSchools", "poiHospitals", "poiMarkets", "poiBanks", "poiRestaurants"].filter(
-    (k) => form[k],
+    (k) => form[k as keyof PosterForm],
   );
 }
 
@@ -235,7 +207,7 @@ export default function PreviewPanel() {
   }, [form.fontFamily]);
 
   // ── QR code preview ────────────────────────────────────────────────────
-  const qrPreviewData = form.showQrCode ? buildQrData(form) : "";
+  const qrPreviewData = form.showQrCode ? resolveQrTarget(form) : "";
   const qrPreviewUrl =
     qrPreviewData && qrPreviewResult?.data === qrPreviewData ? qrPreviewResult.url : "";
 
@@ -325,35 +297,23 @@ export default function PreviewPanel() {
   const footerCityLabel = form.footerCity || form.displayCity || form.location || "Phnom Penh";
   const footerCountryLabel = form.footerCountry || form.displayCountry || "Cambodia";
 
+  const cycleTheme = (step: number, startX?: number) => {
+    const isRight = isDualCity && startX !== undefined && startX > window.innerWidth / 2;
+    const current = isRight ? form.theme2 || form.theme : form.theme;
+    const ids = themeOptions.map((option) => option.id);
+    dispatch({ type: isRight ? "SET_THEME2" : "SET_THEME", themeId: cycle(ids, current, step) });
+  };
+  const cycleShape = (step: number) =>
+    dispatch({
+      type: "SET_FIELD",
+      name: "mapShape",
+      value: cycle(POSTER_SHAPES, form.mapShape, step),
+    });
   const swipeHandlers = useSwipeGestures({
-    onSwipeLeft: (startX?: number) => {
-      const isRight = isDualCity && startX !== undefined && startX > window.innerWidth / 2;
-      const key = isRight ? form.theme2 || form.theme : form.theme;
-      const actionType = isRight ? "SET_THEME2" : "SET_THEME";
-      const idx = themeOptions.findIndex((t) => t.id === key);
-      const next = themeOptions[(idx + 1) % themeOptions.length];
-      if (next) dispatch({ type: actionType, themeId: next.id });
-    },
-    onSwipeRight: (startX?: number) => {
-      const isRight = isDualCity && startX !== undefined && startX > window.innerWidth / 2;
-      const key = isRight ? form.theme2 || form.theme : form.theme;
-      const actionType = isRight ? "SET_THEME2" : "SET_THEME";
-      const idx = themeOptions.findIndex((t) => t.id === key);
-      const next = themeOptions[(idx - 1 + themeOptions.length) % themeOptions.length];
-      if (next) dispatch({ type: actionType, themeId: next.id });
-    },
-    onSwipeUp: () => {
-      const idx = SHAPES.indexOf(form.mapShape);
-      dispatch({ type: "SET_FIELD", name: "mapShape", value: SHAPES[(idx + 1) % SHAPES.length] });
-    },
-    onSwipeDown: () => {
-      const idx = SHAPES.indexOf(form.mapShape);
-      dispatch({
-        type: "SET_FIELD",
-        name: "mapShape",
-        value: SHAPES[(idx - 1 + SHAPES.length) % SHAPES.length],
-      });
-    },
+    onSwipeLeft: (startX?: number) => cycleTheme(1, startX),
+    onSwipeRight: (startX?: number) => cycleTheme(-1, startX),
+    onSwipeUp: () => cycleShape(1),
+    onSwipeDown: () => cycleShape(-1),
   });
 
   const commonMapProps = {
@@ -603,7 +563,7 @@ export default function PreviewPanel() {
       <div className="map-controls" aria-label="Map controls">
         <PickerModal
           open={isUserGuideOpen}
-          title={t("nav.userGuide" as any)}
+          title={t("nav.userGuide")}
           onClose={() => setIsUserGuideOpen(false)}
         >
           <UserGuide />
@@ -630,7 +590,7 @@ export default function PreviewPanel() {
               type="button"
               className="map-control-btn user-guide-btn"
               onClick={() => setIsUserGuideOpen(true)}
-              aria-label={t("nav.userGuide" as any)}
+              aria-label={t("nav.userGuide")}
             >
               <InfoIcon />
             </button>
