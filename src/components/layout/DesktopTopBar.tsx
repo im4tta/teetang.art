@@ -13,6 +13,7 @@ import type { MobileTab } from "@/components/layout/MobileNavBar";
 import { useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
 import DesktopLocationBar from "@/components/layout/DesktopLocationBar";
+import NewPosterButton from "@/components/ui/NewPosterButton";
 
 interface DesktopTopBarProps {
   activeTab: MobileTab;
@@ -104,6 +105,7 @@ export default function DesktopTopBar({
           <div className="desktop-top-search">
             <DesktopLocationBar />
           </div>
+          <NewPosterButton className="desktop-top-about-btn" />
           <button
             type="button"
             className="desktop-top-lang-btn"

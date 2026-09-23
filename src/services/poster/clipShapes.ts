@@ -1,5 +1,14 @@
-export type PosterShape =
-  "rectangle" | "rounded" | "circle" | "diamond" | "hexagon" | "star" | "triangle" | "heart";
+export const POSTER_SHAPES = [
+  "rectangle",
+  "rounded",
+  "circle",
+  "diamond",
+  "hexagon",
+  "star",
+  "triangle",
+  "heart",
+] as const;
+export type PosterShape = (typeof POSTER_SHAPES)[number];
 
 type Point = readonly [number, number];
 

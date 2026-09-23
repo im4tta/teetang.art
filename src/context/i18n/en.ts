@@ -64,6 +64,9 @@ export const en = {
   "export.followUs": "Follow us",
   "export.share": "Share",
   "export.copyLink": "Copy link",
+  "export.linkCopied": "Link copied!",
+  "export.tapToShareImage": "Tap again to share the image",
+  "export.shareText": "I made a map poster of {city} with Tee Tang Art. Design yours free:",
   "routes.clickToPlaceStart": "Click the map to place the start point",
   "support.abaAccount": "ABA Account",
   "support.copyAccount": "Copy account number",
@@ -201,4 +204,6 @@ export const en = {
   "embed.widget": "Embed Widget",
   "embed.copyCode": "Copy embed code",
   "embed.copied": "Copied!",
+  "design.new": "New poster",
+  "design.newConfirm": "Start a new poster? Your current design will be cleared.",
 } satisfies Record<string, string>;

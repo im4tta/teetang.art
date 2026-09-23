@@ -10,23 +10,12 @@ import { useI18n } from "@/context/i18n/context";
 import { usePosterContext } from "@/context/PosterContext";
 import { LogoUploadField } from "@/components/ui/LogoUploadField";
 import {
-  buildGoogleMapsUrl,
-  buildWhatsAppUrl,
-  buildAppleMapsUrl,
-  buildTelegramUrl,
-  buildTeeTangUrl,
-} from "@/utils/qrCode";
-
-const SHAPES = [
-  "rectangle",
-  "rounded",
-  "circle",
-  "diamond",
-  "hexagon",
-  "star",
-  "triangle",
-  "heart",
-];
+  buildPosterLink,
+  copyText,
+  resolveQrTarget,
+  shareOrCopy,
+} from "@/services/share/posterLink";
+import { POSTER_SHAPES } from "@/services/poster/clipShapes";
 
 function Toggle({
   label,
@@ -273,7 +262,7 @@ export default function TypographySection({ form, onChange, fontOptions }: Props
       <section className="panel-block">
         <p className="section-summary-label">{t("layout.posterSize")}</p>
         <div className="shape-picker">
-          {SHAPES.map((s) => (
+          {POSTER_SHAPES.map((s) => (
             <button
               key={s}
               type="button"
@@ -567,25 +556,8 @@ function QRSection({ form, onChange }: { form: PosterForm; onChange: (e: any) =>
   const { t } = useI18n();
 
   const handleShare = useCallback(async () => {
-    const lat = Number(form.latitude) || 0,
-      lon = Number(form.longitude) || 0;
-    const urls: Record<string, string> = {
-      "google-maps": buildGoogleMapsUrl(lat, lon),
-      "apple-maps": buildAppleMapsUrl(lat, lon),
-      whatsapp: form.qrPhone ? buildWhatsAppUrl(form.qrPhone) : "",
-      telegram: form.qrPhone ? buildTelegramUrl(form.qrPhone) : "",
-      "teetang-landing": buildTeeTangUrl(lat, lon, form.displayCity),
-      custom: form.qrCustomUrl || "",
-    };
-    const url = urls[form.qrDestination] ?? buildGoogleMapsUrl(lat, lon);
-    if (!url) return;
-    try {
-      if ("share" in navigator)
-        await (navigator as any).share({ title: "Map location", text: url, url });
-      else await (navigator as any).clipboard.writeText(url);
-    } catch {
-      /* share/clipboard cancelled or unsupported; ignore */
-    }
+    const url = resolveQrTarget(form);
+    if (url) await shareOrCopy({ title: "Map location", url });
   }, [form]);
 
   const setXY = (field: string, v: number) =>
@@ -744,10 +716,7 @@ function QRSection({ form, onChange }: { form: PosterForm; onChange: (e: any) =>
 function EmbedWidgetSection({ form }: { form: PosterForm }) {
   const { t } = useI18n();
   const [copied, setCopied] = useState(false);
-  const lat = Number(form.latitude) || 0,
-    lon = Number(form.longitude) || 0;
-  const city = encodeURIComponent(form.displayCity || form.location || "location");
-  const code = `<iframe\n  src="https://teetangart.com/embed?lat=${lat}&lon=${lon}&city=${city}&theme=${form.theme}"\n  width="400" height="500"\n  frameborder="0"\n  style="border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.15);"\n></iframe>`;
+  const code = `<iframe\n  src="${buildPosterLink(form)}"\n  width="400" height="500"\n  frameborder="0"\n  style="border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.15);"\n></iframe>`;
   return (
     <section className="panel-block">
       <p className="section-summary-label">{t("embed.widget")}</p>
@@ -773,7 +742,8 @@ function EmbedWidgetSection({ form }: { form: PosterForm }) {
         className="general-header-text-btn"
         style={{ width: "100%", justifyContent: "center" }}
         onClick={() =>
-          void navigator.clipboard.writeText(code).then(() => {
+          void copyText(code).then((outcome) => {
+            if (outcome !== "copied") return;
             setCopied(true);
             setTimeout(() => setCopied(false), 2000);
           })

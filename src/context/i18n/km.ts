@@ -66,6 +66,10 @@ export const km: TranslationDict = {
   "export.followUs": "តាមដានយើង",
   "export.share": "ចែករំលែក",
   "export.copyLink": "ចម្លងតំណភ្ជាប់",
+  "export.linkCopied": "បានចម្លងតំណភ្ជាប់!",
+  "export.tapToShareImage": "ចុចម្ដងទៀតដើម្បីចែករំលែករូបភាព",
+  "export.shareText":
+    "ខ្ញុំបានបង្កើតផ្ទាំងផែនទី {city} ជាមួយ Tee Tang Art។ បង្កើតរបស់អ្នកដោយឥតគិតថ្លៃ៖",
   "routes.clickToPlaceStart": "ចុចលើផែនទី ដើម្បីដាក់ចំណុចចាប់ផ្តើម",
   "support.abaAccount": "គណនី ABA",
   "support.copyAccount": "ចម្លងលេខគណនី",
@@ -204,4 +208,6 @@ export const km: TranslationDict = {
   "embed.widget": "ធាតុបញ្ចូល",
   "embed.copyCode": "ចម្លងកូដបញ្ចូល",
   "embed.copied": "បានចម្លង!",
+  "design.new": "ផ្ទាំងថ្មី",
+  "design.newConfirm": "ចាប់ផ្ដើមផ្ទាំងថ្មី? ការរចនាបច្ចុប្បន្នរបស់អ្នកនឹងត្រូវលុបចោល។",
 };
