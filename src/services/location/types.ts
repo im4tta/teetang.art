@@ -11,4 +11,4 @@ export interface Location {
   lon: number;
 }
 
-export interface SearchResult extends Location {}
+export type SearchResult = Location;

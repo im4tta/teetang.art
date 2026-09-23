@@ -1,3 +1,5 @@
+import type { GeoJSONSource } from "maplibre-gl";
+import type { Feature } from "geojson";
 import { useEffect, useRef } from "react";
 import type { MapInstanceRef } from "@/services/map/types";
 
@@ -41,7 +43,7 @@ interface PoiOverlayProps {
 }
 
 export default function PoiOverlay({ mapRef, center, visible, activeTypes }: PoiOverlayProps) {
-  const poiDataRef = useRef<Record<string, any[]>>({});
+  const poiDataRef = useRef<Record<string, Feature[]>>({});
   const prevTypesRef = useRef<string>("");
 
   useEffect(() => {
@@ -104,7 +106,7 @@ export default function PoiOverlay({ mapRef, center, visible, activeTypes }: Poi
           headers: { "Content-Type": "application/x-www-form-urlencoded" },
         });
         const data = await res.json();
-        const grouped: Record<string, any[]> = {};
+        const grouped: Record<string, Feature[]> = {};
         for (const el of data.elements || []) {
           const lat = el.lat || el.center?.lat;
           const lon = el.lon || el.center?.lon;
@@ -125,7 +127,7 @@ export default function PoiOverlay({ mapRef, center, visible, activeTypes }: Poi
         poiDataRef.current = grouped;
 
         for (const key of enabledTypes) {
-          const source = map.getSource(`poi-${key}`) as any;
+          const source = map.getSource<GeoJSONSource>(`poi-${key}`);
           if (source) {
             source.setData({
               type: "FeatureCollection",

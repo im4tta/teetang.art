@@ -1,7 +1,7 @@
 import type { ResolvedTheme } from "@/services/theme/types";
 import { MAP_OVERZOOM_SCALE } from "@/services/map/constants";
 import { blendHex } from "@/utils/color";
-import type { StyleSpecification } from "maplibre-gl";
+import type { ExpressionSpecification, FilterSpecification, StyleSpecification } from "maplibre-gl";
 import { TILE_PROVIDERS } from "@/services/config";
 
 const OPENFREEMAP_SOURCE = "https://tiles.openfreemap.org/planet";
@@ -132,13 +132,13 @@ const ROAD_PATH_OVERVIEW_MIN_ZOOM = 5;
 const ROAD_PATH_DETAIL_MIN_ZOOM = 8;
 const ROAD_OVERVIEW_MAX_ZOOM = 11.8;
 
-const LINE_GEOMETRY_FILTER = [
+const LINE_GEOMETRY_FILTER: ExpressionSpecification = [
   "match",
   ["geometry-type"],
   ["LineString", "MultiLineString"],
   true,
   false,
-] as const;
+];
 
 /**
  * Over-zoom preview/export shrinks rendered strokes after viewport scale compensation.
@@ -156,14 +156,14 @@ function resolveBuildingMinZoom(distanceMeters?: number): number {
   return MAP_BUILDING_MIN_ZOOM_DEFAULT;
 }
 
-function widthExpr(stops: [number, number][]): any {
+function widthExpr(stops: [number, number][]): ExpressionSpecification {
   const flat = stops.flatMap(([zoom, width]) => [zoom, width]);
-  return ["interpolate", ["linear"], ["zoom"], ...flat];
+  return ["interpolate", ["linear"], ["zoom"], ...flat] as ExpressionSpecification;
 }
 
-function opacityExpr(stops: [number, number][]): any {
+function opacityExpr(stops: [number, number][]): ExpressionSpecification {
   const flat = stops.flatMap(([zoom, opacity]) => [zoom, opacity]);
-  return ["interpolate", ["linear"], ["zoom"], ...flat];
+  return ["interpolate", ["linear"], ["zoom"], ...flat] as ExpressionSpecification;
 }
 
 function scaledStops(stops: [number, number][], scale: number): [number, number][] {
@@ -174,7 +174,7 @@ function compensateLineWidthStops(stops: [number, number][]): [number, number][]
   return scaledStops(stops, OVERZOOM_LINE_WIDTH_SCALE);
 }
 
-function lineClassFilter(classes: string[]): any {
+function lineClassFilter(classes: string[]): FilterSpecification {
   return ["all", LINE_GEOMETRY_FILTER, ["match", ["get", "class"], classes, true, false]];
 }
 
@@ -303,7 +303,15 @@ export function generateMapStyle(
           properties: {},
           geometry: {
             type: "Polygon",
-            coordinates: [[[-180, -90], [180, -90], [180, 90], [-180, 90], [-180, -90]]],
+            coordinates: [
+              [
+                [-180, -90],
+                [180, -90],
+                [180, 90],
+                [-180, 90],
+                [-180, -90],
+              ],
+            ],
           },
         },
       },
@@ -727,7 +735,7 @@ export function generateMapStyle(
         "source-layer": "boundary",
         type: "line" as const,
         minzoom: 2,
-        filter: ["==", ["get", "admin_level"], 2] as any,
+        filter: ["==", ["get", "admin_level"], 2],
         paint: {
           "line-color": theme.ui.text,
           "line-width": 2.5,

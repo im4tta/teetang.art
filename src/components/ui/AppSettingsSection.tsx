@@ -9,10 +9,12 @@ import {
   LayoutIcon,
 } from "@/components/ui/Icons";
 import { useI18n } from "@/context/i18n/context";
+import type { PosterForm } from "@/context/posterReducer";
+import type { FormChangeHandler } from "@/hooks/useFormHandlers";
 
 interface Props {
-  form: any;
-  onChange: (e: any) => void;
+  form: PosterForm;
+  onChange: FormChangeHandler;
 }
 
 export default function AppSettingsSection({ form, onChange }: Props) {

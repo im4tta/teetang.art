@@ -130,7 +130,7 @@ export default function PosterTextOverlay({
   const stackedCenter = `${(footer.centerX / widthUnits) * 100}%`;
 
   const alignmentStyle: React.CSSProperties = {
-    textAlign: titleAlign as any,
+    textAlign: titleAlign as React.CSSProperties["textAlign"],
     paddingLeft: titleAlign === "left" ? "8%" : "0",
     paddingRight: titleAlign === "right" ? "8%" : "0",
   };

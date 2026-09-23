@@ -155,7 +155,7 @@ function MarkerCard({
   onRemove,
 }: {
   marker: MarkerItem;
-  icon: any;
+  icon: ReturnType<typeof findMarkerIcon>;
   markerLabel: string;
   onEdit: () => void;
   onRemove: () => void;
@@ -420,7 +420,7 @@ export default function MarkersSection() {
                 {isSettingsOpen ? <CheckIcon /> : <GearIcon />}
               </span>
               {isSettingsOpen && (
-                <span className="marker-row__icon-btn-label">{t("markers.done") as string}</span>
+                <span className="marker-row__icon-btn-label">{t("markers.done")}</span>
               )}
             </button>
           )}

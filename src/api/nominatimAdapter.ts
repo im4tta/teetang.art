@@ -5,6 +5,7 @@ import type { SearchResult } from "@/services/location/types";
 import {
   normalizeLocationResult,
   parseLocationResponseItems,
+  type NominatimEntry,
 } from "@/services/location/locationParser";
 import { GEOCODE_TTL_MS, LOCATION_SEARCH_TTL_MS } from "@/services/location/constants";
 import {
@@ -70,7 +71,7 @@ export function createNominatimAdapter(http: IHttp, cache: ICache): IGeocodePort
     const cacheKey = getGeocodeCacheKey(lookup);
     const cached = cache.read<Record<string, unknown>>(cacheKey, GEOCODE_TTL_MS);
     if (cached && typeof cached === "object") {
-      const normalizedCached = normalizeLocationResult(cached as any, lookup);
+      const normalizedCached = normalizeLocationResult(cached as NominatimEntry, lookup);
       if (normalizedCached) {
         return normalizedCached;
       }
@@ -94,7 +95,7 @@ export function createNominatimAdapter(http: IHttp, cache: ICache): IGeocodePort
     const cacheKey = getReverseGeocodeCacheKey(lat, lon);
     const cached = cache.read<Record<string, unknown>>(cacheKey, GEOCODE_TTL_MS);
     if (cached && typeof cached === "object") {
-      const normalizedCached = normalizeLocationResult(cached as any);
+      const normalizedCached = normalizeLocationResult(cached as NominatimEntry);
       if (normalizedCached) {
         return normalizedCached;
       }

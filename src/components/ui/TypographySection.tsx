@@ -17,6 +17,7 @@ import {
 } from "@/services/share/posterLink";
 import { POSTER_SHAPES } from "@/services/poster/clipShapes";
 import { POSITION_OPTIONS } from "@/components/ui/positionOptions";
+import type { FormChangeHandler } from "@/hooks/useFormHandlers";
 
 function Toggle({
   label,
@@ -27,7 +28,7 @@ function Toggle({
   label: string;
   name: string;
   checked: boolean;
-  onChange: (e: any) => void;
+  onChange: FormChangeHandler;
 }) {
   return (
     <div className="ios-toggle-row">
@@ -51,7 +52,7 @@ function Field({
   label: string;
   name: string;
   value: string;
-  onChange: (e: any) => void;
+  onChange: FormChangeHandler;
   type?: string;
   placeholder?: string;
 }) {
@@ -87,7 +88,7 @@ function Slider({
   max: string;
   step: string;
   unit?: string;
-  onChange: (e: any) => void;
+  onChange: FormChangeHandler;
 }) {
   return (
     <>
@@ -122,7 +123,7 @@ function SelectField({
   label: string;
   name: string;
   value: string;
-  onChange: (e: any) => void;
+  onChange: FormChangeHandler;
   children: React.ReactNode;
 }) {
   return (
@@ -139,7 +140,7 @@ function SelectField({
 
 interface Props {
   form: PosterForm;
-  onChange: (e: any) => void;
+  onChange: FormChangeHandler;
   fontOptions: FontOption[];
 }
 
@@ -552,7 +553,7 @@ export default function TypographySection({ form, onChange, fontOptions }: Props
   );
 }
 
-function QRSection({ form, onChange }: { form: PosterForm; onChange: (e: any) => void }) {
+function QRSection({ form, onChange }: { form: PosterForm; onChange: FormChangeHandler }) {
   const { dispatch } = usePosterContext();
   const { t } = useI18n();
 

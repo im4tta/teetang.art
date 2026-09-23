@@ -11,6 +11,7 @@ import { CM_PER_INCH, DEFAULT_POSTER_WIDTH_CM, DEFAULT_POSTER_HEIGHT_CM } from "
 import { getQrCodeDataUrl } from "@/utils/qrCode";
 import { resolveQrTarget } from "@/services/share/posterLink";
 import type { PosterForm } from "@/context/posterReducer";
+import type { PosterShape } from "@/services/poster/clipShapes";
 
 const EXPORT_KEY = "teetangart.poster.count";
 const EXPORT_TTL = 365 * 24 * 60 * 60 * 1000;
@@ -128,7 +129,7 @@ export function useExport() {
           markers,
           markerIcons,
           routes: visibleRoutes,
-          mapShape: form.mapShape as any,
+          mapShape: form.mapShape as PosterShape,
         });
         return {
           blob,
@@ -198,7 +199,7 @@ export function useExport() {
           markerIcons,
           ...overlayProps,
           routes: visibleRoutes,
-          mapShape: form.mapShape as any,
+          mapShape: form.mapShape as PosterShape,
           qrUrl,
           titleAlign: form.titleAlign,
           showBorder: form.showBorder,

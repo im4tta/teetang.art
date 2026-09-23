@@ -1,6 +1,6 @@
 import type { SearchResult } from "@/services/location/types";
 
-interface NominatimEntry {
+export interface NominatimEntry {
   lat?: number | string;
   lon?: number | string;
   display_name?: string;

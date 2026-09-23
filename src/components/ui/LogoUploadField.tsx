@@ -2,8 +2,9 @@ import { useRef, useState } from "react";
 import { POSITION_OPTIONS } from "@/components/ui/positionOptions";
 import { useI18n } from "@/context/i18n/context";
 import { usePosterContext } from "@/context/PosterContext";
+import type { PosterForm } from "@/context/posterReducer";
 
-export function LogoUploadField({ form }: { form: any }) {
+export function LogoUploadField({ form }: { form: PosterForm }) {
   const fileRef = useRef<HTMLInputElement>(null);
   const { t } = useI18n();
   const { dispatch } = usePosterContext();
@@ -121,15 +122,17 @@ export function LogoUploadField({ form }: { form: any }) {
                   />
                 </div>
               ))}
-              {[
-                ["poster.size", "logoSize", 5, 80, 1, "%"],
-                ["poster.opacity", "logoOpacity", 10, 100, 5, "%"],
-              ].map(([lk, fk, min, max, step, unit]) => (
-                <div key={fk as string}>
+              {(
+                [
+                  ["poster.size", "logoSize", 5, 80, 1, "%"],
+                  ["poster.opacity", "logoOpacity", 10, 100, 5, "%"],
+                ] as const
+              ).map(([lk, fk, min, max, step, unit]) => (
+                <div key={fk}>
                   <div className="ctrl-row">
-                    <span className="ctrl-label">{t(lk as any)}</span>
+                    <span className="ctrl-label">{t(lk)}</span>
                     <span className="ctrl-val">
-                      {form[fk as string]}
+                      {form[fk]}
                       {unit}
                     </span>
                   </div>
@@ -139,8 +142,8 @@ export function LogoUploadField({ form }: { form: any }) {
                     min={min}
                     max={max}
                     step={step}
-                    value={Number(form[fk as string])}
-                    onChange={(e) => setField({ [fk as string]: String(Number(e.target.value)) })}
+                    value={Number(form[fk])}
+                    onChange={(e) => setField({ [fk]: String(Number(e.target.value)) })}
                   />
                 </div>
               ))}
