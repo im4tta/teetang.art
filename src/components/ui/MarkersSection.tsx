@@ -547,7 +547,9 @@ export default function MarkersSection() {
                     ))}
                   </ul>
                 )}
-                {ctSearching && <p className="location-suggestions-loading">Searching...</p>}
+                {ctSearching && (
+                  <p className="location-suggestions-loading">{t("location.searching")}</p>
+                )}
               </div>
               <label>
                 {t("markers.markerLabel") as string}
@@ -620,7 +622,7 @@ export default function MarkersSection() {
                     className="marker-row__icon-btn"
                     onClick={() => setOpenColorPickerId(null)}
                   >
-                    <span className="marker-row__icon-btn-label">Done</span>
+                    <span className="marker-row__icon-btn-label">{t("markers.done")}</span>
                   </button>
                 </div>
                 <ColorPicker
@@ -678,7 +680,7 @@ export default function MarkersSection() {
                                     {isExpanded ? <CheckIcon /> : <EditIcon />}
                                   </span>
                                   <span className="marker-row__icon-btn-label">
-                                    {isExpanded ? "Done" : "Edit"}
+                                    {t(isExpanded ? "markers.done" : "ui.edit")}
                                   </span>
                                 </button>
                                 <button
@@ -739,20 +741,22 @@ export default function MarkersSection() {
                                       onChange={(e) =>
                                         update(marker.id, { label: e.target.value || undefined })
                                       }
-                                      placeholder="Optional label text"
+                                      placeholder={t("markers.labelPlaceholder")}
                                     />
                                   </label>
                                 </div>
                                 <div className="marker-editor-card__stack">
                                   <SliderWithInput
-                                    label="Size"
+                                    label={t("poster.size")}
                                     value={marker.size}
                                     min={MIN_MARKER_SIZE}
                                     max={MAX_MARKER_SIZE}
                                     onChange={(v) => update(marker.id, { size: v })}
                                   />
                                   <div>
-                                    <span className="marker-settings-card__theme-label">Color</span>
+                                    <span className="marker-settings-card__theme-label">
+                                      {t("ui.color")}
+                                    </span>
                                     <ColorButton
                                       color={marker.color}
                                       onClick={() =>
@@ -825,7 +829,7 @@ export default function MarkersSection() {
                         boxShadow: "none",
                       }}
                     >
-                      <p className="section-summary-label">Logo</p>
+                      <p className="section-summary-label">{t("poster.logo")}</p>
                       <_LogoUploadField form={form} />
                     </div>
                     <div
@@ -837,9 +841,9 @@ export default function MarkersSection() {
                         boxShadow: "none",
                       }}
                     >
-                      <p className="section-summary-label">Radius Highlight</p>
+                      <p className="section-summary-label">{t("radius.highlight")}</p>
                       <label className="toggle-field">
-                        <span>Walking / driving radius</span>
+                        <span>{t("radius.hint")}</span>
                         <span className="theme-select-wrapper">
                           <select
                             className="theme-select"

@@ -8,6 +8,7 @@ import {
   StyleIcon,
   LayoutIcon,
 } from "@/components/ui/Icons";
+import { useI18n } from "@/context/i18n/context";
 
 interface Props {
   form: any;
@@ -15,6 +16,7 @@ interface Props {
 }
 
 export default function AppSettingsSection({ form, onChange }: Props) {
+  const { t } = useI18n();
   const opt = (
     name: string,
     value: string,
@@ -32,41 +34,41 @@ export default function AppSettingsSection({ form, onChange }: Props) {
   );
 
   const quickLinks: [string, React.ComponentType<{ className?: string }>, string][] = [
-    ["style", StyleIcon, "Fonts & Style"],
-    ["layout", LayoutIcon, "Shapes & Sizes"],
+    ["style", StyleIcon, t("settings.fontsStyle")],
+    ["layout", LayoutIcon, t("settings.shapesSizes")],
   ];
 
   return (
     <div className="app-settings-section">
       <div className="settings-group">
-        <p className="section-summary-label">App Appearance</p>
+        <p className="section-summary-label">{t("settings.appearance")}</p>
         <div className="settings-row-grid">
           <div className="settings-option-card-group">
-            {opt("appTheme", "light", SunIcon, "Light")}
-            {opt("appTheme", "dark", MoonIcon, "Dark")}
+            {opt("appTheme", "light", SunIcon, t("settings.light"))}
+            {opt("appTheme", "dark", MoonIcon, t("settings.dark"))}
           </div>
         </div>
       </div>
       <div className="settings-group" style={{ marginTop: 20 }}>
-        <p className="section-summary-label">UI Density</p>
+        <p className="section-summary-label">{t("settings.density")}</p>
         <div className="settings-row-grid">
           <div className="settings-option-card-group">
-            {opt("uiDensity", "comfortable", MaximizeIcon, "Comfortable")}
-            {opt("uiDensity", "compact", MinimizeIcon, "Compact")}
+            {opt("uiDensity", "comfortable", MaximizeIcon, t("settings.comfortable"))}
+            {opt("uiDensity", "compact", MinimizeIcon, t("settings.compact"))}
           </div>
         </div>
       </div>
       <div className="settings-group" style={{ marginTop: 20 }}>
-        <p className="section-summary-label">Poster</p>
+        <p className="section-summary-label">{t("settings.poster")}</p>
         <div className="settings-link-grid">
           <UndoRedoButtons className="settings-link-btn" withLabel />
           <NewPosterButton className="settings-link-btn" withLabel />
         </div>
       </div>
       <div className="settings-group" style={{ marginTop: 20 }}>
-        <p className="section-summary-label">Quick Links</p>
+        <p className="section-summary-label">{t("settings.quickLinks")}</p>
         <div className="settings-links">
-          <p className="settings-link-hint">Jump to specific design settings:</p>
+          <p className="settings-link-hint">{t("settings.jumpTo")}</p>
           <div className="settings-link-grid">
             {quickLinks.map(([sec, Icon, label]) => (
               <button

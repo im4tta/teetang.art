@@ -3,6 +3,7 @@ import type { RefObject } from "react";
 import ThemeCard from "@/components/ui/ThemeCard";
 import { EditIcon } from "@/components/ui/Icons";
 import type { ThemeOption, ThemeGroup } from "@/services/theme/types";
+import { useI18n } from "@/context/i18n/context";
 
 interface ThemeSummarySectionProps {
   listRef?: RefObject<HTMLDivElement>;
@@ -25,11 +26,12 @@ export default function ThemeSummarySection({
   onThemeSelect,
   onCustomize,
 }: ThemeSummarySectionProps) {
+  const { t } = useI18n();
   const [activeGroupId, setActiveGroupId] = useState<string>(ALL_GROUP_ID);
   const localListRef = useRef<HTMLDivElement | null>(null);
   const resolvedListRef = listRef ?? localListRef;
 
-  const description = selectedThemeOption.description?.trim() || "No description available.";
+  const description = selectedThemeOption.description?.trim() || t("theme.noDescription");
 
   const visibleOptions =
     activeGroupId === ALL_GROUP_ID
@@ -37,13 +39,12 @@ export default function ThemeSummarySection({
       : (themeGroups.find((group) => group.id === activeGroupId)?.options ?? themeOptions);
 
   useEffect(() => {
-    const selectedCard = resolvedListRef.current?.querySelector<HTMLElement>(
-      ".theme-card.is-selected",
-    );
+    const selectedCard =
+      resolvedListRef.current?.querySelector<HTMLElement>(".theme-card.is-selected");
     selectedCard?.scrollIntoView({ behavior: "auto", block: "nearest", inline: "start" });
   }, [activeGroupId, resolvedListRef, selectedThemeId]);
 
-  const groupChips = [{ id: ALL_GROUP_ID, name: "All" }, ...themeGroups];
+  const groupChips = [{ id: ALL_GROUP_ID, name: t("ui.all") }, ...themeGroups];
 
   return (
     <div className="theme-summary-view">
