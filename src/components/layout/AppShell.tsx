@@ -18,7 +18,7 @@ import { useSwipeDown } from "@/hooks/useSwipeDown";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
 import { CheckIcon } from "@/components/ui/Icons";
 import SupportModal from "@/components/ui/SupportModal";
-import { SUPPORT_PROMPT_EVENT, type SupportPromptState } from "@/hooks/useExport";
+import { SUPPORT_PROMPT_EVENT, type SupportPromptState } from "@/services/export/supportPrompt";
 import DotField from "@/components/layout/DotField";
 import DesktopLocationBar from "@/components/layout/DesktopLocationBar";
 

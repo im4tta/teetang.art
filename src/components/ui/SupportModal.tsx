@@ -4,7 +4,7 @@ import { ABA_ACCOUNT, SOCIAL_INSTAGRAM } from "@/services/config";
 import { CloseIcon, InstagramIcon } from "@/components/ui/Icons";
 import AbaLogo from "@/components/ui/AbaLogo";
 import { useI18n } from "@/context/i18n/context";
-import type { SupportPromptVariant } from "@/hooks/useExport";
+import type { SupportPromptVariant } from "@/services/export/supportPrompt";
 
 interface SupportModalProps {
   posterNumber: number;
