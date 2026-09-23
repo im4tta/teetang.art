@@ -260,19 +260,6 @@
   flex-wrap: wrap;
 }
 
-.updates-skip-row {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 0.95rem;
-}
-
-.updates-skip-row input {
-  accent-color: #78f5c2;
-  width: 18px;
-  height: 18px;
-}
-
 .updates-actions {
   display: flex;
   gap: 10px;

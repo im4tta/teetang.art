@@ -32,10 +32,6 @@
 
 /* ── Mobile persistent footer — hidden on desktop ── */
 
-.mobile-persistent-footer {
-  display: none;
-}
-
 /* ═══════════ MOBILE BREAKPOINT ═══════════ */
 
 @media (max-width: 768px), (hover: none) and (pointer: coarse) {
@@ -184,242 +180,6 @@
   }
 
   /* Settings button — separate pill/circle to the right */
-  .mobile-nav-settings {
-    flex-shrink: 0;
-    width: 60px;
-    height: 60px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    border-radius: 20px;
-    background: var(--overlay-bg);
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px);
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.55),
-      0 2px 8px rgba(0, 0, 0, 0.35),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    color: rgba(180, 205, 225, 0.4);
-    cursor: default;
-    -webkit-tap-highlight-color: transparent;
-  }
-
-  .mobile-nav-settings-icon {
-    width: 20px;
-    height: 20px;
-  }
-
-  .startup-location-modal {
-    position: fixed;
-    inset: 0;
-    z-index: 420;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    padding: 20px;
-    background: rgba(6, 12, 18, 0.42);
-    backdrop-filter: blur(12px);
-    -webkit-backdrop-filter: blur(12px);
-    animation: startup-location-fadein 0.25s ease;
-  }
-
-  .startup-location-modal.is-closing {
-    animation: startup-location-fadeout 0.22s ease forwards;
-  }
-
-  .startup-location-logo-wrap {
-    width: auto;
-    height: auto;
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    transform: translateY(-18px);
-  }
-
-  .startup-location-logo {
-    width: 98px;
-    height: 98px;
-    animation: startup-location-logo-pop 1.05s cubic-bezier(0.24, 0.78, 0, 1);
-  }
-
-  .startup-location-app-name {
-    margin: 0;
-    font-family: "Space Grotesk", "Bebas Neue", sans-serif;
-    font-size: 2rem;
-    line-height: 0.92;
-    letter-spacing: 0.04em;
-    color: var(--accent);
-    text-shadow: 0 2px 10px rgba(0, 0, 0, 0.45);
-    transform: translateY(10px);
-  }
-
-  .startup-location-suggestions {
-    margin: -2px 0 0;
-    padding: 0;
-    list-style: none;
-    border: 1px solid var(--line);
-    border-radius: 10px;
-    background: rgba(9, 18, 27, 0.96);
-    max-height: 176px;
-    overflow-y: auto;
-  }
-
-  .startup-location-suggestion {
-    width: 100%;
-    border: none;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-    background: transparent;
-    color: #f5f5fa;
-    font-family: "JetBrains Mono", "Space Grotesk", monospace;
-    font-size: 0.74rem;
-    line-height: 1.4;
-    text-align: left;
-    padding: 10px 11px;
-    justify-content: flex-start;
-    text-transform: none;
-    letter-spacing: 0.02em;
-    border-radius: 0;
-  }
-
-  .startup-location-suggestion:last-child {
-    border-bottom: none;
-  }
-
-  .startup-location-suggestion-status {
-    margin: 0;
-    padding: 10px 11px;
-    font-size: 0.72rem;
-    color: rgba(180, 205, 225, 0.7);
-  }
-
-  .startup-location-card {
-    width: min(360px, calc(100% - 16px));
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: rgba(9, 18, 27, 0.98);
-    box-shadow: 0 18px 36px rgba(0, 0, 0, 0.48);
-    padding: 12px;
-    display: grid;
-    gap: 10px;
-    opacity: 0;
-    transform: translateY(8px);
-    transition:
-      opacity 0.2s ease,
-      transform 0.2s ease;
-  }
-
-  .startup-location-card.is-visible {
-    opacity: 1;
-    transform: translateY(0);
-  }
-
-  .startup-location-title {
-    margin: 0;
-    font-family: "Spline Sans Mono", monospace;
-    font-size: 0.8rem;
-    text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: rgba(214, 234, 247, 0.92);
-  }
-
-  .startup-location-input {
-    width: 100%;
-    min-height: 46px;
-    border: 1px solid rgba(255, 255, 255, 0.1);
-    border-radius: 9999px;
-    background: rgba(255, 255, 255, 0.05);
-    color: #f5f5fa;
-    font-family: "JetBrains Mono", "Space Grotesk", monospace;
-    font-size: 16px;
-    padding: 0 16px;
-    outline: none;
-  }
-
-  .startup-location-input:focus {
-    border-color: #3b82f6;
-    background: rgba(255, 255, 255, 0.08);
-    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
-  }
-
-  .startup-location-action {
-    min-height: 46px;
-    border-radius: 10px;
-    font-family: "Spline Sans Mono", monospace;
-    font-size: 0.84rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    gap: 7px;
-    border: 1px solid transparent;
-  }
-
-  .startup-location-action--geo {
-    background: rgba(255, 255, 255, 0.05);
-    border-color: rgba(255, 255, 255, 0.1);
-    color: #f5f5fa;
-  }
-
-  .startup-location-action--geo svg {
-    width: 17px;
-    height: 17px;
-  }
-
-  .startup-location-action--confirm {
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.12), rgba(192, 57, 43, 0.15));
-    color: #ffffff;
-    border: 1px solid rgba(192, 57, 43, 0.2);
-    box-shadow:
-      rgba(249, 115, 22, 0.2) 0px 20px 25px -5px,
-      rgba(249, 115, 22, 0.2) 0px 8px 10px -6px;
-  }
-
-  .startup-location-error {
-    margin: 0;
-    color: #ef4444;
-    font-size: 0.72rem;
-    font-family: "JetBrains Mono", "Space Grotesk", monospace;
-  }
-
-  @keyframes startup-location-fadein {
-    from {
-      opacity: 0;
-    }
-    to {
-      opacity: 1;
-    }
-  }
-
-  @keyframes startup-location-fadeout {
-    from {
-      opacity: 1;
-    }
-    to {
-      opacity: 0;
-    }
-  }
-
-  @keyframes startup-location-logo-pop {
-    0% {
-      opacity: 0;
-      transform: scale(0.78) rotate(-7deg);
-    }
-    60% {
-      opacity: 1;
-      transform: scale(1.06) rotate(2deg);
-    }
-    100% {
-      opacity: 1;
-      transform: scale(1) rotate(0deg);
-    }
-  }
 
   .mobile-export-fab-trigger {
     position: fixed;
@@ -708,11 +468,6 @@
     min-width: 0;
   }
 
-  .general-header .desktop-brand-logo {
-    width: 34px;
-    height: auto;
-  }
-
   .general-header .desktop-brand-copy {
     display: flex;
     flex-direction: column;
@@ -810,13 +565,8 @@
     font-size: 0.78rem;
   }
 
-  .install-help-steps li,
   .install-help-modal-text {
     font-size: 0.68rem;
-  }
-
-  .app-copy {
-    display: none;
   }
 
   .app-shell > .install-prompt {
@@ -1067,37 +817,14 @@
     color: #def2ff;
   }
 
-  @keyframes mobile-location-spin {
-    from {
-      transform: rotate(0deg);
-    }
-    to {
-      transform: rotate(360deg);
-    }
-  }
-
   /* ────────────────────────────────────
      Grid: reorder for mobile
      preview first, then settings card
      ──────────────────────────────────── */
 
-  .app-grid {
-    grid-template-columns: 1fr;
-    grid-template-areas:
-      "preview"
-      "config";
-    gap: 0;
-  }
-
   /* Hide the info-panel inside the grid (shown in mobile-persistent-footer) */
-  .app-grid > .info-panel {
-    display: none;
-  }
 
   /* Settings panel hidden in grid on mobile — rendered inside drawer instead */
-  .app-grid > .settings-panel {
-    display: none;
-  }
 
   /* FooterNote: styled for mobile, shown below the persistent footer */
   .app-shell > .app-footer {
@@ -1236,43 +963,7 @@
 
   /* ── Map controls: compact row below map ── */
 
-  .map-controls-section {
-    margin: 0 8px;
-    padding: 8px 10px;
-    border-top: 1px solid rgba(255, 255, 255, 0.08);
-  }
-
   /* ── Mobile user guide floating card ── */
-
-  .mobile-user-guide {
-    position: absolute;
-    top: 8px;
-    left: 8px;
-    z-index: 15;
-    max-width: 180px;
-  }
-
-  .mobile-user-guide .user-guide {
-    display: grid;
-    gap: 3px;
-    margin: 0;
-    padding: 6px 10px;
-    border-radius: 10px;
-    background: rgba(20, 20, 25, 0.92);
-    backdrop-filter: blur(10px);
-    -webkit-backdrop-filter: blur(10px);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.32);
-    font-family: "Noto Sans Khmer", "Battambang", "Inter", sans-serif;
-    animation: info-dim-hide 8s ease forwards;
-  }
-
-  .mobile-user-guide .user-guide:hover,
-  .mobile-user-guide .user-guide:focus-within {
-    animation: none;
-    opacity: 1;
-    visibility: visible;
-  }
 
   @keyframes info-dim-hide {
     0% {
@@ -1293,26 +984,6 @@
     }
   }
 
-  .mobile-user-guide .user-guide-row {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .mobile-user-guide .user-guide-icon {
-    flex-shrink: 0;
-    font-size: 0.65rem;
-    color: var(--accent);
-    width: 16px;
-    text-align: center;
-  }
-
-  .mobile-user-guide .user-guide-text {
-    font-size: 0.58rem;
-    color: #94a3b8;
-    line-height: 1.25;
-  }
-
   /* ────────────────────────────────────
      Settings panel: card container
      Inner panel-block sections retain
@@ -1329,12 +1000,6 @@
     box-shadow:
       0 8px 20px rgba(0, 0, 0, 0.28),
       inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  }
-
-  .settings-info-card .settings-info-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    grid-template-rows: repeat(3, auto);
-    gap: 8px 12px;
   }
 
   /* ── Tab-driven section visibility ── */
@@ -1407,43 +1072,9 @@
      and map data credits (OSM, etc.).
      ──────────────────────────────────── */
 
-  .mobile-persistent-footer {
-    display: none;
-    margin: 8px 8px 0;
-    padding: 14px;
-    border: 1px solid var(--line);
-    border-radius: 14px;
-    background: var(--panel);
-    box-shadow:
-      0 8px 20px rgba(0, 0, 0, 0.28),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  }
-
-  .mobile-persistent-footer .info-panel {
-    display: block;
-  }
-
-  .mobile-persistent-footer .info-panel-group {
-    border: none;
-    border-radius: 0;
-    background: transparent;
-    box-shadow: none;
-    padding: 0;
-  }
-
   /* ────────────────────────────────────
      Export buttons: full-width stacked
      ──────────────────────────────────── */
-
-  .download-row {
-    grid-template-columns: 1fr;
-    gap: 10px;
-  }
-
-  button.download-format-btn {
-    min-height: 50px;
-    font-size: 0.9rem;
-  }
 
   .about-modal-backdrop {
     position: fixed;
