@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef } from "react";
-import maplibregl from "maplibre-gl";
+import type maplibregl from "maplibre-gl";
 import type { Route } from "@/services/routes/types";
 import { fetchOsrmRoute } from "@/api/osrm";
 import type { MapInstanceRef } from "@/services/map/types";
@@ -12,6 +12,8 @@ interface UseRouteInteractionsOptions {
   routeDrawMode: boolean;
   routesLength: number; // used as dep for map click effect
   dispatch: React.Dispatch<PosterAction>;
+  /** Changes whenever the map instance is (re)created, so listeners re-attach. */
+  mapVersion: number;
 }
 
 export function useRouteInteractions({
@@ -21,6 +23,7 @@ export function useRouteInteractions({
   routeDrawMode,
   routesLength,
   dispatch,
+  mapVersion,
 }: UseRouteInteractionsOptions) {
   const routeDrawStartRef = useRef<{ lat: number; lon: number } | null>(null);
   const routeDrawOverlayRef = useRef<HTMLDivElement | null>(null);
@@ -52,7 +55,12 @@ export function useRouteInteractions({
         source: "manual",
         visible: true,
         showEndpoints: true,
-        segments: [[{ lat: start.lat, lon: start.lon }, { lat, lon: lng }]],
+        segments: [
+          [
+            { lat: start.lat, lon: start.lon },
+            { lat, lon: lng },
+          ],
+        ],
         waypoints: [],
         startMarker: { iconId: "circle", color: "#22c55e", size: 28 },
         finishMarker: { iconId: "circle", color: "#ef4444", size: 28 },
@@ -61,15 +69,25 @@ export function useRouteInteractions({
       routeDrawStartRef.current = null;
       dispatch({ type: "SET_ROUTE_DRAW_MODE", active: false });
       if (snapToRoads) {
-        fetchOsrmRoute([[start.lat, start.lon], [lat, lng]]).then(coords => {
+        fetchOsrmRoute([
+          [start.lat, start.lon],
+          [lat, lng],
+        ]).then((coords) => {
           if (coords?.length > 1)
-            dispatch({ type: "UPDATE_ROUTE", routeId: newRouteId, changes: { segments: [coords] } });
+            dispatch({
+              type: "UPDATE_ROUTE",
+              routeId: newRouteId,
+              changes: { segments: [coords] },
+            });
         });
       }
     };
     map.on("click", handleMapClick);
-    return () => { map.off("click", handleMapClick); routeDrawStartRef.current = null; };
-  }, [mapRef, routeDrawMode, routesLength, dispatch, snapToRoads]);
+    return () => {
+      map.off("click", handleMapClick);
+      routeDrawStartRef.current = null;
+    };
+  }, [mapRef, mapVersion, routeDrawMode, routesLength, dispatch, snapToRoads]);
 
   // Reset overlay text when draw mode exits
   useEffect(() => {
@@ -87,9 +105,8 @@ export function useRouteInteractions({
   const snapAndUpdateRoute = useCallback(
     (routeId: string, coords: [number, number][]) => {
       if (!snapToRoads) return;
-      fetchOsrmRoute(coords).then(c => {
-        if (c?.length > 1)
-          dispatch({ type: "UPDATE_ROUTE", routeId, changes: { segments: [c] } });
+      fetchOsrmRoute(coords).then((c) => {
+        if (c?.length > 1) dispatch({ type: "UPDATE_ROUTE", routeId, changes: { segments: [c] } });
       });
     },
     [snapToRoads, dispatch],
@@ -98,9 +115,9 @@ export function useRouteInteractions({
   // ── Endpoint drag ──────────────────────────────────────────────────────
   const handleRouteEndpointDragEnd = useCallback(
     (routeId: string, type: "start" | "finish", lat: number, lon: number) => {
-      const route = routes.find(r => r.id === routeId);
+      const route = routes.find((r) => r.id === routeId);
       if (!route) return;
-      const segs = route.segments.map(seg => {
+      const segs = route.segments.map((seg) => {
         if (!seg.length) return seg;
         return type === "start"
           ? [{ lat, lon }, ...seg.slice(1)]
@@ -108,12 +125,12 @@ export function useRouteInteractions({
       });
       dispatch({ type: "UPDATE_ROUTE", routeId, changes: { segments: segs } });
       const pts = segs
-        .flatMap(s => [s[0]!, s[s.length - 1]!])
-        .filter((p, i, a) => a.findIndex(x => x.lat === p.lat && x.lon === p.lon) === i);
+        .flatMap((s) => [s[0]!, s[s.length - 1]!])
+        .filter((p, i, a) => a.findIndex((x) => x.lat === p.lat && x.lon === p.lon) === i);
       if (pts.length >= 2)
         snapAndUpdateRoute(routeId, [
-          ...pts.map(p => [p.lat, p.lon] as [number, number]),
-          ...route.waypoints.map(w => [w.lat, w.lon] as [number, number]),
+          ...pts.map((p) => [p.lat, p.lon] as [number, number]),
+          ...route.waypoints.map((w) => [w.lat, w.lon] as [number, number]),
         ]);
     },
     [routes, dispatch, snapAndUpdateRoute],
@@ -122,7 +139,7 @@ export function useRouteInteractions({
   // ── Via point drag ─────────────────────────────────────────────────────
   const handleViaPointDragEnd = useCallback(
     (routeId: string, index: number, lat: number, lon: number) => {
-      const route = routes.find(r => r.id === routeId);
+      const route = routes.find((r) => r.id === routeId);
       if (!route) return;
       const wps = [...route.waypoints];
       wps[index] = { lat, lon };
@@ -131,7 +148,7 @@ export function useRouteInteractions({
       const last = route.segments[route.segments.length - 1]!;
       snapAndUpdateRoute(routeId, [
         [first.lat, first.lon],
-        ...wps.map(w => [w.lat, w.lon] as [number, number]),
+        ...wps.map((w) => [w.lat, w.lon] as [number, number]),
         [last[last.length - 1]!.lat, last[last.length - 1]!.lon],
       ]);
     },
@@ -141,7 +158,7 @@ export function useRouteInteractions({
   // ── Via point delete ───────────────────────────────────────────────────
   const handleViaPointDelete = useCallback(
     (routeId: string, index: number) => {
-      const route = routes.find(r => r.id === routeId);
+      const route = routes.find((r) => r.id === routeId);
       if (!route) return;
       const wps = route.waypoints.filter((_, i) => i !== index);
       dispatch({ type: "UPDATE_ROUTE", routeId, changes: { waypoints: wps } });
@@ -150,7 +167,7 @@ export function useRouteInteractions({
         const last = route.segments[route.segments.length - 1]!;
         snapAndUpdateRoute(routeId, [
           [first.lat, first.lon],
-          ...wps.map(w => [w.lat, w.lon] as [number, number]),
+          ...wps.map((w) => [w.lat, w.lon] as [number, number]),
           [last[last.length - 1]!.lat, last[last.length - 1]!.lon],
         ]);
       }
@@ -170,21 +187,20 @@ export function useRouteInteractions({
         for (let i = 0; i < seg.length - 1; i++) {
           const a = map.project([seg[i]!.lon, seg[i]!.lat]);
           const b = map.project([seg[i + 1]!.lon, seg[i + 1]!.lat]);
-          const dx = b.x - a.x, dy = b.y - a.y;
+          const dx = b.x - a.x,
+            dy = b.y - a.y;
           const t = Math.max(
             0,
             Math.min(1, ((pt.x - a.x) * dx + (pt.y - a.y) * dy) / (dx * dx + dy * dy)),
           );
-          const dist = Math.sqrt(
-            (pt.x - (a.x + t * dx)) ** 2 + (pt.y - (a.y + t * dy)) ** 2,
-          );
+          const dist = Math.sqrt((pt.x - (a.x + t * dx)) ** 2 + (pt.y - (a.y + t * dy)) ** 2);
           if (dist < 15) {
             const wps = [...(route.waypoints || []), { lat: e.lngLat.lat, lon: e.lngLat.lng }];
             dispatch({ type: "UPDATE_ROUTE", routeId: route.id, changes: { waypoints: wps } });
             if (snapToRoads)
               snapAndUpdateRoute(route.id, [
                 [seg[0]!.lat, seg[0]!.lon],
-                ...wps.map(w => [w.lat, w.lon] as [number, number]),
+                ...wps.map((w) => [w.lat, w.lon] as [number, number]),
                 [seg[seg.length - 1]!.lat, seg[seg.length - 1]!.lon],
               ]);
             return;
@@ -199,8 +215,10 @@ export function useRouteInteractions({
     const map = mapRef.current;
     if (!map || routeDrawMode || !routes.length) return;
     map.on("click", handleRouteClick);
-    return () => { map.off("click", handleRouteClick); };
-  }, [mapRef, routeDrawMode, routes.length, handleRouteClick]);
+    return () => {
+      map.off("click", handleRouteClick);
+    };
+  }, [mapRef, mapVersion, routeDrawMode, routes.length, handleRouteClick]);
 
   return {
     routeDrawOverlayRef,

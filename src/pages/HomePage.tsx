@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { REPO_URL } from "@/services/config";
-import { preloadEditorPage } from "@/pages/editorLoader";
+import { preloadEditorPage, preloadEditorWhenIdle } from "@/pages/editorLoader";
 import { readDraftTitle } from "@/context/posterDraft";
 import "@/styles/home-page.css";
 import {
@@ -239,6 +239,8 @@ export default function HomePage() {
     }
     triggerToast(`ប្តូរទៅកាន់ស្ទីល ${next ? "ងងឹត (Dark Mode)" : "ភ្លឺ (Light Mode)"}`);
   };
+
+  useEffect(() => preloadEditorWhenIdle(), []);
 
   // Scroll-triggered reveal animations
   useEffect(() => {

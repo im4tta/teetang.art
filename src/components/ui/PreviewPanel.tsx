@@ -5,13 +5,13 @@ import {
   useState,
   lazy,
   Suspense,
+  type ComponentProps,
   type CSSProperties,
 } from "react";
 import { useMobileViewport } from "@/hooks/useMobileViewport";
 import { usePosterContext } from "@/context/PosterContext";
 import type { PosterForm } from "@/context/posterReducer";
 import { useMapSync, distanceToZoom, resolveZoomBounds, zoomToDistance } from "@/hooks/useMapSync";
-import MapPreview from "@/components/ui/MapPreview";
 import MarkerOverlay from "@/components/ui/MarkerOverlay";
 import RouteOverlay from "@/components/ui/RouteOverlay";
 import RouteEndpointsOverlay from "@/components/ui/RouteEndpointsOverlay";
@@ -27,6 +27,8 @@ import UserGuide from "@/components/ui/UserGuide";
 import PickerModal from "@/components/ui/PickerModal";
 import { useI18n } from "@/context/i18n/context";
 const ExportFab = lazy(() => import("@/components/ui/ExportFab"));
+// MapLibre is the largest download; the rest of the editor renders while it loads.
+const MapPreview = lazy(() => import("@/components/ui/MapPreview"));
 import MapPrimaryControls from "@/components/ui/MapPrimaryControls";
 import { InfoIcon } from "@/components/ui/Icons";
 import {
@@ -64,6 +66,19 @@ function cycle<T extends string>(list: readonly T[], current: string, step: numb
   return list[(index + step + list.length) % list.length];
 }
 
+/** MapPreview behind a Suspense boundary that shows a shimmer while MapLibre loads. */
+function LazyMap(props: ComponentProps<typeof MapPreview>) {
+  return (
+    <Suspense
+      fallback={
+        <div className="map-container map-loading" style={props.containerStyle} aria-busy="true" />
+      }
+    >
+      <MapPreview {...props} />
+    </Suspense>
+  );
+}
+
 function getPois(form: PosterForm): string[] {
   return ["poiSchools", "poiHospitals", "poiMarkets", "poiBanks", "poiRestaurants"].filter(
     (k) => form[k as keyof PosterForm],
@@ -99,6 +114,9 @@ export default function PreviewPanel() {
   } | null>(null);
   const [badgeVisible, setBadgeVisible] = useState(true);
   const isMobileViewport = useMobileViewport();
+  // Bumped each time a map instance is created so map-bound listeners attach.
+  const [mapVersion, setMapVersion] = useState(0);
+  const handleMapReady = useCallback(() => setMapVersion((v) => v + 1), []);
 
   const isDualCity = form.layoutMode === "dual-city";
   const isPropertyCard = form.layoutMode === "property-card";
@@ -129,6 +147,7 @@ export default function PreviewPanel() {
     routeDrawMode: state.routeDrawMode,
     routesLength: state.routes.length,
     dispatch,
+    mapVersion,
   });
 
   const {
@@ -141,7 +160,13 @@ export default function PreviewPanel() {
     handleRotateBy,
     handleBearingChange,
     handleCompassReset,
-  } = useMapBearing({ mapRef, mapRef2, isDualCity, isMarkerEditorActive });
+  } = useMapBearing({
+    mapRef,
+    mapRef2,
+    isDualCity,
+    isMarkerEditorActive,
+    mapVersion,
+  });
 
   const handleStartMapEditing = () => {
     setBadgeVisible(true);
@@ -178,7 +203,7 @@ export default function PreviewPanel() {
     return () => {
       map.off("render", syncGhost);
     };
-  }, [mapRef]);
+  }, [mapRef, mapVersion]);
 
   // ── Badge timer ────────────────────────────────────────────────────────
   useEffect(() => {
@@ -374,7 +399,8 @@ export default function PreviewPanel() {
             <>
               <div className="dual-map-container">
                 <div className="dual-map-half dual-map-half--left">
-                  <MapPreview
+                  <LazyMap
+                    onReady={handleMapReady}
                     style={mapStyle}
                     center={mapCenter}
                     zoom={mapZoom}
@@ -389,7 +415,8 @@ export default function PreviewPanel() {
                   />
                 </div>
                 <div className="dual-map-half dual-map-half--right">
-                  <MapPreview
+                  <LazyMap
+                    onReady={handleMapReady}
                     style={mapStyle2}
                     center={mapCenter2}
                     zoom={mapZoom2}
@@ -407,11 +434,14 @@ export default function PreviewPanel() {
                   <GradientFades color={effectiveTheme2.ui.bg} />
                 </>
               )}
-              <RouteOverlay {...routeOverlayProps} />
-              <RouteEndpointsOverlay {...endpointProps} />
-              {hasVisibleMarkers && <MarkerOverlay {...markerOverlayProps} />}
-              {form.showPois && (
+              {mapVersion > 0 && <RouteOverlay key={mapVersion} {...routeOverlayProps} />}
+              {mapVersion > 0 && <RouteEndpointsOverlay key={mapVersion} {...endpointProps} />}
+              {hasVisibleMarkers && mapVersion > 0 && (
+                <MarkerOverlay key={mapVersion} {...markerOverlayProps} />
+              )}
+              {form.showPois && mapVersion > 0 && (
                 <PoiOverlay
+                  key={mapVersion}
                   mapRef={mapRef}
                   center={mapCenter}
                   visible={form.showPois}
@@ -443,7 +473,8 @@ export default function PreviewPanel() {
             </>
           ) : (
             <>
-              <MapPreview
+              <LazyMap
+                onReady={handleMapReady}
                 style={mapStyle}
                 center={mapCenter}
                 zoom={mapZoom}
@@ -456,17 +487,20 @@ export default function PreviewPanel() {
                 radiusLabel={form.radiusLabel}
               />
               {form.showMarkers && <GradientFades color={effectiveTheme.ui.bg} />}
-              <RouteOverlay {...routeOverlayProps} />
-              <RouteEndpointsOverlay {...endpointProps} />
-              {form.showPois && (
+              {mapVersion > 0 && <RouteOverlay key={mapVersion} {...routeOverlayProps} />}
+              {mapVersion > 0 && <RouteEndpointsOverlay key={mapVersion} {...endpointProps} />}
+              {form.showPois && mapVersion > 0 && (
                 <PoiOverlay
+                  key={mapVersion}
                   mapRef={mapRef}
                   center={mapCenter}
                   visible={form.showPois}
                   activeTypes={activePois}
                 />
               )}
-              {hasVisibleMarkers && <MarkerOverlay {...markerOverlayProps} />}
+              {hasVisibleMarkers && mapVersion > 0 && (
+                <MarkerOverlay key={mapVersion} {...markerOverlayProps} />
+              )}
               {!isPropertyCard && !isShopSignage && (
                 <PosterTextOverlay
                   city={cityLabel}

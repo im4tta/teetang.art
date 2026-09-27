@@ -24,6 +24,8 @@ interface MapPreviewProps {
   radiusMeters?: number;
   radiusStyle?: string;
   radiusLabel?: string;
+  /** Called once the MapLibre instance exists and `mapRef` points at it. */
+  onReady?: () => void;
 }
 
 function isSameView(
@@ -61,6 +63,7 @@ export default function MapPreview({
   radiusMeters = 0,
   radiusStyle = "dashed",
   radiusLabel = "",
+  onReady,
 }: MapPreviewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isSyncing = useRef(false);
@@ -95,6 +98,7 @@ export default function MapPreview({
 
     mapRef.current = map;
     setMapInstance(map);
+    onReady?.();
 
     // Force resize on next animation frame to ensure correct dimensions
     // in PWA standalone mode where initial container size may be stale.
