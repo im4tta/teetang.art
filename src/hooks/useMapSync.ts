@@ -55,6 +55,7 @@ type MapSyncDispatch = (a: {
   type: "SET_FORM_FIELDS";
   fields: Partial<Record<string, string>>;
   resetDisplayNameOverrides?: boolean;
+  record?: boolean;
 }) => void;
 
 export function useMapSync(state: MapSyncState, dispatch: MapSyncDispatch, mapRef: MapInstanceRef) {
@@ -115,6 +116,7 @@ export function useMapSync(state: MapSyncState, dispatch: MapSyncDispatch, mapRe
           if (!location) return;
           dispatch({
             type: "SET_FORM_FIELDS",
+            record: false,
             fields: {
               location,
               displayContinent: continent,

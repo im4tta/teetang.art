@@ -203,19 +203,6 @@
   height: 20px;
 }
 
-.settings-links {
-  background: rgba(255, 255, 255, 0.03);
-  border-radius: 12px;
-  padding: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-}
-
-.settings-link-hint {
-  font-size: 11px;
-  color: rgba(245, 245, 247, 0.4);
-  margin-bottom: 10px;
-}
-
 .settings-link-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;

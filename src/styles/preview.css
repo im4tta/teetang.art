@@ -863,12 +863,6 @@
       rgba(249, 115, 22, 0.2) 0px 20px 25px -5px,
       rgba(249, 115, 22, 0.2) 0px 8px 10px -6px;
   }
-
-  .map-controls .mobile-export-fab-trigger.is-hidden {
-    opacity: 1;
-    transform: none;
-    pointer-events: auto;
-  }
 }
 
 @media (max-width: 700px) {

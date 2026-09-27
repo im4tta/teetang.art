@@ -270,6 +270,7 @@ export default function PreviewPanel() {
           if (city || country)
             dispatch({
               type: "SET_FORM_FIELDS",
+              record: false,
               fields: {
                 ...(city ? { displayCity2: city } : {}),
                 ...(country ? { displayCountry2: country } : {}),

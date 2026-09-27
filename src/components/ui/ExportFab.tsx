@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useExport } from "@/hooks/useExport";
 import type { ExportFormat } from "@/services/export/types";
-import { CloseIcon, DownloadIcon, LoaderIcon } from "@/components/ui/Icons";
+import { CloseIcon, DownloadIcon, LoaderIcon, ShareIcon } from "@/components/ui/Icons";
+import { OPEN_EXPORT_EVENT } from "@/components/layout/mobileGroups";
 import SocialLinkGroup from "@/components/ui/SocialLinkGroup";
 import { useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
@@ -49,6 +50,13 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
   useEffect(() => {
     exportingRef.current = isExporting;
   }, [isExporting]);
+
+  // The phone bottom bar's Download tab opens this sheet.
+  useEffect(() => {
+    const open = () => setIsOpen(true);
+    window.addEventListener(OPEN_EXPORT_EVENT, open);
+    return () => window.removeEventListener(OPEN_EXPORT_EVENT, open);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -169,34 +177,70 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
               </button>
             </div>
 
-            <div className="export-modal-actions">
-              {FORMAT_OPTIONS.map(({ format, labelKey }) => {
-                const label = t(labelKey);
-                return (
-                  <button
-                    key={labelKey}
-                    type="button"
-                    className={`export-modal-option export-modal-option--${format}`}
-                    onClick={() => runExport(format)}
-                    disabled={isExporting}
-                  >
-                    {isExporting && activeFormat === format ? (
-                      <LoaderIcon className="export-modal-option-icon is-spinning" />
-                    ) : (
-                      <DownloadIcon className="export-modal-option-icon" />
-                    )}
-                    <span>{label}</span>
-                  </button>
-                );
-              })}
+            <div className="export-modal-primary">
+              <button
+                type="button"
+                className="export-modal-save"
+                onClick={() => runExport("png")}
+                disabled={isExporting}
+              >
+                {isExporting && activeFormat === "png" ? (
+                  <LoaderIcon className="export-modal-option-icon is-spinning" />
+                ) : (
+                  <DownloadIcon className="export-modal-option-icon" />
+                )}
+                <span className="export-modal-save__text">
+                  <strong>
+                    {isExporting && activeFormat === "png"
+                      ? t("export.rendering")
+                      : t("export.saveImage")}
+                  </strong>
+                  <small>{t("export.saveImageHint")}</small>
+                </span>
+              </button>
+              <button
+                type="button"
+                className="export-modal-share-image"
+                onClick={() => void handleShare("share")}
+                disabled={isExporting}
+                aria-live="polite"
+              >
+                <ShareIcon className="export-modal-option-icon" />
+                <span>
+                  {shareFeedback?.id === "share" ? shareFeedback.label : t("export.share")}
+                </span>
+              </button>
             </div>
 
+            <details className="export-modal-more">
+              <summary>{t("export.moreFormats")}</summary>
+              <div className="export-modal-actions">
+                {FORMAT_OPTIONS.filter(({ format }) => format !== "png").map(
+                  ({ format, labelKey }) => (
+                    <button
+                      key={labelKey}
+                      type="button"
+                      className={`export-modal-option export-modal-option--${format}`}
+                      onClick={() => runExport(format)}
+                      disabled={isExporting}
+                    >
+                      {isExporting && activeFormat === format ? (
+                        <LoaderIcon className="export-modal-option-icon is-spinning" />
+                      ) : (
+                        <DownloadIcon className="export-modal-option-icon" />
+                      )}
+                      <span>{t(labelKey)}</span>
+                    </button>
+                  ),
+                )}
+              </div>
+            </details>
+
             <div className="export-modal-share">
-              <p className="export-modal-share-label">{t("export.share")}</p>
+              <p className="export-modal-share-label">{t("export.shareLink")}</p>
               <div className="export-modal-share-actions">
                 {(
                   [
-                    { id: "share", label: t("export.share") },
                     { id: "facebook", label: "Facebook" },
                     { id: "twitter", label: "X / Twitter" },
                     { id: "telegram", label: "Telegram" },

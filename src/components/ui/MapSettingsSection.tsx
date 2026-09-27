@@ -13,6 +13,7 @@ import type { ResolvedTheme, ThemeGroup } from "@/services/theme/types";
 import type { LayoutGroup } from "@/services/layout/types";
 import { useColorEditorState } from "@/hooks/useColorEditorState";
 import { useI18n } from "@/context/i18n/context";
+import { revealHorizontally } from "@/utils/dom";
 
 interface MapSettingsForm {
   theme: string;
@@ -157,7 +158,7 @@ export default function MapSettingsSection({
     const frameId = window.requestAnimationFrame(() => {
       const selectedThemeCard =
         themeListRef.current?.querySelector<HTMLElement>(".theme-card.is-selected");
-      selectedThemeCard?.scrollIntoView({ behavior: "auto", block: "nearest", inline: "start" });
+      revealHorizontally(selectedThemeCard);
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [activeMobileTab]);
@@ -168,7 +169,7 @@ export default function MapSettingsSection({
       const selectedLayoutCard = layoutGroupsRef.current?.querySelector<HTMLElement>(
         ".layout-card.is-selected",
       );
-      selectedLayoutCard?.scrollIntoView({ behavior: "auto", block: "nearest", inline: "start" });
+      revealHorizontally(selectedLayoutCard);
     });
     return () => window.cancelAnimationFrame(frameId);
   }, [activeMobileTab, isLayoutEditing]);

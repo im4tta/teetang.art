@@ -136,7 +136,13 @@ export interface PosterState {
 
 export type PosterAction =
   | { type: "SET_FIELD"; name: string; value: string | boolean }
-  | { type: "SET_FORM_FIELDS"; fields: Partial<PosterForm>; resetDisplayNameOverrides?: boolean }
+  | {
+      type: "SET_FORM_FIELDS";
+      fields: Partial<PosterForm>;
+      resetDisplayNameOverrides?: boolean;
+      /** false for automatic updates (geolocation, geocoded names) that should not be an undo step. */
+      record?: boolean;
+    }
   | { type: "SET_THEME"; themeId: string }
   | { type: "SET_THEME2"; themeId: string }
   | { type: "SET_LAYOUT"; layoutId: string; widthCm: string; heightCm: string }

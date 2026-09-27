@@ -4,6 +4,7 @@ import ThemeCard from "@/components/ui/ThemeCard";
 import { EditIcon } from "@/components/ui/Icons";
 import type { ThemeOption, ThemeGroup } from "@/services/theme/types";
 import { useI18n } from "@/context/i18n/context";
+import { revealHorizontally } from "@/utils/dom";
 
 interface ThemeSummarySectionProps {
   listRef?: RefObject<HTMLDivElement>;
@@ -41,7 +42,7 @@ export default function ThemeSummarySection({
   useEffect(() => {
     const selectedCard =
       resolvedListRef.current?.querySelector<HTMLElement>(".theme-card.is-selected");
-    selectedCard?.scrollIntoView({ behavior: "auto", block: "nearest", inline: "start" });
+    revealHorizontally(selectedCard);
   }, [activeGroupId, resolvedListRef, selectedThemeId]);
 
   const groupChips = [{ id: ALL_GROUP_ID, name: t("ui.all") }, ...themeGroups];

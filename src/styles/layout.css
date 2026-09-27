@@ -50,14 +50,6 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.general-header-btn-label {
-  display: inline;
-}
-
-.general-header-btn-icon {
-  display: none;
-}
-
 .install-help-modal-backdrop {
   position: fixed;
   inset: 0;
