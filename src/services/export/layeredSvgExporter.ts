@@ -35,6 +35,16 @@ interface LayeredSvgOptions {
   showUnderline?: boolean;
 }
 
+/** Layer types whose content can be checked with queryRenderedFeatures. */
+const VECTOR_LAYER_TYPES = new Set([
+  "fill",
+  "line",
+  "symbol",
+  "circle",
+  "fill-extrusion",
+  "heatmap",
+]);
+
 function renderMapCanvasToDataUrl(
   mapCanvas: HTMLCanvasElement,
   exportWidth: number,
@@ -122,6 +132,9 @@ export async function createLayeredSvgBlobFromMap({
     attributionControl: false,
     pixelRatio,
     canvasContextAttributes: { preserveDrawingBuffer: true },
+    // Draw labels at full opacity straight away instead of fading them in,
+    // so each per-layer render settles sooner.
+    fadeDuration: 0,
   });
 
   try {
@@ -136,13 +149,25 @@ export async function createLayeredSvgBlobFromMap({
       return visibility !== "none";
     });
 
+    // Vector layers with nothing in view render blank; find them while every
+    // layer is still drawn (hidden layers never report features).
+    const emptyLayerIds = new Set(
+      visibleLayerIds.filter(
+        (layerId) =>
+          VECTOR_LAYER_TYPES.has(exportMap.getLayer(layerId)?.type ?? "") &&
+          exportMap.queryRenderedFeatures({ layers: [layerId] }).length === 0,
+      ),
+    );
     for (const layerId of visibleLayerIds) {
       exportMap.setLayoutProperty(layerId, "visibility", "none");
     }
-    await waitForMapIdle(exportMap);
 
+    // One wait per layer (hiding needs no wait of its own: the next layer's
+    // wait covers that render), no label fade-in, and empty layers skipped.
+    // This used to take minutes and hold dozens of full-size PNGs in memory.
     const mapLayerDataUrls: { id: string; dataUrl: string }[] = [];
     for (const layerId of visibleLayerIds) {
+      if (emptyLayerIds.has(layerId)) continue;
       exportMap.setLayoutProperty(layerId, "visibility", "visible");
       await waitForMapIdle(exportMap);
       mapLayerDataUrls.push({
@@ -150,7 +175,6 @@ export async function createLayeredSvgBlobFromMap({
         dataUrl: renderMapCanvasToDataUrl(exportMap.getCanvas(), exportWidth, exportHeight),
       });
       exportMap.setLayoutProperty(layerId, "visibility", "none");
-      await waitForMapIdle(exportMap);
     }
 
     for (const layerId of layerIds) {

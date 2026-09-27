@@ -22,6 +22,8 @@ import { SUPPORT_PROMPT_EVENT, type SupportPromptState } from "@/services/export
 import DotField from "@/components/layout/DotField";
 import DesktopLocationBar from "@/components/layout/DesktopLocationBar";
 import { useUndoShortcuts } from "@/hooks/useUndoShortcuts";
+import Toaster from "@/components/ui/Toaster";
+import { notify } from "@/services/notify";
 
 const AboutModal = lazy(() => import("@/components/ui/AboutModal"));
 const SettingsPanel = lazy(() => import("@/components/ui/SettingsPanel"));
@@ -100,8 +102,27 @@ function SettingsDrawer({ mobileTab, onClose }: { mobileTab: MobileTab; onClose:
 
 export default function AppShell() {
   const { t } = useI18n();
-  useUndoShortcuts();
   const { state, dispatch } = usePosterContext();
+  useUndoShortcuts();
+
+  // Errors used to appear only inside the settings panel, invisible on phones
+  // with the drawer closed; surface them as toasts too.
+  useEffect(() => {
+    if (state.error) notify(state.error, { tone: "error", id: "poster-error" });
+  }, [state.error]);
+
+  useEffect(() => {
+    const offline = () => notify(t("toast.offline"), { id: "network", duration: 0 });
+    const online = () => notify(t("toast.online"), { id: "network", tone: "success" });
+    if (!navigator.onLine) offline();
+    window.addEventListener("offline", offline);
+    window.addEventListener("online", online);
+    return () => {
+      window.removeEventListener("offline", offline);
+      window.removeEventListener("online", online);
+    };
+  }, [t]);
+
   const { isMarkerEditorActive } = state;
   const activeMarker =
     state.activeMarkerId != null
@@ -320,6 +341,7 @@ export default function AppShell() {
       />
 
       <FooterNote />
+      <Toaster />
       <Suspense fallback={null}>
         <AnnouncementModal />
       </Suspense>

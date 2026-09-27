@@ -267,4 +267,10 @@ export const en = {
   "qr.teetangLink": "Tee Tang poster link",
   "qr.labelPlaceholder": "Scan to navigate",
   "embed.hint": "Copy this code to embed the poster on any website.",
+  "toast.dismiss": "Dismiss",
+  "toast.offline":
+    "You're offline. Your poster is saved and the map will finish loading when you reconnect.",
+  "toast.online": "Back online",
+  "toast.exported": "Poster saved to your device",
+  "export.rendering": "Rendering poster…",
 } satisfies Record<string, string>;

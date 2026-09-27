@@ -136,6 +136,23 @@ export default function MapPreview({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Re-request tiles that failed while the device was offline.
+  useEffect(() => {
+    const map = mapInstance;
+    if (!map) return;
+    const reload = () => {
+      for (const id of Object.keys(map.getStyle()?.sources ?? {})) {
+        try {
+          map.refreshTiles(id);
+        } catch {
+          // GeoJSON sources have no tiles to refresh.
+        }
+      }
+    };
+    window.addEventListener("online", reload);
+    return () => window.removeEventListener("online", reload);
+  }, [mapInstance]);
+
   // ── Interactivity ────────────────────────────────────────────────────────
   useMapInteractivity({ mapInstance, interactive, allowRotation });
 
