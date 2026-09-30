@@ -19,6 +19,14 @@ const MAPLIBRE_DEP_PACKAGES = new Set([
   "tinyqueue",
 ]);
 
+const VENDOR_REACT_PACKAGES = new Set([
+  "react",
+  "react-dom",
+  "scheduler",
+  "react-router",
+  "react-router-dom",
+]);
+
 function getPackageName(id) {
   const nodeModulesMatch = id.match(/[\\/]node_modules[\\/](.*)$/);
   if (!nodeModulesMatch || !nodeModulesMatch[1]) return null;
@@ -61,15 +69,8 @@ const baseConfig = {
             return "vendor-maplibre-deps";
           }
 
-          if (packageName?.startsWith("react-icons")) {
-            return "vendor-icons";
-          }
-
-          if (
-            packageName === "react" ||
-            packageName === "react-dom" ||
-            packageName === "react-colorful"
-          ) {
+          // Everything both the home page and the editor need, cached together.
+          if (VENDOR_REACT_PACKAGES.has(packageName)) {
             return "vendor-react";
           }
         },
@@ -77,9 +78,18 @@ const baseConfig = {
     },
   },
   resolve: {
-    alias: {
-      "@": path.resolve(import.meta.dirname, "src"),
-    },
+    alias: [
+      { find: "@", replacement: path.resolve(import.meta.dirname, "src") },
+      // react-router's package exports point at its development build, which
+      // keeps dev-only checks and warnings in the production bundle.
+      {
+        find: /^react-router$/,
+        replacement: path.resolve(
+          import.meta.dirname,
+          "node_modules/react-router/dist/production/index.mjs",
+        ),
+      },
+    ],
   },
 };
 

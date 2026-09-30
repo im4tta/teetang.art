@@ -1,7 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { useExport } from "@/hooks/useExport";
 import type { ExportFormat } from "@/services/export/types";
-import { CloseIcon, DownloadIcon, LoaderIcon } from "@/components/ui/Icons";
+import { CloseIcon, DownloadIcon, LoaderIcon, ShareIcon } from "@/components/ui/Icons";
+import { OPEN_EXPORT_EVENT } from "@/components/layout/mobileGroups";
 import SocialLinkGroup from "@/components/ui/SocialLinkGroup";
 import { useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
@@ -49,6 +51,13 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
   useEffect(() => {
     exportingRef.current = isExporting;
   }, [isExporting]);
+
+  // The phone bottom bar's Download tab opens this sheet.
+  useEffect(() => {
+    const open = () => setIsOpen(true);
+    window.addEventListener(OPEN_EXPORT_EVENT, open);
+    return () => window.removeEventListener(OPEN_EXPORT_EVENT, open);
+  }, []);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -142,86 +151,127 @@ export default function ExportFab({ isMobile }: ExportFabProps) {
         {!isMobile && <span>{t("export.download")}</span>}
       </button>
 
-      {isOpen ? (
-        <div
-          className="export-modal-backdrop"
-          role="presentation"
-          onClick={() => !isExporting && setIsOpen(false)}
-        >
-          <div
-            ref={modalRef}
-            className="export-modal"
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="export-modal-title"
-            onClick={(event) => event.stopPropagation()}
-          >
-            <div className="export-modal-header">
-              <h3 id="export-modal-title">{t("export.downloadPoster")}</h3>
-              <button
-                ref={closeRef}
-                type="button"
-                className="export-modal-close"
-                onClick={() => !isExporting && setIsOpen(false)}
-                aria-label={t("export.closeOptions")}
+      {/* Portalled to <body> so no ancestor's stacking context can put other
+          layers (install banner, tab bar) above the dialog. */}
+      {isOpen
+        ? createPortal(
+            <div
+              className="export-modal-backdrop"
+              role="presentation"
+              onClick={() => !isExporting && setIsOpen(false)}
+            >
+              <div
+                ref={modalRef}
+                className="export-modal"
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="export-modal-title"
+                onClick={(event) => event.stopPropagation()}
               >
-                <CloseIcon />
-              </button>
-            </div>
-
-            <div className="export-modal-actions">
-              {FORMAT_OPTIONS.map(({ format, labelKey }) => {
-                const label = t(labelKey);
-                return (
+                <div className="export-modal-header">
+                  <h3 id="export-modal-title">{t("export.downloadPoster")}</h3>
                   <button
-                    key={labelKey}
+                    ref={closeRef}
                     type="button"
-                    className={`export-modal-option export-modal-option--${format}`}
-                    onClick={() => runExport(format)}
+                    className="export-modal-close"
+                    onClick={() => !isExporting && setIsOpen(false)}
+                    aria-label={t("export.closeOptions")}
+                  >
+                    <CloseIcon />
+                  </button>
+                </div>
+
+                <div className="export-modal-primary">
+                  <button
+                    type="button"
+                    className="export-modal-save"
+                    onClick={() => runExport("png")}
                     disabled={isExporting}
                   >
-                    {isExporting && activeFormat === format ? (
+                    {isExporting && activeFormat === "png" ? (
                       <LoaderIcon className="export-modal-option-icon is-spinning" />
                     ) : (
                       <DownloadIcon className="export-modal-option-icon" />
                     )}
-                    <span>{label}</span>
+                    <span className="export-modal-save__text">
+                      <strong>
+                        {isExporting && activeFormat === "png"
+                          ? t("export.rendering")
+                          : t("export.saveImage")}
+                      </strong>
+                      <small>{t("export.saveImageHint")}</small>
+                    </span>
                   </button>
-                );
-              })}
-            </div>
-
-            <div className="export-modal-share">
-              <p className="export-modal-share-label">{t("export.share")}</p>
-              <div className="export-modal-share-actions">
-                {(
-                  [
-                    { id: "share", label: t("export.share") },
-                    { id: "facebook", label: "Facebook" },
-                    { id: "twitter", label: "X / Twitter" },
-                    { id: "telegram", label: "Telegram" },
-                    { id: "copy", label: t("export.copyLink") },
-                  ] satisfies { id: ShareTarget; label: string }[]
-                ).map((btn) => (
                   <button
-                    key={btn.id}
                     type="button"
-                    className="general-header-text-btn export-modal-share-btn"
-                    onClick={() => void handleShare(btn.id)}
+                    className="export-modal-share-image"
+                    onClick={() => void handleShare("share")}
                     disabled={isExporting}
                     aria-live="polite"
                   >
-                    {shareFeedback?.id === btn.id ? shareFeedback.label : btn.label}
+                    <ShareIcon className="export-modal-option-icon" />
+                    <span>
+                      {shareFeedback?.id === "share" ? shareFeedback.label : t("export.share")}
+                    </span>
                   </button>
-                ))}
-              </div>
-            </div>
+                </div>
 
-            <p className="export-modal-support-label">{t("export.supportProject")}</p>
-            <SocialLinkGroup variant="mobile-export" />
-          </div>
-        </div>
-      ) : null}
+                <details className="export-modal-more">
+                  <summary>{t("export.moreFormats")}</summary>
+                  <div className="export-modal-actions">
+                    {FORMAT_OPTIONS.filter(({ format }) => format !== "png").map(
+                      ({ format, labelKey }) => (
+                        <button
+                          key={labelKey}
+                          type="button"
+                          className={`export-modal-option export-modal-option--${format}`}
+                          onClick={() => runExport(format)}
+                          disabled={isExporting}
+                        >
+                          {isExporting && activeFormat === format ? (
+                            <LoaderIcon className="export-modal-option-icon is-spinning" />
+                          ) : (
+                            <DownloadIcon className="export-modal-option-icon" />
+                          )}
+                          <span>{t(labelKey)}</span>
+                        </button>
+                      ),
+                    )}
+                  </div>
+                </details>
+
+                <div className="export-modal-share">
+                  <p className="export-modal-share-label">{t("export.shareLink")}</p>
+                  <div className="export-modal-share-actions">
+                    {(
+                      [
+                        { id: "facebook", label: "Facebook" },
+                        { id: "twitter", label: "X / Twitter" },
+                        { id: "telegram", label: "Telegram" },
+                        { id: "copy", label: t("export.copyLink") },
+                      ] satisfies { id: ShareTarget; label: string }[]
+                    ).map((btn) => (
+                      <button
+                        key={btn.id}
+                        type="button"
+                        className="general-header-text-btn export-modal-share-btn"
+                        onClick={() => void handleShare(btn.id)}
+                        disabled={isExporting}
+                        aria-live="polite"
+                      >
+                        {shareFeedback?.id === btn.id ? shareFeedback.label : btn.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <p className="export-modal-support-label">{t("export.supportProject")}</p>
+                <SocialLinkGroup variant="mobile-export" />
+              </div>
+            </div>,
+            document.body,
+          )
+        : null}
     </>
   );
 }

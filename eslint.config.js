@@ -35,4 +35,10 @@ export default tseslint.config(
       "@typescript-eslint/no-empty-object-type": "warn",
     },
   },
+  {
+    // Playwright fixtures call a function named `use`, which is not a React hook.
+    files: ["tests/**/*.ts", "playwright.config.ts"],
+    languageOptions: { globals: globals.node },
+    rules: { "react-hooks/rules-of-hooks": "off" },
+  },
 );

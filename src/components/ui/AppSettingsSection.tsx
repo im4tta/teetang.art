@@ -1,13 +1,5 @@
 import NewPosterButton from "@/components/ui/NewPosterButton";
-import UndoRedoButtons from "@/components/ui/UndoRedoButtons";
-import {
-  SunIcon,
-  MoonIcon,
-  MaximizeIcon,
-  MinimizeIcon,
-  StyleIcon,
-  LayoutIcon,
-} from "@/components/ui/Icons";
+import { SunIcon, MoonIcon, MaximizeIcon, MinimizeIcon, InfoIcon } from "@/components/ui/Icons";
 import { useI18n } from "@/context/i18n/context";
 import type { PosterForm } from "@/context/posterReducer";
 import type { FormChangeHandler } from "@/hooks/useFormHandlers";
@@ -15,9 +7,10 @@ import type { FormChangeHandler } from "@/hooks/useFormHandlers";
 interface Props {
   form: PosterForm;
   onChange: FormChangeHandler;
+  onAboutOpen?: () => void;
 }
 
-export default function AppSettingsSection({ form, onChange }: Props) {
+export default function AppSettingsSection({ form, onChange, onAboutOpen }: Props) {
   const { t } = useI18n();
   const opt = (
     name: string,
@@ -34,11 +27,6 @@ export default function AppSettingsSection({ form, onChange }: Props) {
       <span>{label}</span>
     </button>
   );
-
-  const quickLinks: [string, React.ComponentType<{ className?: string }>, string][] = [
-    ["style", StyleIcon, t("settings.fontsStyle")],
-    ["layout", LayoutIcon, t("settings.shapesSizes")],
-  ];
 
   return (
     <div className="app-settings-section">
@@ -63,33 +51,19 @@ export default function AppSettingsSection({ form, onChange }: Props) {
       <div className="settings-group" style={{ marginTop: 20 }}>
         <p className="section-summary-label">{t("settings.poster")}</p>
         <div className="settings-link-grid">
-          <UndoRedoButtons className="settings-link-btn" withLabel />
           <NewPosterButton className="settings-link-btn" withLabel />
         </div>
       </div>
-      <div className="settings-group" style={{ marginTop: 20 }}>
-        <p className="section-summary-label">{t("settings.quickLinks")}</p>
-        <div className="settings-links">
-          <p className="settings-link-hint">{t("settings.jumpTo")}</p>
+      {onAboutOpen && (
+        <div className="settings-group" style={{ marginTop: 20 }}>
           <div className="settings-link-grid">
-            {quickLinks.map(([sec, Icon, label]) => (
-              <button
-                key={sec}
-                type="button"
-                className="settings-link-btn"
-                onClick={() =>
-                  document
-                    .querySelector(`[data-section="${sec}"]`)
-                    ?.scrollIntoView({ behavior: "smooth" })
-                }
-              >
-                <Icon />
-                <span>{label}</span>
-              </button>
-            ))}
+            <button type="button" className="settings-link-btn" onClick={onAboutOpen}>
+              <InfoIcon />
+              <span>{t("mnav.about")}</span>
+            </button>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }

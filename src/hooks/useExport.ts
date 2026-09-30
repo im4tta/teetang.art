@@ -1,5 +1,7 @@
 import { useCallback, useMemo } from "react";
 import { usePosterContext } from "@/context/PosterContext";
+import { useI18n } from "@/context/i18n/context";
+import { notify } from "@/services/notify";
 import { localStorageCache } from "@/services/cache/localStorageCache";
 import type { ExportFormat } from "@/services/export/types";
 import { getAllMarkerIcons } from "@/services/markers/iconRegistry";
@@ -20,6 +22,19 @@ const readCount = () => {
   return typeof v === "number" && Number.isFinite(v) && v >= 0 ? Math.floor(v) : 0;
 };
 const writeCount = (n: number) => localStorageCache.write(EXPORT_KEY, n);
+
+/**
+ * Keeps a phone screen from sleeping during a long render (sleeping can
+ * suspend the tab mid-export). Returns a release function; no-op if unsupported.
+ */
+async function keepScreenOn(): Promise<() => void> {
+  try {
+    const lock = await navigator.wakeLock?.request("screen");
+    return () => void lock?.release().catch(() => undefined);
+  } catch {
+    return () => undefined;
+  }
+}
 
 const SQUARE_SHAPES = new Set(["circle", "diamond", "hexagon", "star", "triangle", "heart"]);
 
@@ -48,6 +63,7 @@ const mediaParams = (form: PosterForm) => ({
 
 export function useExport() {
   const { state, dispatch, effectiveTheme, mapRef, mapRef2 } = usePosterContext();
+  const { t } = useI18n();
   const { form } = state;
   const hasVisibleMarkers = form.showMarkers && state.markers.length > 0;
   const visibleRoutes = useMemo(
@@ -231,25 +247,30 @@ export function useExport() {
   const exportPoster = useCallback(
     async (format: ExportFormat) => {
       dispatch({ type: "SET_EXPORT_STATUS", exporting: true });
+      const releaseWakeLock = await keepScreenOn();
       try {
         const { blob, filename } = await renderPoster(format);
         await triggerDownloadBlob(blob, filename);
         registerExport();
         dispatch({ type: "SET_EXPORT_STATUS", exporting: false });
+        notify(t("toast.exported"), { tone: "success" });
       } catch (err) {
         dispatch({
           type: "SET_EXPORT_STATUS",
           exporting: false,
           error: err instanceof Error ? err.message : "Export failed.",
         });
+      } finally {
+        releaseWakeLock();
       }
     },
-    [dispatch, renderPoster, registerExport],
+    [dispatch, renderPoster, registerExport, t],
   );
 
   /** Renders the poster as a PNG file for the native share sheet. */
   const renderPosterFile = useCallback(async (): Promise<File | null> => {
     dispatch({ type: "SET_EXPORT_STATUS", exporting: true });
+    const releaseWakeLock = await keepScreenOn();
     try {
       const { blob, filename } = await renderPoster("png");
       registerExport();
@@ -262,6 +283,8 @@ export function useExport() {
         error: err instanceof Error ? err.message : "Export failed.",
       });
       return null;
+    } finally {
+      releaseWakeLock();
     }
   }, [dispatch, renderPoster, registerExport]);
 

@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import maplibregl from "maplibre-gl";
+import type maplibregl from "maplibre-gl";
 
 interface UseMapInteractivityOptions {
   mapInstance: maplibregl.Map | null;

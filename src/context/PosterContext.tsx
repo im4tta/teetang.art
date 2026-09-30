@@ -109,8 +109,20 @@ export function PosterProvider({ children }: { children: ReactNode }) {
     const previous = lastThemeTextRef.current;
     lastThemeTextRef.current = color;
     if (previous === null || previous === color) return;
-    dispatch({ type: "SET_MARKER_DEFAULTS", defaults: { color }, applyToMarkers: true });
-    dispatch({ type: "SET_ROUTE_DEFAULTS", defaults: { color }, applyToRoutes: true });
+    // Part of the theme change the user made, not an undo step of its own
+    // (on a slow phone it can land well after the theme change itself).
+    dispatch({
+      type: "SET_MARKER_DEFAULTS",
+      defaults: { color },
+      applyToMarkers: true,
+      record: false,
+    });
+    dispatch({
+      type: "SET_ROUTE_DEFAULTS",
+      defaults: { color },
+      applyToRoutes: true,
+      record: false,
+    });
   }, [effectiveTheme.ui.text]);
 
   const {

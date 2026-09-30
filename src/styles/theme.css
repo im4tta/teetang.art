@@ -185,14 +185,6 @@ html[data-app-theme="light"] .mobile-nav-tab.is-active {
   color: var(--accent);
 }
 
-html[data-app-theme="light"] .mobile-nav-fade {
-  background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.9) 70%, #fff 100%);
-}
-
-html[data-app-theme="light"] .mobile-nav-fade::after {
-  border-color: var(--text-secondary);
-}
-
 html[data-app-theme="light"]
   :is(
     .mobile-drawer-sheet,

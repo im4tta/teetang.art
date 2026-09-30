@@ -136,7 +136,13 @@ export interface PosterState {
 
 export type PosterAction =
   | { type: "SET_FIELD"; name: string; value: string | boolean }
-  | { type: "SET_FORM_FIELDS"; fields: Partial<PosterForm>; resetDisplayNameOverrides?: boolean }
+  | {
+      type: "SET_FORM_FIELDS";
+      fields: Partial<PosterForm>;
+      resetDisplayNameOverrides?: boolean;
+      /** false for automatic updates (geolocation, geocoded names) that should not be an undo step. */
+      record?: boolean;
+    }
   | { type: "SET_THEME"; themeId: string }
   | { type: "SET_THEME2"; themeId: string }
   | { type: "SET_LAYOUT"; layoutId: string; widthCm: string; heightCm: string }
@@ -160,14 +166,24 @@ export type PosterAction =
   | { type: "SET_CUSTOM_MARKER_ICONS"; icons: MarkerIconDefinition[] }
   | { type: "REMOVE_CUSTOM_MARKER_ICON"; iconId: string }
   | { type: "CLEAR_CUSTOM_MARKER_ICONS" }
-  | { type: "SET_MARKER_DEFAULTS"; defaults: Partial<MarkerDefaults>; applyToMarkers?: boolean }
+  | {
+      type: "SET_MARKER_DEFAULTS";
+      defaults: Partial<MarkerDefaults>;
+      applyToMarkers?: boolean;
+      record?: boolean;
+    }
   | { type: "RESET_MARKER_DEFAULTS" }
   | { type: "ADD_ROUTE"; route: Route }
   | { type: "UPDATE_ROUTE"; routeId: string; changes: Partial<Route> }
   | { type: "REMOVE_ROUTE"; routeId: string }
   | { type: "REPLACE_ROUTES"; routes: Route[] }
   | { type: "CLEAR_ROUTES" }
-  | { type: "SET_ROUTE_DEFAULTS"; defaults: Partial<RouteDefaults>; applyToRoutes?: boolean }
+  | {
+      type: "SET_ROUTE_DEFAULTS";
+      defaults: Partial<RouteDefaults>;
+      applyToRoutes?: boolean;
+      record?: boolean;
+    }
   | { type: "RESET_DESIGN" }
   // Handled by posterHistoryReducer.
   | { type: "UNDO" }

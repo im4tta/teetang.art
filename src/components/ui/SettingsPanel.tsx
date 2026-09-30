@@ -4,7 +4,9 @@ import { useFormHandlers } from "@/hooks/useFormHandlers";
 import { useLocationAutocomplete } from "@/hooks/useLocationAutocomplete";
 import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { useMapSync } from "@/hooks/useMapSync";
-import type { MobileTab } from "@/components/layout/MobileNavBar";
+import { MOBILE_GROUPS, type MobileGroup, type SectionId } from "@/components/layout/mobileGroups";
+import ThemeStrip from "@/components/ui/ThemeStrip";
+import FooterNote from "@/components/layout/FooterNote";
 import { useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
 import LocationSection from "@/components/ui/LocationSection";
@@ -31,9 +33,6 @@ import { layoutGroups } from "@/services/layout/layoutRepository";
 import { MIN_POSTER_CM, MAX_POSTER_CM, FONT_OPTIONS } from "@/services/config";
 import type { SearchResult } from "@/services/location/types";
 
-type SectionId =
-  "app" | "location" | "theme" | "layout" | "dualCity" | "style" | "layers" | "markers" | "routes";
-
 const SECTIONS: {
   id: SectionId;
   labelKey: TranslationKey;
@@ -52,11 +51,13 @@ const SECTIONS: {
 ];
 
 export default function SettingsPanel({
-  mobileTab,
+  mobileGroup,
   desktopActivePanel,
+  onAboutOpen,
 }: {
-  mobileTab?: MobileTab;
+  mobileGroup?: MobileGroup;
   desktopActivePanel?: string;
+  onAboutOpen?: () => void;
 }) {
   const { state, dispatch, mapRef, selectedTheme } = usePosterContext();
   const { t } = useI18n();
@@ -96,7 +97,13 @@ export default function SettingsPanel({
     )
       return null;
     if (id === "app")
-      return <AppSettingsSection form={state.form} onChange={handlers.handleChange} />;
+      return (
+        <AppSettingsSection
+          form={state.form}
+          onChange={handlers.handleChange}
+          onAboutOpen={onAboutOpen}
+        />
+      );
     if (id === "location")
       return (
         <LocationSection
@@ -181,22 +188,30 @@ export default function SettingsPanel({
     );
   }
 
-  if (mobileTab) {
-    const sectionId: SectionId = mobileTab === "settings" ? "app" : mobileTab;
-    const section = SECTIONS.find((item) => item.id === sectionId);
-    if (!section) return null;
+  if (mobileGroup) {
+    const { sections } = MOBILE_GROUPS[mobileGroup];
     return (
       <form
         className="settings-panel settings-panel--mobile-focused"
         onSubmit={(e) => e.preventDefault()}
       >
-        <div className="panel-view" data-panel={mobileTab}>
-          <div className="panel-hdr">
-            <h2>{t(section.labelKey)}</h2>
-          </div>
-          <div className="section">{renderSection(section.id)}</div>
-        </div>
+        {mobileGroup === "look" && !isColorEditorActive && <ThemeStrip />}
+        {sections.map((sectionId) => {
+          const section = SECTIONS.find((item) => item.id === sectionId);
+          if (!section) return null;
+          const content = renderSection(sectionId);
+          if (!content) return null;
+          return (
+            <div key={sectionId} className="panel-view" data-panel={sectionId}>
+              <div className="panel-hdr">
+                <h2>{t(section.labelKey)}</h2>
+              </div>
+              <div className="section">{content}</div>
+            </div>
+          );
+        })}
         {!isColorEditorActive && state.error && <p className="error">{state.error}</p>}
+        {mobileGroup === "settings" && <FooterNote />}
       </form>
     );
   }

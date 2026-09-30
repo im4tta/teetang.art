@@ -12,7 +12,16 @@ import GeneralHeader from "@/components/layout/GeneralHeader";
 import DesktopTopBar from "@/components/layout/DesktopTopBar";
 import FooterNote from "@/components/layout/FooterNote";
 import PreviewPanel from "@/components/ui/PreviewPanel";
-import MobileNavBar, { type MobileTab } from "@/components/layout/MobileNavBar";
+import MobileNavBar, {
+  type MobileNavTarget,
+  type MobileTab,
+} from "@/components/layout/MobileNavBar";
+import {
+  MOBILE_GROUPS,
+  OPEN_EXPORT_EVENT,
+  type MobileGroup,
+} from "@/components/layout/mobileGroups";
+import { tapFeedback } from "@/utils/haptics";
 import InstallPrompt from "@/components/ui/InstallPrompt";
 import { useSwipeDown } from "@/hooks/useSwipeDown";
 import { useFocusTrap } from "@/hooks/useFocusTrap";
@@ -22,18 +31,38 @@ import { SUPPORT_PROMPT_EVENT, type SupportPromptState } from "@/services/export
 import DotField from "@/components/layout/DotField";
 import DesktopLocationBar from "@/components/layout/DesktopLocationBar";
 import { useUndoShortcuts } from "@/hooks/useUndoShortcuts";
+import Toaster from "@/components/ui/Toaster";
+import QuickStart from "@/components/ui/QuickStart";
+import { notify } from "@/services/notify";
 
 const AboutModal = lazy(() => import("@/components/ui/AboutModal"));
 const SettingsPanel = lazy(() => import("@/components/ui/SettingsPanel"));
 const AnnouncementModal = lazy(() => import("@/components/ui/AnnouncementModal"));
 const UserGuidePanel = lazy(() => import("@/components/ui/UserGuidePanel"));
 
-function SettingsDrawer({ mobileTab, onClose }: { mobileTab: MobileTab; onClose: () => void }) {
+type SheetSnap = "peek" | "half" | "full";
+const SNAPS: SheetSnap[] = ["peek", "half", "full"];
+
+function SettingsDrawer({
+  group,
+  onClose,
+  onAboutOpen,
+}: {
+  group: MobileGroup;
+  onClose: () => void;
+  onAboutOpen: () => void;
+}) {
   const { t } = useI18n();
-  const [expanded, setExpanded] = useState(false);
+  // Style opens low so the poster stays visible while swiping through themes.
+  const [snap, setSnap] = useState<SheetSnap>(group === "look" ? "peek" : "half");
   const closeButtonRef = useRef<HTMLButtonElement>(null);
-  const { sheetRef, handleRef, handleProps } = useSwipeDown(onClose, 80, {
-    onExpand: () => setExpanded(true),
+  const step = (delta: number) => {
+    const next = SNAPS.indexOf(snap) + delta;
+    if (next < 0) onClose();
+    else setSnap(SNAPS[Math.min(next, SNAPS.length - 1)]);
+  };
+  const { sheetRef, handleRef, handleProps } = useSwipeDown(() => step(-1), 60, {
+    onExpand: () => step(1),
   });
 
   useFocusTrap(sheetRef, onClose);
@@ -58,24 +87,24 @@ function SettingsDrawer({ mobileTab, onClose }: { mobileTab: MobileTab; onClose:
   }, []);
 
   return (
-    <div className="mobile-drawer">
+    <div className="mobile-drawer" data-snap={snap}>
       <div className="mobile-drawer-backdrop" onClick={onClose} aria-hidden="true" />
       <div
-        className={`mobile-drawer-sheet${expanded ? " is-expanded" : ""}`}
+        className={`mobile-drawer-sheet${snap === "full" ? " is-expanded" : ""}`}
         ref={sheetRef}
-        data-mobile-tab={mobileTab}
+        data-snap={snap}
+        data-mobile-group={group}
         role="dialog"
         aria-modal="true"
-        aria-label={t("nav.settings")}
+        aria-label={t(MOBILE_GROUPS[group].labelKey)}
       >
         <div className="mobile-drawer-toolbar">
           <button
             ref={handleRef}
             type="button"
             className="mobile-drawer-handle"
-            onClick={() => setExpanded((value) => !value)}
-            aria-expanded={expanded}
-            aria-label={expanded ? t("close") : t("nav.settings")}
+            onClick={() => setSnap(SNAPS[(SNAPS.indexOf(snap) + 1) % SNAPS.length])}
+            aria-label={t("sheet.resize")}
             {...handleProps}
           >
             <span className="mobile-drawer-grabber" aria-hidden="true" />
@@ -85,13 +114,15 @@ function SettingsDrawer({ mobileTab, onClose }: { mobileTab: MobileTab; onClose:
             type="button"
             className="mobile-drawer-close"
             onClick={onClose}
-            aria-label={t("close")}
+            aria-label={t("sheet.close")}
           >
             <span aria-hidden="true">×</span>
           </button>
         </div>
         <div className="mobile-drawer-content">
-          <SettingsPanel mobileTab={mobileTab} />
+          <Suspense fallback={null}>
+            <SettingsPanel mobileGroup={group} onAboutOpen={onAboutOpen} />
+          </Suspense>
         </div>
       </div>
     </div>
@@ -100,17 +131,35 @@ function SettingsDrawer({ mobileTab, onClose }: { mobileTab: MobileTab; onClose:
 
 export default function AppShell() {
   const { t } = useI18n();
-  useUndoShortcuts();
   const { state, dispatch } = usePosterContext();
+  useUndoShortcuts();
+
+  // Errors used to appear only inside the settings panel, invisible on phones
+  // with the drawer closed; surface them as toasts too.
+  useEffect(() => {
+    if (state.error) notify(state.error, { tone: "error", id: "poster-error" });
+  }, [state.error]);
+
+  useEffect(() => {
+    const offline = () => notify(t("toast.offline"), { id: "network", duration: 0 });
+    const online = () => notify(t("toast.online"), { id: "network", tone: "success" });
+    if (!navigator.onLine) offline();
+    window.addEventListener("offline", offline);
+    window.addEventListener("online", online);
+    return () => {
+      window.removeEventListener("offline", offline);
+      window.removeEventListener("online", online);
+    };
+  }, [t]);
+
   const { isMarkerEditorActive } = state;
   const activeMarker =
     state.activeMarkerId != null
       ? (state.markers.find((m) => m.id === state.activeMarkerId) ?? null)
       : null;
 
-  const [mobileTab, setMobileTab] = useState<MobileTab>("theme");
+  const [mobileGroup, setMobileGroup] = useState<MobileGroup>("look");
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
-  const [mobileLocationVisible, setMobileLocationVisible] = useState(true);
   const isMobileViewport = useMobileViewport();
   const [desktopTab, setDesktopTab] = useState<MobileTab>("theme");
   const [desktopPanelOpen, setDesktopPanelOpen] = useState(false);
@@ -191,17 +240,24 @@ export default function AppShell() {
     document.body.classList.toggle("compact-ui", density === "compact");
   }, [state.form.appTheme, state.form.uiDensity]);
 
-  const handleMobileTabChange = (tab: MobileTab) => {
-    if (tab === "location") {
-      setMobileLocationVisible((v) => !v);
+  const openMobileGroup = (group: MobileGroup) => {
+    tapFeedback();
+    if (group === mobileGroup && mobileDrawerOpen) {
       setMobileDrawerOpen(false);
       return;
     }
-    if (tab === mobileTab && mobileDrawerOpen) setMobileDrawerOpen(false);
-    else {
-      setMobileTab(tab);
-      setMobileDrawerOpen(true);
+    setMobileGroup(group);
+    setMobileDrawerOpen(true);
+  };
+
+  const handleMobileNav = (target: MobileNavTarget) => {
+    if (target === "download") {
+      tapFeedback();
+      setMobileDrawerOpen(false);
+      window.dispatchEvent(new Event(OPEN_EXPORT_EVENT));
+      return;
     }
+    openMobileGroup(target);
   };
 
   const handleDesktopTabChange = (tab: MobileTab) => {
@@ -228,7 +284,6 @@ export default function AppShell() {
   return (
     <div
       className="app-shell"
-      data-mobile-tab={mobileTab}
       data-desktop-tab={desktopTab}
       data-desktop-panel-open={desktopPanelOpen ? "true" : "false"}
     >
@@ -243,11 +298,11 @@ export default function AppShell() {
           onAboutOpen={() => setAboutOpen(true)}
         />
       ) : (
-        <GeneralHeader onAboutOpen={() => setAboutOpen(true)} />
+        <GeneralHeader onSettingsOpen={() => openMobileGroup("settings")} />
       )}
 
       {isMobileViewport && (
-        <div className={`mobile-location-row-wrap${mobileLocationVisible ? "" : " is-hidden"}`}>
+        <div className="mobile-location-row-wrap">
           <DesktopLocationBar />
         </div>
       )}
@@ -294,7 +349,15 @@ export default function AppShell() {
       <PreviewPanel />
 
       {mobileDrawerOpen && (
-        <SettingsDrawer mobileTab={mobileTab} onClose={() => setMobileDrawerOpen(false)} />
+        <SettingsDrawer
+          key={mobileGroup}
+          group={mobileGroup}
+          onClose={() => setMobileDrawerOpen(false)}
+          onAboutOpen={() => {
+            setMobileDrawerOpen(false);
+            setAboutOpen(true);
+          }}
+        />
       )}
 
       {isMobileViewport && isMarkerEditorActive && (
@@ -313,13 +376,14 @@ export default function AppShell() {
       )}
 
       <MobileNavBar
-        activeTab={mobileTab}
-        drawerOpen={mobileDrawerOpen}
-        isLocationVisible={mobileLocationVisible}
-        onTabChange={handleMobileTabChange}
+        activeGroup={mobileDrawerOpen ? mobileGroup : null}
+        onSelect={handleMobileNav}
       />
 
-      <FooterNote />
+      {/* On phones the footer lives in the Settings sheet, clear of the tab bar. */}
+      {!isMobileViewport && <FooterNote />}
+      <Toaster />
+      {isMobileViewport && <QuickStart />}
       <Suspense fallback={null}>
         <AnnouncementModal />
       </Suspense>

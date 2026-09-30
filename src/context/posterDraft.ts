@@ -87,3 +87,11 @@ export function readDraftTitle(): string | null {
     return null;
   }
 }
+
+export function clearDraft(): void {
+  try {
+    localStorage.removeItem(DRAFT_KEY);
+  } catch {
+    // Nothing stored or storage unavailable.
+  }
+}

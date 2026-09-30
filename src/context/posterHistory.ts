@@ -59,7 +59,9 @@ export function posterHistoryReducer(
 
   const next = posterReducer(present, action);
   if (next === present) return history;
-  if (!designChanged(present, next)) return { ...history, present: next };
+  if (!designChanged(present, next) || ("record" in action && action.record === false)) {
+    return { ...history, present: next };
+  }
 
   const now = Date.now();
   const merge = now - history.lastChangeAt < MERGE_WINDOW_MS && past.length > 0;

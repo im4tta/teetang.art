@@ -22,6 +22,7 @@ export function useGeolocation(dispatch: React.Dispatch<PosterAction>, enabled: 
       dispatch({ type: "SET_USER_LOCATION", location: null });
       dispatch({
         type: "SET_FORM_FIELDS",
+        record: false,
         resetDisplayNameOverrides: true,
         fields: FALLBACK_FIELDS,
       });
@@ -37,6 +38,7 @@ export function useGeolocation(dispatch: React.Dispatch<PosterAction>, enabled: 
         if (cancelled) return;
         dispatch({
           type: "SET_FORM_FIELDS",
+          record: false,
           resetDisplayNameOverrides: true,
           fields: { latitude: lat.toFixed(6), longitude: lon.toFixed(6) },
         });

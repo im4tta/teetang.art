@@ -1,29 +1,13 @@
 import { useNavigate } from "react-router-dom";
-import { MapPin } from "lucide-react";
-import { InfoIcon } from "@/components/ui/Icons";
+import { MapPin, Settings } from "lucide-react";
+import UndoRedoButtons from "@/components/ui/UndoRedoButtons";
 import { useI18n } from "@/context/i18n/context";
 
 interface GeneralHeaderProps {
-  onAboutOpen: () => void;
+  onSettingsOpen: () => void;
 }
 
-function GlobeIcon() {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      width="16"
-      height="16"
-    >
-      <circle cx="12" cy="12" r="10" />
-      <path d="M2 12h20M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" />
-    </svg>
-  );
-}
-
-export default function GeneralHeader({ onAboutOpen }: GeneralHeaderProps) {
+export default function GeneralHeader({ onSettingsOpen }: GeneralHeaderProps) {
   const navigate = useNavigate();
   const { lang, toggleLang, t } = useI18n();
 
@@ -31,6 +15,7 @@ export default function GeneralHeader({ onAboutOpen }: GeneralHeaderProps) {
     <header className="general-header">
       <div className="desktop-brand">
         <div
+          className="general-header-logo"
           style={{
             width: 32,
             height: 32,
@@ -74,27 +59,24 @@ export default function GeneralHeader({ onAboutOpen }: GeneralHeaderProps) {
       </div>
 
       <div className="general-header-actions">
+        <UndoRedoButtons className="general-header-icon-btn" />
         <button
           type="button"
-          className="lang-toggle"
+          className="lang-toggle general-header-icon-btn"
           onClick={toggleLang}
           aria-label={lang === "en" ? "Switch to Khmer" : "ប្ដូរទៅអង់គ្លេស"}
           title={lang === "en" ? "ខ្មែរ" : "English"}
         >
-          <GlobeIcon />
           <span>{lang === "en" ? "KH" : "EN"}</span>
         </button>
         <button
           type="button"
-          className="general-header-text-btn general-header-about-text-btn"
-          onClick={onAboutOpen}
-          aria-label={t("about.title")}
-          title={t("about.title")}
+          className="general-header-icon-btn"
+          onClick={onSettingsOpen}
+          aria-label={t("nav.settings")}
+          title={t("nav.settings")}
         >
-          <span className="general-header-btn-label">{t("about.title")}</span>
-          <span className="general-header-btn-icon" aria-hidden="true">
-            <InfoIcon />
-          </span>
+          <Settings size={18} aria-hidden="true" />
         </button>
       </div>
     </header>

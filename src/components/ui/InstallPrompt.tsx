@@ -3,6 +3,7 @@ import { FaMobileAlt as MobileIcon } from "react-icons/fa";
 import { FiShare as ShareIcon } from "react-icons/fi";
 import React, { useState } from "react";
 import { INSTALL_DIAGNOSTICS_ENABLED } from "@/services/config";
+import { quickStartSeen } from "@/components/ui/quickStartState";
 
 export default function InstallPrompt() {
   const {
@@ -17,7 +18,8 @@ export default function InstallPrompt() {
   const [isDiagnosticsOpen, setIsDiagnosticsOpen] = useState(false);
   const diagnosticsText = JSON.stringify(diagnostics, null, 2);
 
-  if (dismissed) return null;
+  // Wait until the first-visit quick start is done so the two cards never stack.
+  if (dismissed || !quickStartSeen()) return null;
 
   if (deferredPrompt) {
     return (

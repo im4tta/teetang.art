@@ -7,6 +7,8 @@ interface UseMapBearingOptions {
   mapRef2?: MapInstanceRef;
   isDualCity: boolean;
   isMarkerEditorActive: boolean;
+  /** Changes whenever a map instance is (re)created, so listeners re-attach. */
+  mapVersion: number;
 }
 
 export function useMapBearing({
@@ -14,6 +16,7 @@ export function useMapBearing({
   mapRef2,
   isDualCity,
   isMarkerEditorActive,
+  mapVersion,
 }: UseMapBearingOptions) {
   const [mapBearing, setMapBearing] = useState(0);
   const [isEditing, setIsEditing] = useState(false);
@@ -28,7 +31,7 @@ export function useMapBearing({
     return () => {
       map.off("rotate", sync);
     };
-  }, [mapRef]);
+  }, [mapRef, mapVersion]);
 
   // Disable interactions immediately while marker editing and clear latent state
   // from a scheduled callback when marker editing starts.

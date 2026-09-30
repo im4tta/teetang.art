@@ -1,0 +1,559 @@
+/*
+ * Phone editor, v2: five fixed tabs, a three-height settings sheet, a poster
+ * that fits between the header and the tab bar, and touch sizes that meet the
+ * 44 px / 16 px / 12 px minimums. Loaded last so it can override the older
+ * mobile rules without editing them in place.
+ */
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  /* ── Bottom bar: five fixed tabs, no sideways scrolling ── */
+  html:not([data-app-theme="light"]) .mobile-nav--fixed {
+    background: rgba(16, 18, 24, 0.98);
+  }
+
+  .mobile-nav--fixed {
+    height: auto;
+    padding: 4px;
+    gap: 2px;
+  }
+
+  .mobile-nav--fixed .mobile-nav-tab {
+    flex: 1 1 0;
+    min-width: 0;
+    max-width: none;
+    min-height: 56px;
+    border-radius: 9999px;
+    font-size: 12px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .mobile-nav--fixed .mobile-nav-icon {
+    width: 22px;
+    height: 22px;
+  }
+
+  .mobile-nav--fixed .mobile-nav-tab--primary,
+  html[data-app-theme="light"] .mobile-nav--fixed .mobile-nav-tab--primary {
+    background: var(--accent, #c0392b);
+    color: #fff;
+  }
+
+  /* The Download tab replaces the floating download button on phones. */
+  .mobile-export-fab-trigger {
+    display: none;
+  }
+
+  /* ── Poster fits between the header/search row and the tab bar ── */
+  .app-shell {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom, 0px));
+  }
+
+  .poster-viewport,
+  html[data-display-mode="standalone"] .poster-viewport {
+    min-height: 0;
+    padding: 10px 0 4px;
+  }
+
+  .poster-frame {
+    width: min(calc(100% - 24px), calc((100dvh - 300px) * var(--poster-aspect, 0.6666667)));
+    margin: 0 auto 4px;
+  }
+
+  .preview-panel .map-controls {
+    padding: 6px 0;
+  }
+
+  /* ── Header: brand plus four 44 px icon buttons ── */
+  .general-header {
+    padding: 6px 10px;
+  }
+
+  .general-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .general-header-icon-btn,
+  .general-header .lang-toggle.general-header-icon-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    padding: 0;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--ink, #f5f5fa);
+    font-size: 13px;
+    font-weight: 700;
+  }
+
+  .general-header-icon-btn:disabled {
+    opacity: 0.35;
+  }
+
+  /* Narrow phones: the wordmark alone, so the four buttons fit. */
+  @media (max-width: 400px) {
+    .general-header .desktop-brand-kicker,
+    .general-header .general-header-logo {
+      /* Overrides the logo's inline display style. */
+      display: none !important;
+    }
+  }
+
+  /* ── Settings sheet: peek / half / full ── */
+  .mobile-drawer-sheet[data-snap]:not(.is-expanded) {
+    height: auto;
+  }
+
+  .mobile-drawer-sheet[data-snap="peek"]:not(.is-expanded) {
+    max-height: min(38dvh, 340px);
+  }
+
+  .mobile-drawer-sheet[data-snap="half"]:not(.is-expanded) {
+    max-height: 62dvh;
+  }
+
+  .mobile-drawer-sheet[data-snap="full"] {
+    height: calc(100dvh - 56px);
+  }
+
+  /* At peek height the poster above stays fully visible. */
+  .mobile-drawer[data-snap="peek"] .mobile-drawer-backdrop {
+    background: transparent;
+  }
+
+  .mobile-drawer-close {
+    width: 44px;
+    height: 44px;
+    top: 2px;
+    right: 8px;
+  }
+
+  .settings-panel--mobile-focused .panel-view + .panel-view {
+    margin-top: 20px;
+  }
+
+  /* ── Theme strip (Style tab) ── */
+  .theme-strip {
+    display: flex;
+    gap: 10px;
+    margin: 0 -14px 16px;
+    padding: 2px 14px 6px;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+  }
+
+  .theme-strip::-webkit-scrollbar {
+    display: none;
+  }
+
+  .theme-strip__item {
+    flex: 0 0 92px;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-height: 44px;
+    padding: 6px;
+    border: 2px solid transparent;
+    border-radius: 14px;
+    background: rgba(255, 255, 255, 0.04);
+    color: inherit;
+    scroll-snap-align: center;
+    cursor: pointer;
+  }
+
+  .theme-strip__item[aria-pressed="true"] {
+    border-color: var(--accent, #c0392b);
+  }
+
+  .theme-strip__swatch {
+    display: flex;
+    height: 44px;
+    overflow: hidden;
+    border-radius: 9px;
+  }
+
+  .theme-strip__swatch > span {
+    flex: 1;
+  }
+
+  .theme-strip__name {
+    overflow: hidden;
+    font-size: 12px;
+    font-weight: 600;
+    line-height: 1.2;
+    text-align: center;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* ── Touch sizes: 44 px targets, 16 px fields (no iOS zoom), 12 px text ── */
+  .app-shell
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  .app-shell select,
+  .app-shell textarea,
+  .mobile-drawer
+    input:not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]),
+  .mobile-drawer select,
+  .mobile-drawer textarea {
+    font-size: 16px;
+  }
+
+  .form-control-tall,
+  .ios-input,
+  .location-clear-btn,
+  .icon-only-btn,
+  .location-row-icon-btn,
+  .theme-customize-btn,
+  .marker-row__icon-btn,
+  .route-card__style-btn,
+  .export-modal-close,
+  .install-prompt-dismiss,
+  .settings-link-btn,
+  .theme-group-chip,
+  .map-control-btn {
+    min-height: 44px;
+  }
+
+  .location-clear-btn,
+  .icon-only-btn,
+  .location-row-icon-btn,
+  .theme-customize-btn,
+  .export-modal-close {
+    min-width: 44px;
+  }
+
+  .ios-toggle {
+    height: 44px;
+  }
+
+  .ios-track {
+    inset: 9px 0;
+  }
+
+  .ios-toggle-label,
+  .ctrl-label,
+  .ctrl-val,
+  .section-summary-label,
+  .theme-card-description {
+    font-size: max(12px, 1em);
+  }
+
+  /* Top search row: a 44 px tall field and clear button. */
+  .mobile-location-row-wrap .dsk-loc-bar .location-search-row,
+  .mobile-location-row-wrap .dsk-loc-bar .location-input-wrap input {
+    min-height: 44px;
+  }
+
+  .mobile-location-row-wrap .dsk-loc-bar button.location-clear-btn {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+    font-size: 16px;
+  }
+
+  .mobile-nav--fixed .mobile-nav-label,
+  html[lang="km"] .mobile-nav--fixed .mobile-nav-label {
+    font-size: 12px;
+  }
+
+  /* forms.css pins these with !important, so matching it is the only override. */
+  .mobile-drawer .theme-summary-view .theme-card,
+  .mobile-drawer .theme-card {
+    min-height: 44px;
+    height: 44px !important;
+  }
+
+  .mobile-drawer .theme-card .theme-card-name {
+    font-size: 12px !important;
+  }
+
+  .mobile-drawer .marker-row__icon-btn {
+    min-width: 44px;
+  }
+
+  .mobile-drawer .theme-card .theme-card-name,
+  .mobile-drawer .card-scroll-list .theme-card .theme-card-name,
+  .mobile-drawer .marker-picker__section-title,
+  .mobile-drawer .marker-picker__label,
+  .map-control-btn span,
+  .export-modal .general-header-text-btn,
+  .export-modal .general-header-github-stars-count,
+  .export-modal .general-header-aba-number {
+    font-size: 12px;
+  }
+
+  .export-modal .export-modal-share-btn,
+  .export-modal .general-header-social-btn {
+    min-height: 44px;
+  }
+
+  .export-modal .general-header-social-btn {
+    min-width: 44px;
+  }
+
+  /* ── Download sheet ── */
+  .export-modal-primary {
+    display: grid;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .export-modal-save,
+  .export-modal-share-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    border-radius: 14px;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .export-modal-save {
+    min-height: 60px;
+    border: 0;
+    background: var(--accent, #c0392b);
+    color: #fff;
+  }
+
+  .export-modal-save__text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.25;
+  }
+
+  .export-modal-save__text strong {
+    font-size: 16px;
+  }
+
+  .export-modal-save__text small {
+    font-size: 12px;
+    opacity: 0.85;
+  }
+
+  .export-modal-share-image {
+    min-height: 48px;
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.05);
+    color: inherit;
+    font-weight: 600;
+  }
+
+  .export-modal-save:disabled,
+  .export-modal-share-image:disabled {
+    opacity: 0.6;
+  }
+
+  .export-modal-more {
+    margin-bottom: 12px;
+  }
+
+  .export-modal-more > summary {
+    display: flex;
+    align-items: center;
+    min-height: 44px;
+    font-size: 14px;
+    cursor: pointer;
+  }
+
+  .export-modal-more[open] > summary {
+    margin-bottom: 8px;
+  }
+
+  html[data-app-theme="light"] .export-modal-share-image,
+  html[data-app-theme="light"] .general-header-icon-btn,
+  html[data-app-theme="light"] .theme-strip__item {
+    border-color: rgba(15, 23, 42, 0.12);
+    background: rgba(15, 23, 42, 0.04);
+    color: #0f172a;
+  }
+
+  html[data-app-theme="light"] .theme-strip__item[aria-pressed="true"] {
+    border-color: var(--accent, #c0392b);
+  }
+}
+
+/* The download sheet's new controls also appear on desktop. */
+@media (min-width: 769px) and (hover: hover) {
+  .export-modal-primary {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: 10px;
+    margin-bottom: 12px;
+  }
+
+  .export-modal-save,
+  .export-modal-share-image {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 56px;
+    border-radius: 14px;
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .export-modal-save {
+    border: 0;
+    background: var(--accent, #c0392b);
+    color: #fff;
+  }
+
+  .export-modal-save__text {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    line-height: 1.25;
+  }
+
+  .export-modal-save__text small {
+    font-size: 12px;
+    opacity: 0.85;
+  }
+
+  .export-modal-share-image {
+    border: 1px solid rgba(255, 255, 255, 0.16);
+    background: rgba(255, 255, 255, 0.05);
+    color: inherit;
+    font-weight: 600;
+  }
+
+  .export-modal-more {
+    margin-bottom: 12px;
+  }
+
+  .export-modal-more > summary {
+    min-height: 32px;
+    cursor: pointer;
+  }
+}
+
+/* One-time intro card, just above the phone tab bar. */
+.quick-start {
+  position: fixed;
+  left: 12px;
+  right: 12px;
+  bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+  z-index: 150;
+  padding: 18px 18px 14px;
+  border: 1px solid rgba(212, 175, 55, 0.4);
+  border-radius: 18px;
+  background: rgba(16, 18, 24, 0.98);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  color: #f5f5fa;
+  animation: app-toast-in 0.25s ease-out;
+}
+
+.quick-start h2 {
+  margin: 0 0 12px;
+  font-size: 17px;
+}
+
+.quick-start ol {
+  display: grid;
+  gap: 10px;
+  margin: 0 0 14px;
+  padding: 0;
+  list-style: none;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.quick-start li {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.quick-start__num {
+  flex: 0 0 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--accent, #c0392b);
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 26px;
+  text-align: center;
+}
+
+.quick-start__go {
+  width: 100%;
+  min-height: 48px;
+  border: 0;
+  border-radius: 12px;
+  background: var(--accent, #c0392b);
+  color: #fff;
+  font: inherit;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+html[data-app-theme="light"] .quick-start {
+  background: #fff;
+  color: #0f172a;
+}
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  .mobile-drawer .location-clear-btn {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  html[data-app-theme="light"] .app-shell > .app-footer {
+    border-color: rgba(15, 23, 42, 0.1);
+    background: rgba(255, 255, 255, 0.92);
+    color: #334155;
+  }
+}
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  /* Footer (credits, legal links, version) inside the Settings sheet. */
+  .mobile-drawer .app-footer {
+    display: grid;
+    gap: 8px;
+    margin-top: 24px;
+    padding: 12px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: center;
+  }
+
+  .mobile-drawer .app-footer,
+  .mobile-drawer .app-footer * {
+    font-size: 12px;
+  }
+
+  .mobile-drawer .app-footer a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 6px;
+  }
+}
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  /* The install banner floats above the tab bar instead of pushing the
+     editor down (which hid the map controls behind the tab bar). */
+  .app-shell > .install-prompt {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    /* Below the tab bar (100), sheets (200) and dialogs. */
+    z-index: 90;
+    margin: 0;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
+  }
+}

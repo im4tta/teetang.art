@@ -1,5 +1,3 @@
-import { createElement } from "react";
-import { renderToStaticMarkup } from "react-dom/server";
 import type { IconType } from "react-icons";
 import {
   FaBuilding,
@@ -23,6 +21,7 @@ import { IoMdFlower } from "react-icons/io";
 import { SlTarget } from "react-icons/sl";
 import type { MarkerIconDefinition } from "@/services/markers/types";
 import { MARKER_FEATURED_ICON_COUNT } from "@/services/markers/renderingConstants";
+import { MARKER_ICON_SVGS } from "@/services/markers/iconSvgs";
 
 function createSvgIcon(id: string, label: string, component: IconType) {
   return {
@@ -31,13 +30,7 @@ function createSvgIcon(id: string, label: string, component: IconType) {
     source: "predefined",
     kind: "svg",
     component,
-    svgMarkup: renderToStaticMarkup(
-      createElement(component, {
-        size: 24,
-        color: "currentColor",
-        "aria-hidden": true,
-      }),
-    ),
+    svgMarkup: MARKER_ICON_SVGS[id],
   } satisfies MarkerIconDefinition;
 }
 

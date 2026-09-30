@@ -29,27 +29,41 @@ const BADGE_STYLE: CSSProperties = {
 };
 
 const ROW_STYLE: CSSProperties = { display: "flex", alignItems: "center", gap: 8 };
-const HINT_ROW_STYLE: CSSProperties = { display: "flex", alignItems: "center", gap: 6, marginBottom: 2 };
+const HINT_ROW_STYLE: CSSProperties = {
+  display: "flex",
+  alignItems: "center",
+  gap: 6,
+  marginBottom: 2,
+};
 
 export default function PosterInfoBadge({
-  form, layoutLabel, isDualCity, isMobile, badgeVisible, isEditing, badgeTimerRef, onVisibilityChange,
+  form,
+  layoutLabel,
+  isDualCity,
+  isMobile,
+  badgeVisible,
+  isEditing,
+  badgeTimerRef,
+  onVisibilityChange,
 }: Props) {
   const { lang } = useI18n();
   const isKhmer = lang === "km";
 
   const rows: [typeof MapPin, string, string, string][] = [
     [
-      MapPin, "#C0392B",
+      MapPin,
+      "#C0392B",
       isDualCity
         ? `${form.displayCity || form.location || "Phnom Penh"} ↔ ${form.displayCity2 || form.location2 || "Paris"}`
         : `${form.displayCity || form.location || "Phnom Penh"}${form.displayCountry ? `, ${form.displayCountry}` : ""}`,
       "#F5F5FA",
     ],
     [
-      Palette, "#D4AF37",
+      Palette,
+      "#D4AF37",
       isDualCity
-        ? `${themeOptions.find(t => t.id === form.theme)?.name || form.theme} ↔ ${themeOptions.find(t => t.id === form.theme2)?.name || form.theme2 || form.theme}`
-        : themeOptions.find(t => t.id === form.theme)?.name || form.theme,
+        ? `${themeOptions.find((t) => t.id === form.theme)?.name || form.theme} ↔ ${themeOptions.find((t) => t.id === form.theme2)?.name || form.theme2 || form.theme}`
+        : themeOptions.find((t) => t.id === form.theme)?.name || form.theme,
       "#94A3B8",
     ],
     [Layout, "#3B82F6", isDualCity ? `Dual City • ${layoutLabel}` : layoutLabel, "#94A3B8"],
@@ -67,18 +81,34 @@ export default function PosterInfoBadge({
 
   return (
     <div
-      onMouseEnter={() => { clearTimeout(badgeTimerRef.current!); onVisibilityChange(true); }}
-      onMouseLeave={() => { if (!isEditing) badgeTimerRef.current = setTimeout(() => onVisibilityChange(false), 4000); }}
-      style={{ ...positionStyle, ...BADGE_STYLE, opacity: badgeVisible ? 1 : 0, transition: "opacity 0.4s ease", pointerEvents: badgeVisible ? "auto" : "none" }}
+      onMouseEnter={() => {
+        clearTimeout(badgeTimerRef.current!);
+        onVisibilityChange(true);
+      }}
+      onMouseLeave={() => {
+        if (!isEditing) badgeTimerRef.current = setTimeout(() => onVisibilityChange(false), 4000);
+      }}
+      style={{
+        ...positionStyle,
+        ...BADGE_STYLE,
+        opacity: badgeVisible ? 1 : 0,
+        transition: "opacity 0.4s ease",
+        pointerEvents: badgeVisible ? "auto" : "none",
+      }}
     >
       {rows.map(([Icon, color, text, textColor]) => (
         <div key={color} style={ROW_STYLE}>
           <Icon size={12} style={{ color, flexShrink: 0 }} />
-          <span style={{
-            fontSize: 12, color: textColor, whiteSpace: "nowrap",
-            overflow: "hidden", textOverflow: "ellipsis",
-            textTransform: Icon === Shapes ? "capitalize" : undefined,
-          }}>
+          <span
+            style={{
+              fontSize: 12,
+              color: textColor,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              textTransform: Icon === Shapes ? "capitalize" : undefined,
+            }}
+          >
             {text}
           </span>
         </div>
@@ -86,8 +116,8 @@ export default function PosterInfoBadge({
       <div style={{ marginTop: 4, paddingTop: 6, borderTop: "1px solid #1e2a47" }}>
         {hints.map(([icon, text]) => (
           <div key={icon} style={HINT_ROW_STYLE}>
-            <span style={{ fontSize: 10, color: "#64748B" }}>{icon}</span>
-            <span style={{ fontSize: 10, color: "#64748B" }}>{text}</span>
+            <span style={{ fontSize: 12, color: "#64748B" }}>{icon}</span>
+            <span style={{ fontSize: 12, color: "#64748B" }}>{text}</span>
           </div>
         ))}
       </div>

@@ -55,6 +55,7 @@ type MapSyncDispatch = (a: {
   type: "SET_FORM_FIELDS";
   fields: Partial<Record<string, string>>;
   resetDisplayNameOverrides?: boolean;
+  record?: boolean;
 }) => void;
 
 export function useMapSync(state: MapSyncState, dispatch: MapSyncDispatch, mapRef: MapInstanceRef) {
@@ -115,6 +116,7 @@ export function useMapSync(state: MapSyncState, dispatch: MapSyncDispatch, mapRe
           if (!location) return;
           dispatch({
             type: "SET_FORM_FIELDS",
+            record: false,
             fields: {
               location,
               displayContinent: continent,
@@ -131,7 +133,7 @@ export function useMapSync(state: MapSyncState, dispatch: MapSyncDispatch, mapRe
   const handleMove = useCallback((_: [number, number]) => {}, []);
 
   const handleMoveEnd = useCallback(
-    (center: [number, number], zoom: number) => {
+    (center: [number, number], zoom: number, byUser = true) => {
       const [lon, lat] = center;
       const bounds = resolveZoomBounds(lat, effectivePx);
       const distance = zoomToDistance(
@@ -142,6 +144,8 @@ export function useMapSync(state: MapSyncState, dispatch: MapSyncDispatch, mapRe
       skippedRef.current = `${lat.toFixed(6)},${lon.toFixed(6)}`;
       dispatch({
         type: "SET_FORM_FIELDS",
+        // Only a move the user made is an undo step.
+        record: byUser,
         fields: {
           latitude: lat.toFixed(6),
           longitude: lon.toFixed(6),

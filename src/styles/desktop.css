@@ -395,22 +395,6 @@
     color: #ffffff;
   }
 
-  .general-header-btn-label {
-    display: inline;
-    margin-right: 8px;
-  }
-
-  .general-header-btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .general-header-btn-icon svg {
-    width: 20px;
-    height: 20px;
-  }
-
   /* ── Desktop vertical nav bar ── */
 
   /* ── Desktop left panel: floating fixed container (location bar + settings) ── */

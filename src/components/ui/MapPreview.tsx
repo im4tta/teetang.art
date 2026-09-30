@@ -17,13 +17,16 @@ interface MapPreviewProps {
   allowRotation?: boolean;
   minZoom?: number;
   maxZoom?: number;
-  onMoveEnd?: (center: [number, number], zoom: number) => void;
+  /** `byUser` is false for moves the app made itself (flyTo, resize settling). */
+  onMoveEnd?: (center: [number, number], zoom: number, byUser: boolean) => void;
   onMove?: (center: [number, number], zoom: number) => void;
   containerStyle?: CSSProperties;
   overzoomScale?: number;
   radiusMeters?: number;
   radiusStyle?: string;
   radiusLabel?: string;
+  /** Called once the MapLibre instance exists and `mapRef` points at it. */
+  onReady?: () => void;
 }
 
 function isSameView(
@@ -61,6 +64,7 @@ export default function MapPreview({
   radiusMeters = 0,
   radiusStyle = "dashed",
   radiusLabel = "",
+  onReady,
 }: MapPreviewProps) {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const isSyncing = useRef(false);
@@ -95,6 +99,7 @@ export default function MapPreview({
 
     mapRef.current = map;
     setMapInstance(map);
+    onReady?.();
 
     // Force resize on next animation frame to ensure correct dimensions
     // in PWA standalone mode where initial container size may be stale.
@@ -102,14 +107,14 @@ export default function MapPreview({
       mapRef.current?.resize();
     });
 
-    map.on("moveend", () => {
+    map.on("moveend", (event) => {
       if (isSyncing.current) return;
       const c = map.getCenter();
       const z = map.getZoom();
       const last = lastSyncedViewRef.current;
       if (isSameView(last, c.lng, c.lat, z)) return;
       lastSyncedViewRef.current = { lng: c.lng, lat: c.lat, zoom: z };
-      onMoveEndRef.current?.([c.lng, c.lat], z);
+      onMoveEndRef.current?.([c.lng, c.lat], z, Boolean(event.originalEvent));
     });
     map.on("move", () => {
       if (isSyncing.current) return;
@@ -131,6 +136,23 @@ export default function MapPreview({
     // Mount once; follow-up updates are handled by effects below.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Re-request tiles that failed while the device was offline.
+  useEffect(() => {
+    const map = mapInstance;
+    if (!map) return;
+    const reload = () => {
+      for (const id of Object.keys(map.getStyle()?.sources ?? {})) {
+        try {
+          map.refreshTiles(id);
+        } catch {
+          // GeoJSON sources have no tiles to refresh.
+        }
+      }
+    };
+    window.addEventListener("online", reload);
+    return () => window.removeEventListener("online", reload);
+  }, [mapInstance]);
 
   // ── Interactivity ────────────────────────────────────────────────────────
   useMapInteractivity({ mapInstance, interactive, allowRotation });

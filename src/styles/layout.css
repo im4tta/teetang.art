@@ -50,14 +50,6 @@
   border-color: rgba(255, 255, 255, 0.2);
 }
 
-.general-header-btn-label {
-  display: inline;
-}
-
-.general-header-btn-icon {
-  display: none;
-}
-
 .install-help-modal-backdrop {
   position: fixed;
   inset: 0;
@@ -434,4 +426,129 @@ button.install-prompt-dismiss:hover {
   opacity: 0.4;
   cursor: default;
   pointer-events: none;
+}
+
+.app-toaster {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 12px);
+  left: 50%;
+  z-index: 10000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: min(92vw, 420px);
+  transform: translateX(-50%);
+  pointer-events: none;
+}
+
+.app-toast {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 48px;
+  padding: 8px 8px 8px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 14px;
+  background: rgba(17, 24, 39, 0.96);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  color: #f5f5fa;
+  font-size: 14px;
+  line-height: 1.4;
+  pointer-events: auto;
+  animation: app-toast-in 0.2s ease-out;
+}
+
+.app-toast--success {
+  border-color: rgba(46, 213, 115, 0.5);
+}
+
+.app-toast--error {
+  border-color: rgba(231, 76, 60, 0.7);
+  background: rgba(60, 16, 16, 0.97);
+}
+
+.app-toast__message {
+  flex: 1;
+}
+
+.app-toast__close {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 10px;
+  background: transparent;
+  color: inherit;
+  font-size: 22px;
+  cursor: pointer;
+}
+
+html[data-app-theme="light"] .app-toast {
+  border-color: rgba(15, 23, 42, 0.12);
+  background: rgba(255, 255, 255, 0.98);
+  color: #0f172a;
+}
+
+html[data-app-theme="light"] .app-toast--error {
+  background: #fff1f0;
+}
+
+@keyframes app-toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-toast {
+    animation: none;
+  }
+}
+
+.editor-crash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  min-height: 100dvh;
+  padding: 24px;
+  background: #0b0f19;
+  color: #f5f5fa;
+  text-align: center;
+  font-family: "Noto Sans Khmer", "Inter", sans-serif;
+}
+
+.editor-crash h1 {
+  margin: 0;
+  font-size: 20px;
+}
+
+.editor-crash p {
+  max-width: 420px;
+  margin: 0;
+  color: #cbd5e1;
+  line-height: 1.6;
+}
+
+.editor-crash button {
+  min-width: 240px;
+  min-height: 48px;
+  border-radius: 12px;
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.editor-crash__primary {
+  border: 0;
+  background: #c0392b;
+  color: #fff;
+}
+
+.editor-crash__secondary {
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  background: transparent;
+  color: inherit;
 }

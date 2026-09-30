@@ -1,4 +1,4 @@
-const STATIC_CACHE_NAME = "teetangart-static-v6";
+const STATIC_CACHE_NAME = "teetangart-static-v7";
 const RUNTIME_CACHE_NAME = "teetangart-runtime-v1";
 const TILE_CACHE_NAME = "teetangart-tiles-v2";
 const CACHE_PREFIX = "teetangart-";
@@ -28,22 +28,32 @@ async function trimCache(cacheName, maxEntries) {
   }
 }
 
+const NAVIGATION_TIMEOUT_MS = 3_000;
+
+/**
+ * Network first, so deploys show up immediately; but on a slow connection fall
+ * back to the cached app shell after a few seconds instead of a blank screen.
+ */
 async function handleNavigation(request, event) {
-  try {
-    const response = await fetch(request);
+  const network = fetch(request).then((response) => {
     if (response.ok) {
       event.waitUntil(putInCache(STATIC_CACHE_NAME, INDEX_FALLBACK, response.clone()));
     }
     return response;
+  });
+  event.waitUntil(network.catch(() => undefined));
+
+  const cachedIndex = () => caches.match(INDEX_FALLBACK).catch(() => undefined);
+  const timeout = new Promise((resolve) =>
+    setTimeout(async () => resolve(await cachedIndex()), NAVIGATION_TIMEOUT_MS),
+  );
+
+  try {
+    const first = await Promise.race([network, timeout]);
+    return first ?? (await network);
   } catch (networkError) {
-    try {
-      const cachedIndex = await caches.match(INDEX_FALLBACK);
-      if (cachedIndex) {
-        return cachedIndex;
-      }
-    } catch {
-      // Preserve the original network failure when cache storage is unavailable.
-    }
+    const cached = await cachedIndex();
+    if (cached) return cached;
     throw networkError;
   }
 }

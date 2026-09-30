@@ -79,58 +79,10 @@
   }
 
   /* Scroll container clips tabs and hosts the fade overlay */
-  .mobile-nav-scroll-container {
-    flex: 1;
-    min-width: 0;
-    height: 100%;
-    position: relative;
-    overflow: hidden;
-  }
 
   /* Actual scrollable row of tabs */
-  .mobile-nav-tabs {
-    display: flex;
-    height: 100%;
-    overflow-x: auto;
-    scrollbar-width: none;
-    -ms-overflow-style: none;
-    scroll-snap-type: x proximity;
-    -webkit-overflow-scrolling: touch;
-    justify-content: center;
-  }
-
-  .mobile-nav-tabs::-webkit-scrollbar {
-    display: none;
-  }
 
   /* Right-edge fade gradient — hints that more tabs exist */
-  .mobile-nav-fade {
-    position: absolute;
-    top: 0;
-    right: 0;
-    bottom: 0;
-    width: 30px;
-    pointer-events: none;
-    background: linear-gradient(
-      to right,
-      transparent,
-      rgba(9, 16, 24, 0.62) 70%,
-      rgba(9, 16, 24, 0.78) 100%
-    );
-    border-radius: 0 20px 20px 0;
-  }
-
-  .mobile-nav-fade::after {
-    content: "";
-    position: absolute;
-    top: 50%;
-    right: 6px;
-    width: 6px;
-    height: 6px;
-    border-top: 1.5px solid rgba(180, 205, 225, 0.35);
-    border-right: 1.5px solid rgba(180, 205, 225, 0.35);
-    transform: translateY(-50%) rotate(45deg);
-  }
 
   .mobile-nav-tab {
     flex: 1 0 72px;
@@ -208,12 +160,6 @@
   .mobile-export-fab-trigger svg {
     width: 18px;
     height: 18px;
-  }
-
-  .mobile-export-fab-trigger.is-hidden {
-    opacity: 0;
-    transform: translateY(8px);
-    pointer-events: none;
   }
 
   .mobile-marker-edit-done {
@@ -542,21 +488,6 @@
     justify-content: center;
   }
 
-  .general-header-btn-label {
-    display: none;
-  }
-
-  .general-header-btn-icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-  }
-
-  .general-header-btn-icon svg {
-    width: 16px;
-    height: 16px;
-  }
-
   .install-help-modal {
     width: min(360px, calc(100vw - 24px));
   }
@@ -581,10 +512,6 @@
     margin: 8px 8px 0;
     z-index: 30;
     pointer-events: auto;
-  }
-
-  .mobile-location-row-wrap.is-hidden {
-    display: none;
   }
 
   .mobile-location-row-wrap .dsk-loc-bar {
@@ -1130,11 +1057,6 @@
 
 /* Focused mobile tool sheets */
 @media (max-width: 768px), (hover: none) and (pointer: coarse) {
-  .mobile-nav-tabs {
-    justify-content: flex-start;
-    scroll-padding-inline: 20px;
-  }
-
   .mobile-nav-tab {
     min-width: 76px;
   }
@@ -1205,30 +1127,6 @@
 
 /* Accurate overflow affordances and keyboard-operable drawer handle */
 @media (max-width: 768px), (hover: none) and (pointer: coarse) {
-  .mobile-nav-fade--end {
-    left: auto;
-    right: 0;
-    border-radius: 0 20px 20px 0;
-  }
-
-  .mobile-nav-fade--start {
-    left: 0;
-    right: auto;
-    background: linear-gradient(
-      to left,
-      transparent,
-      rgba(9, 16, 24, 0.62) 70%,
-      rgba(9, 16, 24, 0.78) 100%
-    );
-    border-radius: 20px 0 0 20px;
-  }
-
-  .mobile-nav-fade--start::after {
-    left: 6px;
-    right: auto;
-    transform: translateY(-50%) rotate(-135deg);
-  }
-
   button.mobile-drawer-handle {
     border: 0;
     background: transparent;
@@ -1312,14 +1210,12 @@
   .light-theme .mobile-drawer-content .theme-card-description,
   .light-theme .mobile-drawer-content .layout-summary-description,
   .light-theme .mobile-drawer-content .theme-group-chip,
-  .light-theme .mobile-drawer-content .settings-option-card,
-  .light-theme .mobile-drawer-content .settings-link-hint {
+  .light-theme .mobile-drawer-content .settings-option-card {
     color: var(--text-secondary);
   }
 
   .light-theme .mobile-drawer-content .theme-group-chip,
   .light-theme .mobile-drawer-content .settings-option-card,
-  .light-theme .mobile-drawer-content .settings-links,
   .light-theme .mobile-drawer-content .settings-link-btn {
     background: var(--item-bg);
     border-color: var(--border-subtle);
