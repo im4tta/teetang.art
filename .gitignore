@@ -62,3 +62,6 @@ tmeta.blog-DESIGN.md
 
 # Empty uploads placeholder
 .uploads/
+# Playwright output
+test-results/
+playwright-report/
