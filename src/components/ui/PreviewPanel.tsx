@@ -250,13 +250,14 @@ export default function PreviewPanel() {
   // ── handleMove2 / handleMoveEnd2 (dual-city second panel) ─────────────
   const handleMove2 = useCallback((_: [number, number], __: number) => {}, []);
   const handleMoveEnd2 = useCallback(
-    (center: [number, number], zoom: number) => {
+    (center: [number, number], zoom: number, byUser: boolean) => {
       const [lon, lat] = center;
       const hw = Math.max(300, frameWidth / 2);
       const bounds = resolveZoomBounds(lat, hw);
       const dist = zoomToDistance(clamp(zoom, bounds.minZoom, bounds.maxZoom), lat, hw);
       dispatch({
         type: "SET_FORM_FIELDS",
+        record: byUser,
         fields: {
           latitude2: lat.toFixed(6),
           longitude2: lon.toFixed(6),

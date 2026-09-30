@@ -1,30 +1,18 @@
 import { useState } from "react";
 import { useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
+import { markQuickStartSeen, quickStartSeen } from "@/components/ui/quickStartState";
 
-const SEEN_KEY = "teetangart.quickstart.v1";
 const STEPS: TranslationKey[] = ["quick.step1", "quick.step2", "quick.step3"];
-
-const hasSeen = () => {
-  try {
-    return localStorage.getItem(SEEN_KEY) === "1";
-  } catch {
-    return true;
-  }
-};
 
 /** A one-time, three-step intro for first-time phone visitors. */
 export default function QuickStart() {
   const { t } = useI18n();
-  const [open, setOpen] = useState(() => !hasSeen());
+  const [open, setOpen] = useState(() => !quickStartSeen());
   if (!open) return null;
 
   const close = () => {
-    try {
-      localStorage.setItem(SEEN_KEY, "1");
-    } catch {
-      // Shown again next visit; harmless.
-    }
+    markQuickStartSeen();
     setOpen(false);
   };
 

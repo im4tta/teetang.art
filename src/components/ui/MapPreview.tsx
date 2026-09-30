@@ -17,7 +17,8 @@ interface MapPreviewProps {
   allowRotation?: boolean;
   minZoom?: number;
   maxZoom?: number;
-  onMoveEnd?: (center: [number, number], zoom: number) => void;
+  /** `byUser` is false for moves the app made itself (flyTo, resize settling). */
+  onMoveEnd?: (center: [number, number], zoom: number, byUser: boolean) => void;
   onMove?: (center: [number, number], zoom: number) => void;
   containerStyle?: CSSProperties;
   overzoomScale?: number;
@@ -106,14 +107,14 @@ export default function MapPreview({
       mapRef.current?.resize();
     });
 
-    map.on("moveend", () => {
+    map.on("moveend", (event) => {
       if (isSyncing.current) return;
       const c = map.getCenter();
       const z = map.getZoom();
       const last = lastSyncedViewRef.current;
       if (isSameView(last, c.lng, c.lat, z)) return;
       lastSyncedViewRef.current = { lng: c.lng, lat: c.lat, zoom: z };
-      onMoveEndRef.current?.([c.lng, c.lat], z);
+      onMoveEndRef.current?.([c.lng, c.lat], z, Boolean(event.originalEvent));
     });
     map.on("move", () => {
       if (isSyncing.current) return;

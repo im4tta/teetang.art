@@ -166,14 +166,24 @@ export type PosterAction =
   | { type: "SET_CUSTOM_MARKER_ICONS"; icons: MarkerIconDefinition[] }
   | { type: "REMOVE_CUSTOM_MARKER_ICON"; iconId: string }
   | { type: "CLEAR_CUSTOM_MARKER_ICONS" }
-  | { type: "SET_MARKER_DEFAULTS"; defaults: Partial<MarkerDefaults>; applyToMarkers?: boolean }
+  | {
+      type: "SET_MARKER_DEFAULTS";
+      defaults: Partial<MarkerDefaults>;
+      applyToMarkers?: boolean;
+      record?: boolean;
+    }
   | { type: "RESET_MARKER_DEFAULTS" }
   | { type: "ADD_ROUTE"; route: Route }
   | { type: "UPDATE_ROUTE"; routeId: string; changes: Partial<Route> }
   | { type: "REMOVE_ROUTE"; routeId: string }
   | { type: "REPLACE_ROUTES"; routes: Route[] }
   | { type: "CLEAR_ROUTES" }
-  | { type: "SET_ROUTE_DEFAULTS"; defaults: Partial<RouteDefaults>; applyToRoutes?: boolean }
+  | {
+      type: "SET_ROUTE_DEFAULTS";
+      defaults: Partial<RouteDefaults>;
+      applyToRoutes?: boolean;
+      record?: boolean;
+    }
   | { type: "RESET_DESIGN" }
   // Handled by posterHistoryReducer.
   | { type: "UNDO" }

@@ -6,6 +6,7 @@ import { useCurrentLocation } from "@/hooks/useCurrentLocation";
 import { useMapSync } from "@/hooks/useMapSync";
 import { MOBILE_GROUPS, type MobileGroup, type SectionId } from "@/components/layout/mobileGroups";
 import ThemeStrip from "@/components/ui/ThemeStrip";
+import FooterNote from "@/components/layout/FooterNote";
 import { useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
 import LocationSection from "@/components/ui/LocationSection";
@@ -210,6 +211,7 @@ export default function SettingsPanel({
           );
         })}
         {!isColorEditorActive && state.error && <p className="error">{state.error}</p>}
+        {mobileGroup === "settings" && <FooterNote />}
       </form>
     );
   }

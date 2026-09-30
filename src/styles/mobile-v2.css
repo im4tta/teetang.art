@@ -281,6 +281,7 @@
   .mobile-drawer .theme-card .theme-card-name,
   .mobile-drawer .card-scroll-list .theme-card .theme-card-name,
   .mobile-drawer .marker-picker__section-title,
+  .mobile-drawer .marker-picker__label,
   .map-control-btn span,
   .export-modal .general-header-text-btn,
   .export-modal .general-header-github-stars-count,
@@ -515,5 +516,44 @@ html[data-app-theme="light"] .quick-start {
     border-color: rgba(15, 23, 42, 0.1);
     background: rgba(255, 255, 255, 0.92);
     color: #334155;
+  }
+}
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  /* Footer (credits, legal links, version) inside the Settings sheet. */
+  .mobile-drawer .app-footer {
+    display: grid;
+    gap: 8px;
+    margin-top: 24px;
+    padding: 12px 0 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+    text-align: center;
+  }
+
+  .mobile-drawer .app-footer,
+  .mobile-drawer .app-footer * {
+    font-size: 12px;
+  }
+
+  .mobile-drawer .app-footer a {
+    display: inline-flex;
+    align-items: center;
+    min-height: 44px;
+    padding: 0 6px;
+  }
+}
+
+@media (max-width: 768px), (hover: none) and (pointer: coarse) {
+  /* The install banner floats above the tab bar instead of pushing the
+     editor down (which hid the map controls behind the tab bar). */
+  .app-shell > .install-prompt {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(92px + env(safe-area-inset-bottom, 0px));
+    /* Below the tab bar (100), sheets (200) and dialogs. */
+    z-index: 90;
+    margin: 0;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
   }
 }

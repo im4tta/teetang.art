@@ -380,7 +380,8 @@ export default function AppShell() {
         onSelect={handleMobileNav}
       />
 
-      <FooterNote />
+      {/* On phones the footer lives in the Settings sheet, clear of the tab bar. */}
+      {!isMobileViewport && <FooterNote />}
       <Toaster />
       {isMobileViewport && <QuickStart />}
       <Suspense fallback={null}>
