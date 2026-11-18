@@ -11,7 +11,8 @@ test.describe("what's new", () => {
     });
     await page.goto("/create");
     const modal = page.locator(".updates-modal");
-    await expect(modal).toBeVisible();
+    // The pop-up waits for the editor and then fetches the notes.
+    await expect(modal).toBeVisible({ timeout: 15_000 });
     await expect(modal).toContainText("អ្វីថ្មី");
     await expect(modal.locator(".updates-try-link")).toHaveAttribute("href", "/plate");
 

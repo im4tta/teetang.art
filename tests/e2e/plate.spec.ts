@@ -2,6 +2,13 @@ import type { Page } from "@playwright/test";
 import { auditTouchSizes, expect, settleAnimations, test } from "./fixtures";
 import { serveTiles, SUMMIT_METRES } from "./plateTiles";
 
+// CI machines have no GPU. The plate needs WebGL, so these tests (and only
+// these: the editor's map would render slowly in software and time out) get
+// SwiftShader.
+test.use({
+  launchOptions: { args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] },
+});
+
 async function openPlate(page: Page, path = "/plate") {
   // Software WebGL is slow on CI machines; without the opening spin the plate
   // only redraws when something changes, as it does on a phone after a touch.

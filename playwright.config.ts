@@ -19,8 +19,6 @@ export default defineConfig({
   use: {
     baseURL: `http://localhost:${PORT}`,
     serviceWorkers: "block",
-    // CI machines have no GPU; this is the fast software WebGL the 3D plate needs.
-    launchOptions: { args: ["--use-angle=swiftshader", "--enable-unsafe-swiftshader"] },
     trace: "retain-on-failure",
   },
   projects: [
