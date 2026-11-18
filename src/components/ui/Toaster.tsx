@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { dismiss, subscribe, type Toast } from "@/services/notify";
 import { useI18n } from "@/context/i18n/context";
+import "@/styles/toast.css";
 
 export default function Toaster() {
   const { t } = useI18n();
