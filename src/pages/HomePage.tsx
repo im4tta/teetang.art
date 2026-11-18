@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { REPO_URL } from "@/services/config";
 import { preloadEditorPage, preloadEditorWhenIdle } from "@/pages/editorLoader";
 import { readDraftTitle } from "@/context/posterDraft";
+import WhatsNew from "@/components/home/WhatsNew";
 import "@/styles/home-page.css";
 import {
   Sparkles,
@@ -340,6 +341,11 @@ export default function HomePage() {
       {/* Hero */}
       <section className="home-hero">
         <div className="container">
+          <Link to="/plate" className="home-new-pill">
+            <span className="home-new-pill__tag">ថ្មី</span>
+            <span>ផ្ទាំងដី 3D · បោះពុម្ព 3D បាន</span>
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
           <div className="home-badge">
             <span className="home-badge-dot" />
             <span>ឥតគិតថ្លៃ ១០០% & Open Source សម្រាប់ខ្មែរគ្រប់រូប</span>
@@ -393,6 +399,8 @@ export default function HomePage() {
       </section>
 
       {/* Studio CTA */}
+      <WhatsNew />
+
       <section id="studio" className="home-steps-section" data-reveal>
         <div className="container">
           <div className="home-section-header">

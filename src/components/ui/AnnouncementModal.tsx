@@ -1,5 +1,9 @@
 ﻿import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import { IoClose } from "react-icons/io5";
+import { useI18n } from "@/context/i18n/context";
+import type { Language } from "@/context/i18n/types";
+import { formatKhmerDate } from "@/utils/khmerDate";
 import { APP_VERSION, UPDATES_URL } from "@/services/config";
 
 type UpdateCategory =
@@ -17,25 +21,39 @@ type UpdateCategory =
   | "perf"
   | "core";
 
+/** Optional link to the feature a release note describes. */
+interface UpdateLink {
+  link?: string;
+  linkLabel?: string;
+  linkLabelKm?: string;
+}
+
 interface UpdatePoint {
   type: UpdateCategory;
   text: string;
+  /** Khmer text; English is shown when it is missing. */
+  km?: string;
 }
 
-interface UpdateStep {
+interface UpdateStep extends UpdateLink {
   title: string;
+  km?: string;
   image: string | null;
   points: UpdatePoint[];
 }
 
-interface UpdateSummary {
+interface UpdateSummary extends UpdateLink {
   title?: string;
+  titleKm?: string;
+  image?: string | null;
   points: UpdatePoint[];
 }
 
 interface UpdateLabels {
   summaryTitle?: string;
+  summaryTitleKm?: string;
   detailsTitle?: string;
+  detailsTitleKm?: string;
 }
 
 interface UpdateVersion {
@@ -49,25 +67,26 @@ interface UpdateVersion {
 interface CategoryMeta {
   icon: string;
   label: string;
+  km: string;
 }
 
 const LAST_SEEN_VERSION = "last_seen_version";
 const CURRENT_VERSION = APP_VERSION;
 
 const categoryConfig: Record<UpdateCategory, CategoryMeta> = {
-  new: { icon: "✨", label: "New" },
-  fixed: { icon: "🛠️", label: "Fixed" },
-  improved: { icon: "🚀", label: "Improved" },
-  info: { icon: "ℹ️", label: "Info" },
-  community: { icon: "👥", label: "Community" },
-  docs: { icon: "📚", label: "Docs" },
-  roadmap: { icon: "🎯", label: "Roadmap" },
-  removed: { icon: "🗑️", label: "Removed" },
-  security: { icon: "🔒", label: "Security" },
-  breaking: { icon: "⚠️", label: "Breaking" },
-  major: { icon: "👑", label: "Major" },
-  perf: { icon: "⚡", label: "Performance" },
-  core: { icon: "🧭", label: "Core" },
+  new: { icon: "✨", label: "New", km: "ថ្មី" },
+  fixed: { icon: "🛠️", label: "Fixed", km: "បានជួសជុល" },
+  improved: { icon: "🚀", label: "Improved", km: "ប្រសើរជាងមុន" },
+  info: { icon: "ℹ️", label: "Info", km: "ព័ត៌មាន" },
+  community: { icon: "👥", label: "Community", km: "សហគមន៍" },
+  docs: { icon: "📚", label: "Docs", km: "ឯកសារ" },
+  roadmap: { icon: "🎯", label: "Roadmap", km: "ផែនការ" },
+  removed: { icon: "🗑️", label: "Removed", km: "បានដកចេញ" },
+  security: { icon: "🔒", label: "Security", km: "សុវត្ថិភាព" },
+  breaking: { icon: "⚠️", label: "Breaking", km: "ការផ្លាស់ប្ដូរធំ" },
+  major: { icon: "👑", label: "Major", km: "សំខាន់" },
+  perf: { icon: "⚡", label: "Performance", km: "ល្បឿន" },
+  core: { icon: "🧭", label: "Core", km: "មូលដ្ឋាន" },
 };
 
 function compareVersions(a: string, b: string): number {
@@ -85,13 +104,14 @@ function compareVersions(a: string, b: string): number {
   return 0;
 }
 
-function toDisplayDate(isoDate: string): string {
+function toDisplayDate(isoDate: string, lang: Language): string {
   const date = new Date(`${isoDate}T00:00:00`);
   if (Number.isNaN(date.getTime())) {
     return isoDate;
   }
 
-  return new Intl.DateTimeFormat(undefined, {
+  if (lang === "km") return formatKhmerDate(isoDate);
+  return new Intl.DateTimeFormat("en-GB", {
     year: "numeric",
     month: "long",
     day: "2-digit",
@@ -115,6 +135,9 @@ function resolveImagePath(image: string | null, updatesUrl: string): string | nu
   }
 }
 
+const pick = (lang: Language, en: string | undefined, km: string | undefined) =>
+  (lang === "km" && km?.trim()) || en?.trim() || "";
+
 function renderPointText(text: string) {
   const separatorIndex = text.indexOf(":");
   if (separatorIndex <= 0) {
@@ -132,6 +155,7 @@ function renderPointText(text: string) {
 }
 
 export default function AnnouncementModal() {
+  const { lang, t } = useI18n();
   const [viewMode, setViewMode] = useState<"summary" | "details">("summary");
   const [open, setOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -223,9 +247,14 @@ export default function AnnouncementModal() {
 
     return release.steps.flatMap((step) => step.points).slice(0, 4);
   }, [release]);
-  const summaryTitle = release?.summary?.title?.trim() || "Quick Highlights";
-  const summaryHeaderTitle = release?.labels?.summaryTitle?.trim() || "What is new";
-  const detailsHeaderTitle = release?.labels?.detailsTitle?.trim() || "Update Details";
+  const summaryTitle =
+    pick(lang, release?.summary?.title, release?.summary?.titleKm) || t("updates.highlights");
+  const summaryHeaderTitle =
+    pick(lang, release?.labels?.summaryTitle, release?.labels?.summaryTitleKm) ||
+    t("updates.whatsNew");
+  const detailsHeaderTitle =
+    pick(lang, release?.labels?.detailsTitle, release?.labels?.detailsTitleKm) ||
+    t("updates.details");
 
   function closeModal() {
     if (CURRENT_VERSION) {
@@ -278,8 +307,11 @@ export default function AnnouncementModal() {
     return null;
   }
 
-  const resolvedImagePath =
-    isDetailsMode && activeStep ? resolveImagePath(activeStep.image, UPDATES_URL) : null;
+  const shown: (UpdateLink & { image?: string | null }) | undefined = isDetailsMode
+    ? (activeStep ?? undefined)
+    : release.summary;
+  const resolvedImagePath = resolveImagePath(shown?.image ?? null, UPDATES_URL);
+  const linkLabel = pick(lang, shown?.linkLabel, shown?.linkLabelKm);
 
   return (
     <div className="updates-modal-backdrop" role="presentation" onClick={closeModal}>
@@ -300,21 +332,33 @@ export default function AnnouncementModal() {
           type="button"
           className="updates-modal-close"
           onClick={closeModal}
-          aria-label="Close announcements"
+          aria-label={t("updates.close")}
         >
           <IoClose className="updates-modal-close-icon" />
         </button>
 
         <header className="updates-modal-header">
-          <span className="updates-version-badge">Version {release.version}</span>
+          <span className="updates-version-badge">
+            {t("updates.version")} {release.version}
+          </span>
           <h2 id="updates-modal-title">
             {isDetailsMode ? detailsHeaderTitle : summaryHeaderTitle}
           </h2>
-          <p className="updates-released-on">Released on {toDisplayDate(release.date)}</p>
+          <p className="updates-released-on">
+            {t("updates.releasedOn")} {toDisplayDate(release.date, lang)}
+          </p>
         </header>
 
         <div className="updates-modal-content">
-          <h3>{isDetailsMode ? activeStep?.title : summaryTitle}</h3>
+          <h3>{isDetailsMode ? pick(lang, activeStep?.title, activeStep?.km) : summaryTitle}</h3>
+          {resolvedImagePath ? (
+            <img className="updates-step-image" src={resolvedImagePath} alt="" loading="lazy" />
+          ) : null}
+          {shown?.link && linkLabel ? (
+            <Link to={shown.link} className="updates-try-link" onClick={closeModal}>
+              {linkLabel} →
+            </Link>
+          ) : null}
           <ul className="updates-points">
             {(isDetailsMode && activeStep ? activeStep.points : summaryPoints).map(
               (point, index) => {
@@ -329,21 +373,16 @@ export default function AnnouncementModal() {
                       {category.icon}
                     </span>
                     <div className="updates-point-text">
-                      <span className="updates-point-label">{category.label}</span>
-                      {renderPointText(point.text)}
+                      <span className="updates-point-label">
+                        {lang === "km" ? category.km : category.label}
+                      </span>
+                      {renderPointText(pick(lang, point.text, point.km))}
                     </div>
                   </li>
                 );
               },
             )}
           </ul>
-          {isDetailsMode && resolvedImagePath ? (
-            <img
-              className="updates-step-image"
-              src={resolvedImagePath}
-              alt={`${activeStep.title} preview`}
-            />
-          ) : null}
         </div>
 
         <footer className="updates-modal-footer">
@@ -352,10 +391,10 @@ export default function AnnouncementModal() {
               {isDetailsMode ? (
                 <>
                   <button type="button" onClick={handleBack} disabled={currentStep === 0}>
-                    Back
+                    {t("updates.back")}
                   </button>
                   <button type="button" className="updates-next-button" onClick={handleNext}>
-                    {isLastStep ? "Finish" : "Next"}
+                    {isLastStep ? t("updates.finish") : t("updates.next")}
                   </button>
                 </>
               ) : (
@@ -365,10 +404,10 @@ export default function AnnouncementModal() {
                     className="updates-next-button"
                     onClick={() => setViewMode("details")}
                   >
-                    Show all details
+                    {t("updates.showDetails")}
                   </button>
                   <button type="button" className="updates-okay-button" onClick={closeModal}>
-                    Okay, got it
+                    {t("updates.ok")}
                   </button>
                 </>
               )}
