@@ -69,6 +69,8 @@ export interface PlateSettings extends PlatePlace {
   routeColor: string;
   /** Raise the route into a ridge you can feel on the print. */
   routeRaise: boolean;
+  /** Lakes and rivers from OpenStreetMap, painted and carved into the print. */
+  lakes: boolean;
 }
 
 export type LabelRelief = "raised" | "engraved";
@@ -167,6 +169,7 @@ export const DEFAULT_PLATE: PlateSettings = {
   route: "",
   routeColor: "#e4572e",
   routeRaise: true,
+  lakes: false,
   name: "Phnom Aural",
   region: "Kampong Speu",
   country: "Cambodia",
@@ -187,6 +190,7 @@ const BOOLEAN_FIELDS = [
   "water",
   "strata",
   "routeRaise",
+  "lakes",
 ] as const satisfies (keyof PlateSettings)[];
 
 /** Short query names used by share links. */
@@ -223,6 +227,7 @@ const LINK = {
   route: "rt",
   routeColor: "rc",
   routeRaise: "rr",
+  lakes: "lakes",
   name: "name",
   region: "region",
   country: "country",

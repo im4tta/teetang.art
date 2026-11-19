@@ -358,6 +358,14 @@ export default function AdjustSheet({
         <label className="plate-switch">
           <input
             type="checkbox"
+            checked={plate.lakes}
+            onChange={(event) => onChange({ lakes: event.target.checked })}
+          />
+          <span>{t("plate.adj.lakes")}</span>
+        </label>
+        <label className="plate-switch">
+          <input
+            type="checkbox"
             checked={plate.snow > 0}
             onChange={(event) => onChange({ snow: event.target.checked ? 0.7 : 0 })}
           />

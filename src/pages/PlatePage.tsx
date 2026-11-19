@@ -60,7 +60,7 @@ import {
   type PlateSettings,
 } from "@/features/plate/plateSettings";
 import { pickSurprise } from "@/features/plate/surprisePlaces";
-import { loadMapDrape, loadTileDrape } from "@/features/plate/drape";
+import { loadMapDrape, loadTileDrape, loadWaterMask, maskToGrid } from "@/features/plate/drape";
 import { resolveBasemap, type Basemap } from "@/features/plate/basemaps";
 import { buildPlateExtras, type PlateExtras } from "@/features/plate/extras";
 import type { PhotoInput } from "@/features/plate/photo";
@@ -265,6 +265,26 @@ function PlateApp() {
     () => (grid ? autoExaggeration(grid, bounds.sizeMeters) : 1),
     [grid, bounds.sizeMeters],
   );
+  // Lakes and rivers from OpenStreetMap, when asked for.
+  const [waterMask, setWaterMask] = useState<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    if (!plate.lakes) {
+      queueMicrotask(() => setWaterMask(null));
+      return;
+    }
+    const controller = new AbortController();
+    loadWaterMask(bounds, controller.signal).then(
+      (mask) => setWaterMask(mask),
+      () => {
+        if (controller.signal.aborted) return;
+        setWaterMask(null);
+        notify(t("plate.lakesError"), { tone: "error", id: "plate-lakes" });
+      },
+    );
+    return () => controller.abort();
+  }, [plate.lakes, bounds, t]);
+  const waterReady = deferred.lakes ? waterMask : null;
+
   const route = useMemo(
     () => (deferred.route ? decodeRoute(deferred.route) : []),
     [deferred.route],
@@ -279,9 +299,15 @@ function PlateApp() {
             sizeMeters: bounds.sizeMeters,
             boxDepth: deferred.box,
             // A ridge 0.8 mm high on a 10 cm print.
-            ridge: raiseRoute
-              ? { mask: routeMask(bounds, route, grid.size), size: grid.size, height: 0.008 }
-              : null,
+            reliefs: [
+              raiseRoute
+                ? { mask: routeMask(bounds, route, grid.size), size: grid.size, height: 0.008 }
+                : null,
+              // Lakes and rivers sink 0.6 mm into the print.
+              waterReady
+                ? { mask: maskToGrid(waterReady, grid.size), size: grid.size, height: -0.006 }
+                : null,
+            ],
           })
         : null,
     [
@@ -293,6 +319,7 @@ function PlateApp() {
       bounds,
       raiseRoute,
       route,
+      waterReady,
     ],
   );
 
@@ -591,6 +618,7 @@ function PlateApp() {
                 look={look}
                 drape={drapeReady}
                 overlay={overlay}
+                waterMask={waterReady}
                 onPick={picking ? handlePick : null}
                 extras={extras}
                 peakText={geometry && plate.pin ? `▲ ${highest}` : ""}
@@ -679,7 +707,9 @@ function PlateApp() {
           <p className="plate-credit">
             Elevation: AWS Terrain Tiles
             {mode === "plate" && basemap ? ` · ${basemap.credit}` : ""}
-            {mode === "plate" && plate.style === "map" ? " · © OpenStreetMap contributors" : ""}
+            {mode === "plate" && (plate.style === "map" || plate.lakes)
+              ? " · © OpenStreetMap contributors"
+              : ""}
           </p>
         </section>
 

@@ -537,4 +537,7 @@ export const km: TranslationDict = {
   "plate.pick.lineEnd": "ឥឡូវចុចត្រង់កន្លែងបញ្ចប់",
   "plate.pick.cancel": "បោះបង់",
   "studio.part.markers": "ម្ជុល",
+  "plate.adj.lakes": "បឹង និងទន្លេ (OpenStreetMap)",
+  "plate.lakesError": "មិនអាចផ្ទុកបឹង និងទន្លេនៅទីនេះបានទេ។",
+  "studio.part.water": "ទឹក",
 };

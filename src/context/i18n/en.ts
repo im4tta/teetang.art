@@ -540,4 +540,7 @@ export const en = {
   "plate.pick.lineEnd": "Now tap where it ends",
   "plate.pick.cancel": "Cancel",
   "studio.part.markers": "Pins",
+  "plate.adj.lakes": "Lakes and rivers (OpenStreetMap)",
+  "plate.lakesError": "Couldn't load lakes and rivers here.",
+  "studio.part.water": "Water",
 } satisfies Record<string, string>;

@@ -66,11 +66,15 @@ export function buildPlateGeometry(
     exaggeration: number;
     sizeMeters: number;
     boxDepth: number;
-    /** Raises the surface along a route: a 0..1 mask over the plate's square and the ridge height in plate units. */
-    ridge?: { mask: Float32Array; size: number; height: number } | null;
+    /**
+     * Raises (positive height) or carves (negative) the surface where a 0..1
+     * mask over the plate's square is set: a route ridge, or lakes and rivers.
+     * Heights are in plate units.
+     */
+    reliefs?: ({ mask: Float32Array; size: number; height: number } | null)[];
   },
 ): PlateGeometry {
-  const { shape, exaggeration, sizeMeters, boxDepth, ridge } = options;
+  const { shape, exaggeration, sizeMeters, boxDepth, reliefs = [] } = options;
   const size = grid.size;
   const count = size * size;
   const surface = new Float32Array(count * 3);
@@ -102,10 +106,13 @@ export function buildPlateGeometry(
 
   const verticalScale = exaggeration / sizeMeters;
   for (let k = 0; k < count; k++) surface[k * 3 + 1] = (elevations[k] - min) * verticalScale;
-  if (ridge && ridge.height > 0) {
-    const maskGrid = { size: ridge.size, heights: ridge.mask, min: 0, max: 1 };
+  for (const relief of reliefs) {
+    if (!relief || !relief.height) continue;
+    const maskGrid = { size: relief.size, heights: relief.mask, min: 0, max: 1 };
     for (let k = 0; k < count; k++) {
-      surface[k * 3 + 1] += sampleGrid(maskGrid, uvs[k * 2], uvs[k * 2 + 1]) * ridge.height;
+      const amount = sampleGrid(maskGrid, uvs[k * 2], uvs[k * 2 + 1]);
+      // Carving stops at the bottom of the terrain so the base stays solid.
+      surface[k * 3 + 1] = Math.max(0, surface[k * 3 + 1] + amount * relief.height);
     }
   }
 

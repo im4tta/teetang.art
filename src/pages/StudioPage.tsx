@@ -27,11 +27,19 @@ import { tapFeedback } from "@/utils/haptics";
 import { useWheelScrollsRows } from "@/hooks/useWheelScrollsRows";
 import { plateBounds } from "@/features/plate/geo";
 import { decodeRoute, routeMask, toPlateUv } from "@/features/plate/routes";
+import { loadWaterMask, maskToGrid } from "@/features/plate/drape";
 import { loadHeightGrid } from "@/features/plate/elevation";
 import type { HeightGrid } from "@/features/plate/elevationCore";
 import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
 import { buildPlateExtras, type PlateExtras } from "@/features/plate/extras";
-import { editTerrain, modelParts, printSoups, writeStl } from "@/features/plate/printModel";
+import {
+  buildWaterInlay,
+  editTerrain,
+  modelParts,
+  printSoups,
+  writeStl,
+  type ModelPart,
+} from "@/features/plate/printModel";
 import { shapeIconPath } from "@/features/plate/shapes";
 import {
   DEFAULT_PLATE,
@@ -75,6 +83,8 @@ import "@/styles/studio.css";
 type Load<T> = { status: "loading" } | { status: "error" } | { status: "ready"; value: T };
 
 const SAVE_DELAY_MS = 400;
+/** How deep lakes and rivers are carved, and how thick their inlay is. */
+const WATER_DEPTH_MM = 0.6;
 const CHECK_DELAY_MS = 700;
 const VIEWS: StudioView[] = ["iso", "top", "front", "side"];
 
@@ -253,6 +263,24 @@ function StudioApp() {
     [grid, deferredPrint.smooth, deferredPrint.trimLow, deferredPrint.trimHigh],
   );
   const exaggeration = deferredPlate.exaggeration || autoHeight;
+  // Lakes and rivers from OpenStreetMap, when the plate asks for them.
+  const [waterMask, setWaterMask] = useState<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    if (!plate.lakes) {
+      queueMicrotask(() => setWaterMask(null));
+      return;
+    }
+    const controller = new AbortController();
+    loadWaterMask(bounds, controller.signal).then(setWaterMask, () => {
+      if (!controller.signal.aborted) setWaterMask(null);
+    });
+    return () => controller.abort();
+  }, [plate.lakes, bounds]);
+  const waterGrid = useMemo(
+    () => (waterMask && edited && deferredPlate.lakes ? maskToGrid(waterMask, edited.size) : null),
+    [waterMask, edited, deferredPlate.lakes],
+  );
+
   const route = useMemo(
     () => (deferredPlate.route ? decodeRoute(deferredPlate.route) : []),
     [deferredPlate.route],
@@ -266,8 +294,8 @@ function StudioApp() {
             exaggeration,
             sizeMeters: bounds.sizeMeters,
             boxDepth: deferredPrint.baseMm / deferredPrint.widthMm,
-            // The same 0.8 mm ridge as on the plate page, whatever the print width.
-            ridge:
+            reliefs: [
+              // The same 0.8 mm ridge as on the plate page, whatever the print width.
               raiseRoute && route.length > 1
                 ? {
                     mask: routeMask(bounds, route, edited.size),
@@ -275,6 +303,15 @@ function StudioApp() {
                     height: 0.8 / deferredPrint.widthMm,
                   }
                 : null,
+              // Lakes and rivers carved 0.6 mm deep.
+              waterGrid
+                ? {
+                    mask: waterGrid,
+                    size: edited.size,
+                    height: -WATER_DEPTH_MM / deferredPrint.widthMm,
+                  }
+                : null,
+            ],
           })
         : null,
     [
@@ -286,6 +323,7 @@ function StudioApp() {
       deferredPrint.widthMm,
       raiseRoute,
       route,
+      waterGrid,
     ],
   );
   const markerSpots = useMemo(
@@ -378,13 +416,20 @@ function StudioApp() {
       label: print.colors[Math.min(1, print.bands - 1)] ?? print.colors[0],
       pin: print.colors[Math.max(0, print.bands - 1)],
       markers: print.colors[Math.max(0, print.bands - 1)],
+      water: "#3b82c4",
     };
-    return printSoups(parts, widthMm, lift).map((part) => ({
+    // The water inlay fills the carved lakes and rivers, as its own part.
+    const inlay =
+      waterGrid && edited
+        ? buildWaterInlay(geometry, waterGrid, edited.size, WATER_DEPTH_MM / widthMm)
+        : null;
+    const all: ModelPart[] = inlay ? [...parts, { id: "water", soup: inlay }] : parts;
+    return printSoups(all, widthMm, lift).map((part) => ({
       ...part,
       name: t(`studio.part.${part.id}` as TranslationKey),
       color: colors[part.id],
     }));
-  }, [geometry, parts, widthMm, lift, print.colors, print.bands, t]);
+  }, [geometry, parts, widthMm, lift, print.colors, print.bands, t, waterGrid, edited]);
 
   useEffect(() => {
     if (!printParts.length) return;
@@ -425,7 +470,9 @@ function StudioApp() {
     try {
       let blob: Blob | null;
       if (kind === "stl") {
-        blob = new Blob([writeStl(printParts, `teetang.art ${plate.name}`)], { type: "model/stl" });
+        // One-colour STL: the carved water stays open; the inlay is for the 3MF.
+        const solids = printParts.filter((part) => part.id !== "water");
+        blob = new Blob([writeStl(solids, `teetang.art ${plate.name}`)], { type: "model/stl" });
       } else if (kind === "3mf") {
         blob = await build3mf(printParts, title);
       } else {
