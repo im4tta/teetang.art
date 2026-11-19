@@ -1,0 +1,128 @@
+[
+  {
+    "version": "2.1.0",
+    "date": "2026-11-19",
+    "labels": {
+      "summaryTitle": "What's new",
+      "summaryTitleKm": "អ្វីថ្មី",
+      "detailsTitle": "Update details",
+      "detailsTitleKm": "ព័ត៌មានលម្អិត"
+    },
+    "summary": {
+      "title": "New: 3D plates of any place",
+      "titleKm": "ថ្មី៖ ផ្ទាំងដី 3D នៃទីកន្លែងណាក៏បាន",
+      "points": [
+        {
+          "type": "new",
+          "text": "3D Plate: turn a mountain, island or hometown into a 3D terrain block you can spin, restyle and download.",
+          "km": "ផ្ទាំងដី 3D៖ បង្វែរភ្នំ កោះ ឬស្រុកកំណើត ទៅជាប្លុកដី 3D ដែលអាចបង្វិល ប្ដូររចនាប័ទ្ម និងទាញយកបាន។"
+        },
+        {
+          "type": "new",
+          "text": "3D printing: download your plate as an STL to print, or as contour lines (SVG) for plotters and laser cutters.",
+          "km": "បោះពុម្ព 3D៖ ទាញយកផ្ទាំងជា STL សម្រាប់ម៉ាស៊ីនបោះពុម្ព 3D ឬជាខ្សែកម្ពស់ (SVG) សម្រាប់ម៉ាស៊ីនគូរ និងកាត់ឡាស៊ែរ។"
+        },
+        {
+          "type": "perf",
+          "text": "Faster on phones: the editor opens about 3× faster, with five simple tabs and one-tap download.",
+          "km": "លឿនជាងមុនលើទូរស័ព្ទ៖ កម្មវិធីរចនាបើកលឿនជាងមុនប្រហែល ៣ ដង មានផ្ទាំងសាមញ្ញ ៥ និងទាញយកដោយចុចតែម្ដង។"
+        },
+        {
+          "type": "improved",
+          "text": "Never lose a design: undo and redo, autosave, and share links that reopen your exact poster.",
+          "km": "មិនបាត់ការរចនាទៀតទេ៖ មាន Undo/Redo រក្សាទុកស្វ័យប្រវត្តិ និងតំណចែករំលែកដែលបើកផ្ទាំងរបស់អ្នកដដែល។"
+        }
+      ],
+      "image": "/assets/updates/plate-3d.webp",
+      "link": "/plate",
+      "linkLabel": "Try the 3D plate",
+      "linkLabelKm": "សាកល្បងផ្ទាំងដី 3D"
+    },
+    "steps": [
+      {
+        "title": "3D Plate",
+        "km": "ផ្ទាំងដី 3D",
+        "image": "/assets/updates/plate-3d.webp",
+        "link": "/plate",
+        "points": [
+          {
+            "type": "new",
+            "text": "Any place in 3D: search a place, tap Surprise me, or drag a square on the map (1–50 km).",
+            "km": "ទីកន្លែងណាក៏បានជា 3D៖ ស្វែងរកទីកន្លែង ចុច «ចៃដន្យ» ឬអូសការ៉េលើផែនទី (១–៥០ គ.ម.)។"
+          },
+          {
+            "type": "new",
+            "text": "Four styles: Drawing (contour lines), Print (shaded relief), Map (your poster themes) and Satellite.",
+            "km": "រចនាប័ទ្ម ៤៖ គំនូរ (ខ្សែកម្ពស់) បោះពុម្ព (ម្លប់ដី) ផែនទី (ស្បែកផ្ទាំងរបស់អ្នក) និងផ្កាយរណប។"
+          },
+          {
+            "type": "new",
+            "text": "Make it yours: height, colours, square, circle or hexagon, box depth and shadow.",
+            "km": "កែតាមចិត្ត៖ កម្ពស់ ពណ៌ រាងការ៉េ រង្វង់ ឬឆកោណ ជម្រៅប្រអប់ និងស្រមោល។"
+          },
+          {
+            "type": "new",
+            "text": "Downloads: PNG to share, SVG contour lines, an STL for 3D printers, or a link to the exact plate.",
+            "km": "ទាញយក៖ PNG សម្រាប់ចែករំលែក ខ្សែកម្ពស់ SVG ឯកសារ STL សម្រាប់ម៉ាស៊ីនបោះពុម្ព 3D ឬតំណទៅផ្ទាំងដដែល។"
+          }
+        ],
+        "linkLabel": "Try the 3D plate",
+        "linkLabelKm": "សាកល្បងផ្ទាំងដី 3D"
+      },
+      {
+        "title": "Faster and easier on phones",
+        "km": "លឿន និងងាយស្រួលជាងមុនលើទូរស័ព្ទ",
+        "image": null,
+        "points": [
+          {
+            "type": "perf",
+            "text": "About 3× faster: the editor appears in around 4 seconds on a slow phone, down from 13.",
+            "km": "លឿនជាងប្រហែល ៣ ដង៖ កម្មវិធីរចនាបង្ហាញក្នុងរយៈពេលប្រហែល ៤ វិនាទីលើទូរស័ព្ទយឺត ពីមុន ១៣ វិនាទី។"
+          },
+          {
+            "type": "improved",
+            "text": "Five simple tabs: Place, Style, Text, Add and Download, with a swipeable theme strip.",
+            "km": "ផ្ទាំងសាមញ្ញ ៥៖ ទីតាំង រចនាប័ទ្ម អក្សរ បន្ថែម និងទាញយក ព្រមទាំងអូសប្ដូរស្បែកបានយ៉ាងងាយ។"
+          },
+          {
+            "type": "improved",
+            "text": "One-tap download: a large Save image button, with PDF and SVG under More formats.",
+            "km": "ទាញយកដោយចុចម្ដង៖ ប៊ូតុង «រក្សាទុករូបភាព» ធំ ហើយ PDF និង SVG នៅក្នុង «ទម្រង់ផ្សេងទៀត»។"
+          },
+          {
+            "type": "fixed",
+            "text": "Works offline after one visit, with clear messages when something goes wrong.",
+            "km": "ប្រើបានដោយគ្មានអ៊ីនធឺណិតបន្ទាប់ពីចូលម្ដង ហើយមានសារច្បាស់លាស់ពេលមានបញ្ហា។"
+          }
+        ]
+      },
+      {
+        "title": "Your designs are safe",
+        "km": "ការរចនារបស់អ្នកមានសុវត្ថិភាព",
+        "image": null,
+        "points": [
+          {
+            "type": "new",
+            "text": "Undo and redo: step back through your changes with the buttons in the header.",
+            "km": "Undo/Redo៖ ត្រឡប់ក្រោយការកែប្រែរបស់អ្នក ដោយប្រើប៊ូតុងខាងលើ។"
+          },
+          {
+            "type": "new",
+            "text": "Autosave: your poster is saved as you work, and the home page offers to continue it.",
+            "km": "រក្សាទុកស្វ័យប្រវត្តិ៖ ផ្ទាំងរបស់អ្នកត្រូវបានរក្សាទុកពេលកំពុងធ្វើ ហើយទំព័រដើមអនុញ្ញាតឱ្យបន្តរចនា។"
+          },
+          {
+            "type": "new",
+            "text": "Share links: send a link that reopens your exact design.",
+            "km": "តំណចែករំលែក៖ ផ្ញើតំណដែលបើកការរចនារបស់អ្នកដដែល។"
+          },
+          {
+            "type": "improved",
+            "text": "More Khmer: the whole editor is now translated.",
+            "km": "ភាសាខ្មែរកាន់តែច្រើន៖ កម្មវិធីរចនាទាំងមូលត្រូវបានបកប្រែហើយ។"
+          }
+        ]
+      }
+    ]
+  }
+]

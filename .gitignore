@@ -36,8 +36,8 @@ Thumbs.db
 !.vscode/settings.json
 !.vscode/commit-instructions.md
 
-# Local updates announcement file for development
-updates.json
+# Local updates announcement file for development (public/updates.json ships the real release notes)
+/updates.json
 
 # ignore agent setting files
 .claude/

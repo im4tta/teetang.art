@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
+import { Mountain } from "lucide-react";
 import { usePosterContext } from "@/context/PosterContext";
 import { useFormHandlers } from "@/hooks/useFormHandlers";
 import { useLocationAutocomplete } from "@/hooks/useLocationAutocomplete";
@@ -32,6 +34,18 @@ import { themeOptions, themeGroups } from "@/services/theme/themeRepository";
 import { layoutGroups } from "@/services/layout/layoutRepository";
 import { MIN_POSTER_CM, MAX_POSTER_CM, FONT_OPTIONS } from "@/services/config";
 import type { SearchResult } from "@/services/location/types";
+import type { PosterForm } from "@/context/posterReducer";
+
+/** Opens the 3D plate page on the poster's place. */
+function plateLink(form: PosterForm): string {
+  const params = new URLSearchParams({
+    lat: String(form.latitude),
+    lon: String(form.longitude),
+    name: String(form.displayCity ?? ""),
+    country: String(form.displayCountry ?? ""),
+  });
+  return `/plate?${params}`;
+}
 
 const SECTIONS: {
   id: SectionId;
@@ -106,20 +120,26 @@ export default function SettingsPanel({
       );
     if (id === "location")
       return (
-        <LocationSection
-          {...c}
-          onLocationFocus={() => handlers.setLocationFocused(true)}
-          onLocationBlur={() => handlers.setLocationFocused(false)}
-          searchNow={searchNow}
-          showLocationSuggestions={showSuggestions}
-          locationSuggestions={locationSuggestions}
-          isLocationSearching={isLocationSearching}
-          onLocationSelect={onLocationSelect}
-          onClearLocation={handlers.handleClearLocation}
-          onUseCurrentLocation={handleUseCurrentLocation}
-          isLocatingUser={isLocatingUser}
-          locationPermissionMessage={locationPermissionMessage}
-        />
+        <>
+          <LocationSection
+            {...c}
+            onLocationFocus={() => handlers.setLocationFocused(true)}
+            onLocationBlur={() => handlers.setLocationFocused(false)}
+            searchNow={searchNow}
+            showLocationSuggestions={showSuggestions}
+            locationSuggestions={locationSuggestions}
+            isLocationSearching={isLocationSearching}
+            onLocationSelect={onLocationSelect}
+            onClearLocation={handlers.handleClearLocation}
+            onUseCurrentLocation={handleUseCurrentLocation}
+            isLocatingUser={isLocatingUser}
+            locationPermissionMessage={locationPermissionMessage}
+          />
+          <Link to={plateLink(state.form)} className="settings-plate-link">
+            <Mountain size={18} aria-hidden="true" />
+            {t("plate.openPlate")}
+          </Link>
+        </>
       );
     if (id === "theme" || id === "layout")
       return (

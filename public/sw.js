@@ -1,10 +1,15 @@
-const STATIC_CACHE_NAME = "teetangart-static-v7";
+const STATIC_CACHE_NAME = "teetangart-static-v8";
 const RUNTIME_CACHE_NAME = "teetangart-runtime-v1";
 const TILE_CACHE_NAME = "teetangart-tiles-v2";
 const CACHE_PREFIX = "teetangart-";
 const INDEX_FALLBACK = "/index.html";
-const TILE_MAX_ENTRIES = 200;
-const TILE_ORIGINS = ["https://tiles.openfreemap.org"];
+const TILE_MAX_ENTRIES = 300;
+// Map tiles, plus elevation and satellite tiles for the 3D plate.
+const TILE_ORIGINS = [
+  "https://tiles.openfreemap.org",
+  "https://s3.amazonaws.com",
+  "https://tiles.maps.eox.at",
+];
 const STATIC_DESTINATIONS = new Set(["font", "image", "script", "style"]);
 const APP_SHELL_ASSETS = ["/", INDEX_FALLBACK, "/site.webmanifest", "/assets/logo.svg"];
 
@@ -156,7 +161,10 @@ self.addEventListener("fetch", (event) => {
 
   const url = new URL(request.url);
 
-  if (TILE_ORIGINS.includes(url.origin)) {
+  if (
+    TILE_ORIGINS.includes(url.origin) &&
+    (url.origin !== "https://s3.amazonaws.com" || url.pathname.startsWith("/elevation-tiles-prod/"))
+  ) {
     event.respondWith(handleTile(request, event));
     return;
   }

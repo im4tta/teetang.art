@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import { REPO_URL } from "@/services/config";
 import { preloadEditorPage, preloadEditorWhenIdle } from "@/pages/editorLoader";
 import { readDraftTitle } from "@/context/posterDraft";
+import WhatsNew from "@/components/home/WhatsNew";
 import "@/styles/home-page.css";
 import {
   Sparkles,
@@ -17,6 +18,7 @@ import {
   ArrowRight,
   Zap,
   Menu,
+  Mountain,
   X,
 } from "lucide-react";
 
@@ -339,6 +341,11 @@ export default function HomePage() {
       {/* Hero */}
       <section className="home-hero">
         <div className="container">
+          <Link to="/plate" className="home-new-pill">
+            <span className="home-new-pill__tag">ថ្មី</span>
+            <span>ផ្ទាំងដី 3D · បោះពុម្ព 3D បាន</span>
+            <ArrowRight size={14} aria-hidden="true" />
+          </Link>
           <div className="home-badge">
             <span className="home-badge-dot" />
             <span>ឥតគិតថ្លៃ ១០០% & Open Source សម្រាប់ខ្មែរគ្រប់រូប</span>
@@ -347,18 +354,19 @@ export default function HomePage() {
           <h1 className="home-hero-title">
             Your place. <em>Your map.</em> Your story.
           </h1>
-          <p className="home-hero-subtitle-kh">
-            ទីតាំង — បង្កើតផ្ទាំងសិល្បៈផែនទីដ៏ស្រស់ស្អាតបំផុតសម្រាប់អ្នក
-          </p>
+          <p className="home-hero-subtitle-kh">ទីតាំង — បង្កើតផ្ទាំងសិល្បៈផែនទីដ៏ស្រស់ស្អាតបំផុតសម្រាប់អ្នក</p>
           <p className="home-hero-desc">
-            រចនា និងបោះពុម្ពផ្ទាំងផែនទីបង្ហាញទីតាំងដ៏ប្រណីតពីគ្រប់ទីកន្លែងក្នុងប្រទេសកម្ពុជា
-            ឬជុំវិញពិភពលោក។ សាមញ្ញ ងាយស្រួលប្រើប្រាស់ និងមិនចាំបាច់មានជំនាញរចនាទាល់តែសោះ។
+            រចនា និងបោះពុម្ពផ្ទាំងផែនទីបង្ហាញទីតាំងដ៏ប្រណីតពីគ្រប់ទីកន្លែងក្នុងប្រទេសកម្ពុជា ឬជុំវិញពិភពលោក។ សាមញ្ញ
+            ងាយស្រួលប្រើប្រាស់ និងមិនចាំបាច់មានជំនាញរចនាទាល់តែសោះ។
           </p>
 
           <div className="home-hero-actions">
             <Link to="/create" className="home-btn home-btn-primary">
               <MousePointer2 size={20} />{" "}
               {draftTitle ? `បន្តរចនាផ្ទាំង ${draftTitle}` : "សាកល្បងរចនាឥឡូវនេះ"}
+            </Link>
+            <Link to="/plate" className="home-btn home-btn-secondary">
+              <Mountain size={20} /> ផ្ទាំងដី 3D · ថ្មី
             </Link>
             <a
               href={REPO_URL}
@@ -391,12 +399,13 @@ export default function HomePage() {
       </section>
 
       {/* Studio CTA */}
+      <WhatsNew />
+
       <section id="studio" className="home-steps-section" data-reveal>
         <div className="container">
           <div className="home-section-header">
             <p className="home-section-sub">
-              សាកល្បងរចនាផ្ទាំងប័ណ្ណផែនទីរបស់អ្នកភ្លាមៗនៅលើវេបសាយនេះ
-              រួចផ្លាស់ប្តូរការកំណត់ទៅតាមចិត្ត!
+              សាកល្បងរចនាផ្ទាំងប័ណ្ណផែនទីរបស់អ្នកភ្លាមៗនៅលើវេបសាយនេះ រួចផ្លាស់ប្តូរការកំណត់ទៅតាមចិត្ត!
             </p>
           </div>
 
@@ -497,8 +506,7 @@ export default function HomePage() {
                 ចាប់ផ្តើមរចនាឥឡូវនេះ
               </h3>
               <p className="home-feat-desc">
-                ជ្រើសរើសទីតាំងដែលអ្នកចូលចិត្ត ប្តូរពណ៌
-                និងប្លាស់ប្តូររចនាសម្ព័ន្ធផ្ទាំងផែនទីរបស់អ្នកយ៉ាងងាយស្រួល។
+                ជ្រើសរើសទីតាំងដែលអ្នកចូលចិត្ត ប្តូរពណ៌ និងប្លាស់ប្តូររចនាសម្ព័ន្ធផ្ទាំងផែនទីរបស់អ្នកយ៉ាងងាយស្រួល។
               </p>
               <Link
                 to="/create"
@@ -533,9 +541,7 @@ export default function HomePage() {
           <div className="home-section-header">
             <span className="home-section-tag">ដំណើរការ</span>
             <h2 className="home-section-h">៣ ជំហានងាយៗ</h2>
-            <p className="home-section-sub">
-              ការរចនាសាមញ្ញបំផុត ដោយគ្រាន់តែធ្វើតាមជំហានងាយៗទាំងនេះ៖
-            </p>
+            <p className="home-section-sub">ការរចនាសាមញ្ញបំផុត ដោយគ្រាន់តែធ្វើតាមជំហានងាយៗទាំងនេះ៖</p>
           </div>
 
           <div className="home-steps-grid">
@@ -672,15 +678,13 @@ export default function HomePage() {
       <footer className="home-footer">
         <div className="container home-footer-container">
           <div className="home-footer-left">
-            រៀបចំឡើងដោយក្តីស្រឡាញ់ពីប្រទេសកម្ពុជា · <a href="https://teetang.art">teetang.art</a> ·
-            MIT License ·{" "}
+            រៀបចំឡើងដោយក្តីស្រឡាញ់ពីប្រទេសកម្ពុជា · <a href="https://teetang.art">teetang.art</a> · MIT
+            License ·{" "}
             <a href={REPO_URL} target="_blank" rel="noreferrer">
               GitHub
             </a>
           </div>
-          <div className="home-footer-right">
-            © 2026 សិល្បៈផែនទី — Tee Tang Art. រក្សាសិទ្ធិគ្រប់យ៉ាង។
-          </div>
+          <div className="home-footer-right">© 2026 សិល្បៈផែនទី — Tee Tang Art. រក្សាសិទ្ធិគ្រប់យ៉ាង។</div>
         </div>
       </footer>
 

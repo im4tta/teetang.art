@@ -69,6 +69,11 @@ const baseConfig = {
             return "vendor-maplibre-deps";
           }
 
+          // Only the 3D plate page uses three.js.
+          if (packageName === "three") {
+            return "vendor-three";
+          }
+
           // Everything both the home page and the editor need, cached together.
           if (VENDOR_REACT_PACKAGES.has(packageName)) {
             return "vendor-react";
