@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
-import { Circle, Hexagon, Square } from "lucide-react";
 import { useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
 import type { ThemeOption } from "@/services/theme/types";
 import { tapFeedback } from "@/utils/haptics";
-import type { PlateShape } from "../geometry";
+import { shapeIconPath } from "../shapes";
 import {
   BOX_LIMITS,
   EXAGGERATION_LIMITS,
   INK_PRESETS,
+  PLATE_DENSITIES,
   PLATE_SHAPES,
   type PlateSettings,
 } from "../plateSettings";
@@ -20,12 +20,6 @@ interface AdjustSheetProps {
   onChange: (patch: Partial<PlateSettings>) => void;
   onClose: () => void;
 }
-
-const SHAPE_ICONS: Record<PlateShape, typeof Square> = {
-  square: Square,
-  circle: Circle,
-  hexagon: Hexagon,
-};
 
 // The height slider is logarithmic: small steps near 1×, big ones near 30×.
 const LOG_MIN = Math.log(EXAGGERATION_LIMITS.min);
@@ -100,24 +94,40 @@ export default function AdjustSheet({
 
       <fieldset className="plate-field">
         <legend className="plate-field__label">{t("plate.adj.shape")}</legend>
+        <div className="plate-shapes">
+          {PLATE_SHAPES.map((shape) => (
+            <button
+              key={shape}
+              type="button"
+              className="plate-shape"
+              aria-pressed={plate.shape === shape}
+              onClick={() => {
+                tapFeedback();
+                onChange({ shape });
+              }}
+            >
+              <svg viewBox="0 0 24 24" width="28" height="28" aria-hidden="true">
+                <path d={shapeIconPath(shape)} />
+              </svg>
+              {t(`plate.shape.${shape}` as TranslationKey)}
+            </button>
+          ))}
+        </div>
+      </fieldset>
+
+      <fieldset className="plate-field">
+        <legend className="plate-field__label">{t("plate.adj.lines")}</legend>
         <div className="plate-segmented plate-segmented--wide">
-          {PLATE_SHAPES.map((shape) => {
-            const Icon = SHAPE_ICONS[shape];
-            return (
-              <button
-                key={shape}
-                type="button"
-                aria-pressed={plate.shape === shape}
-                onClick={() => {
-                  tapFeedback();
-                  onChange({ shape });
-                }}
-              >
-                <Icon size={18} aria-hidden="true" />
-                {t(`plate.shape.${shape}` as TranslationKey)}
-              </button>
-            );
-          })}
+          {PLATE_DENSITIES.map((density) => (
+            <button
+              key={density}
+              type="button"
+              aria-pressed={plate.density === density}
+              onClick={() => onChange({ density })}
+            >
+              {t(`plate.lines.${density}` as TranslationKey)}
+            </button>
+          ))}
         </div>
       </fieldset>
 

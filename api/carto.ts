@@ -9,7 +9,8 @@
 export const config = { runtime: "edge" };
 
 const UPSTREAM = "https://a.basemaps.cartocdn.com";
-const TILE_PATH = /^rastertiles\/(?:voyager|light_all|dark_all)\/\d{1,2}\/\d+\/\d+\.png$/;
+const TILE_PATH =
+  /^rastertiles\/(?:voyager|voyager_only_labels|light_all|dark_all)\/\d{1,2}\/\d+\/\d+(?:@2x)?\.png$/;
 
 export default async function handler(request: Request): Promise<Response> {
   if (request.method !== "GET" && request.method !== "HEAD") {

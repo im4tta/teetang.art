@@ -138,16 +138,48 @@ test.describe("3D plate", () => {
     await openPlate(page);
     await page.locator(".plate-move").click();
     await expect(page.locator(".area-picker__square")).toBeVisible();
-    await page.locator(".plate-size input").fill("20");
+
+    // Base map and shading are remembered for next time.
+    await page.locator(".area-picker__bases").getByRole("button", { name: "Satellite" }).click();
+    await page.locator(".plate-dim input").fill("0.5");
+    await expect
+      .poll(() => page.evaluate(() => localStorage.getItem("teetangart.plate.picker")))
+      .toBe(JSON.stringify({ base: "satellite", dim: 0.5 }));
+
+    await page.getByRole("button", { name: "25 km" }).click();
+    await expect(page.locator(".area-picker__size")).toHaveText("25 km");
     await page.getByRole("button", { name: "Show plate" }).click();
     await expect(page.locator(".plate-canvas")).toHaveAttribute("data-ready", "true");
     await expect
       .poll(() =>
         page.evaluate(() => JSON.parse(localStorage.getItem("teetangart.plate.v1") ?? "{}").sizeKm),
       )
-      .toBe(20);
+      .toBe(25);
 
     await page.getByRole("button", { name: "Surprise me" }).click();
     await expect(page.locator(".plate-place__name")).not.toHaveText("Phnom Aural");
+  });
+
+  test("every shape builds a plate and survives a share link", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openPlate(page);
+    await page.getByRole("button", { name: "Elevation" }).click();
+    await page.getByRole("button", { name: "Adjust" }).click();
+    const shapes = page.locator(".plate-shape");
+    await expect(shapes).toHaveCount(8);
+    for (let k = 0; k < 8; k++) {
+      await shapes.nth(k).click();
+      await expect(shapes.nth(k)).toHaveAttribute("aria-pressed", "true");
+    }
+    await page.getByRole("button", { name: "More", exact: true }).click();
+    await page.locator(".plate-sheet__header button").click();
+
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await page.locator(".plate-download[data-kind=link]").click();
+    const link = await page.evaluate(() => navigator.clipboard.readText());
+    expect(link).toContain("shape=star");
+    expect(link).toContain("style=elevation");
+    expect(link).toContain("lines=more");
+    await expect(page.locator(".app-toast--error")).toHaveCount(0);
   });
 });

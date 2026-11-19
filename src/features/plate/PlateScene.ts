@@ -15,7 +15,6 @@ import {
   Mesh,
   NoColorSpace,
   PerspectiveCamera,
-  PlaneGeometry,
   Scene,
   ShaderMaterial,
   Vector3,
@@ -23,7 +22,7 @@ import {
   WebGLRenderer,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { contourInterval, type PlateGeometry, type PlateShape } from "./geometry";
+import { contourInterval, type PlateGeometry } from "./geometry";
 import {
   STYLE_CODE,
   shadowFragment,
@@ -45,9 +44,10 @@ export interface PlateLook {
   paper: string;
   side: string;
   shadow: boolean;
+  /** About how many contour lines run from the lowest to the highest point. */
+  lines: number;
 }
 
-const SHAPE_CODE: Record<PlateShape, number> = { square: 0, circle: 1, hexagon: 2 };
 const LIGHT = new Vector3(-0.55, 0.75, -0.35).normalize();
 const FOV = 24;
 const IDLE_SPIN_MS = 1_200;
@@ -72,6 +72,8 @@ export class PlateScene {
   private activeUntil = 0;
   private plateHeight = 0;
   private baseDepth = 0;
+  private elevationRange: [number, number] = [0, 1];
+  private lines = 30;
   private resizeObserver: ResizeObserver;
   private disposed = false;
   private readonly createdAt = performance.now();
@@ -92,6 +94,8 @@ export class PlateScene {
         uInk: { value: new Color() },
         uPaper: { value: new Color() },
         uInterval: { value: 50 },
+        uMin: { value: 0 },
+        uMax: { value: 1 },
         uLineScale: { value: 1 },
         uLight: { value: LIGHT },
         uDrape: { value: null },
@@ -110,8 +114,6 @@ export class PlateScene {
       depthWrite: false,
       side: DoubleSide,
       uniforms: {
-        uShape: { value: 0 },
-        uOffset: { value: [0.1, 0.1] },
         uInk: { value: new Color() },
         uStripe: { value: 6 },
       },
@@ -119,9 +121,7 @@ export class PlateScene {
     this.surface.material = this.surfaceMaterial;
     this.shell.material = this.shellMaterial;
     this.rim.material = this.rimMaterial;
-    const ground = new PlaneGeometry(4, 4);
-    ground.rotateX(-Math.PI / 2);
-    this.shadow = new Mesh(ground, this.shadowMaterial);
+    this.shadow = new Mesh(new BufferGeometry(), this.shadowMaterial);
     this.shadow.renderOrder = -1;
     this.scene.add(this.shadow, this.shell, this.surface, this.rim);
 
@@ -209,7 +209,7 @@ export class PlateScene {
     this.camera.updateProjectionMatrix();
   }
 
-  setGeometry(geometry: PlateGeometry, shape: PlateShape) {
+  setGeometry(geometry: PlateGeometry) {
     const surface = new BufferGeometry();
     surface.setAttribute("position", new BufferAttribute(geometry.surface, 3));
     surface.setAttribute("uv", new BufferAttribute(geometry.uvs, 2));
@@ -239,11 +239,29 @@ export class PlateScene {
 
     this.plateHeight = (geometry.max - geometry.min) * geometry.verticalScale;
     this.baseDepth = geometry.baseDepth;
-    this.shadow.position.y = -geometry.baseDepth - 0.0005;
+    // The shadow is the plate's outline, flat on the ground and shifted away
+    // from the light, so it fits every shape.
+    const ring = geometry.outline;
+    const fan = new Float32Array((ring.length / 2) * 9);
+    for (let k = 0, n = ring.length / 2; k < n; k++) {
+      const next = (k + 1) % n;
+      fan.set(
+        [0, 0, 0, ring[next * 2], 0, ring[next * 2 + 1], ring[k * 2], 0, ring[k * 2 + 1]],
+        k * 9,
+      );
+    }
+    const shadowGeometry = new BufferGeometry();
+    shadowGeometry.setAttribute("position", new BufferAttribute(fan, 3));
+    this.shadow.geometry.dispose();
+    this.shadow.geometry = shadowGeometry;
     const reach = 0.05 + (geometry.baseDepth + this.plateHeight) * 0.4;
-    this.shadowMaterial.uniforms.uOffset.value = [reach, reach * 0.8];
-    this.shadowMaterial.uniforms.uShape.value = SHAPE_CODE[shape];
-    this.surfaceMaterial.uniforms.uInterval.value = contourInterval(geometry.min, geometry.max, 30);
+    this.shadow.position.set(reach, -geometry.baseDepth - 0.0005, reach * 0.8);
+
+    this.elevationRange = [geometry.min, geometry.max];
+    const u = this.surfaceMaterial.uniforms;
+    u.uMin.value = geometry.min;
+    u.uMax.value = Math.max(geometry.max, geometry.min + 1);
+    u.uInterval.value = contourInterval(geometry.min, geometry.max, this.lines);
     this.fitCamera();
     this.wake(IDLE_SPIN_MS);
   }
@@ -253,6 +271,8 @@ export class PlateScene {
     u.uStyle.value = STYLE_CODE[look.style];
     u.uInk.value.set(look.ink);
     u.uPaper.value.set(look.paper);
+    this.lines = look.lines;
+    u.uInterval.value = contourInterval(...this.elevationRange, look.lines);
     this.shellMaterial.uniforms.uSide.value.set(look.side);
     this.shadowMaterial.uniforms.uInk.value.set(look.side);
     this.rimMaterial.color.set(look.ink);

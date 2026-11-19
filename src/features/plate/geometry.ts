@@ -7,8 +7,9 @@
  * +y is up. The lowest point of the terrain sits at y = 0.
  */
 import type { HeightGrid } from "./elevationCore";
+import { warp, type PlateShape } from "./shapes";
 
-export type PlateShape = "square" | "circle" | "hexagon";
+export type { PlateShape };
 
 export interface PlateGeometry {
   /** Vertices per side of the surface grid. */
@@ -30,35 +31,6 @@ export interface PlateGeometry {
   /** Vertical units per metre of elevation. */
   verticalScale: number;
   baseDepth: number;
-}
-
-const SQRT3_2 = Math.sqrt(3) / 2;
-
-/** Moves a point of the square [-0.5, 0.5]² onto the chosen shape, keeping the grid's order. */
-function warp(shape: PlateShape, u: number, v: number): [number, number] {
-  if (shape === "square" || (u === 0 && v === 0)) return [u, v];
-  if (shape === "circle") {
-    // Shirley–Chiu concentric mapping: even spacing, no pinching at the centre.
-    const a = 2 * u;
-    const b = 2 * v;
-    let r: number;
-    let phi: number;
-    if (Math.abs(a) > Math.abs(b)) {
-      r = a;
-      phi = (Math.PI / 4) * (b / a);
-    } else {
-      r = b;
-      phi = Math.PI / 2 - (Math.PI / 4) * (a / b);
-    }
-    return [0.5 * r * Math.cos(phi), 0.5 * r * Math.sin(phi)];
-  }
-  // Hexagon with points east and west: scale each point along its ray.
-  const t = 2 * Math.max(Math.abs(u), Math.abs(v));
-  const theta = Math.atan2(v, u);
-  const sector = Math.PI / 3;
-  const normal = sector / 2 + sector * Math.round((theta - sector / 2) / sector);
-  const radius = (0.5 * SQRT3_2) / Math.cos(theta - normal);
-  return [Math.cos(theta) * radius * t, Math.sin(theta) * radius * t];
 }
 
 function sampleGrid(grid: HeightGrid, u: number, v: number): number {

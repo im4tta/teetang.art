@@ -4,7 +4,7 @@
  * shows is what the plate shows.
  */
 
-export const STYLE_CODE = { drawing: 0, print: 1, map: 2, satellite: 3 } as const;
+export const STYLE_CODE = { drawing: 0, print: 1, elevation: 4, map: 2, satellite: 3 } as const;
 
 export const surfaceVertex = /* glsl */ `
   attribute float elevation;
@@ -24,6 +24,8 @@ export const surfaceFragment = /* glsl */ `
   uniform vec3 uInk;
   uniform vec3 uPaper;
   uniform float uInterval;
+  uniform float uMin;
+  uniform float uMax;
   uniform float uLineScale;
   uniform vec3 uLight;
   uniform sampler2D uDrape;
@@ -58,6 +60,14 @@ export const surfaceFragment = /* glsl */ `
       float shade = smoothstep(0.05, 1.0, light);
       color = mix(uInk, uPaper, 0.25 + 0.75 * shade);
       color = mix(color, uInk, contour(0.18));
+    } else if (uStyle == 4) {
+      // Hypsometric tint: low green, through ochre and brown, to pale peaks.
+      float h = clamp((vElevation - uMin) / (uMax - uMin), 0.0, 1.0);
+      vec3 tint = mix(vec3(0.36, 0.56, 0.36), vec3(0.83, 0.77, 0.5), smoothstep(0.0, 0.45, h));
+      tint = mix(tint, vec3(0.6, 0.42, 0.29), smoothstep(0.4, 0.8, h));
+      tint = mix(tint, vec3(0.96, 0.95, 0.93), smoothstep(0.82, 1.0, h));
+      color = tint * (0.7 + 0.42 * light);
+      color = mix(color, uInk, contour(0.2));
     } else {
       vec3 base = uHasDrape ? texture2D(uDrape, vUv).rgb : uPaper;
       float shade = uStyle == 2 ? 0.72 + 0.4 * light : 0.82 + 0.3 * light;
@@ -87,39 +97,17 @@ export const shellFragment = /* glsl */ `
 `;
 
 export const shadowVertex = /* glsl */ `
-  varying vec2 vPos;
   void main() {
-    vPos = position.xz;
     gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
   }
 `;
 
-/** A hatched shadow: screen-aligned stripes inside the plate's offset outline. */
+/** A hatched shadow: screen-aligned stripes over the plate's outline on the ground. */
 export const shadowFragment = /* glsl */ `
-  uniform int uShape;
-  uniform vec2 uOffset;
   uniform vec3 uInk;
   uniform float uStripe;
-  varying vec2 vPos;
-
-  float shapeDistance(vec2 p) {
-    if (uShape == 1) return length(p) - 0.5;
-    if (uShape == 2) {
-      vec2 q = abs(p);
-      float flat_ = q.y - 0.4330127;
-      float slant = dot(q, vec2(0.8660254, 0.5)) - 0.4330127;
-      return max(flat_, slant);
-    }
-    vec2 q = abs(p) - 0.5;
-    return max(q.x, q.y);
-  }
-
   void main() {
-    float d = shapeDistance(vPos - uOffset);
-    float inside = 1.0 - smoothstep(-0.004, 0.004, d);
-    float stripe = step(mod(gl_FragCoord.y, uStripe), uStripe * 0.42);
-    float alpha = inside * stripe * 0.75;
-    if (alpha < 0.01) discard;
-    gl_FragColor = vec4(uInk, alpha);
+    if (mod(gl_FragCoord.y, uStripe) > uStripe * 0.42) discard;
+    gl_FragColor = vec4(uInk, 0.75);
   }
 `;

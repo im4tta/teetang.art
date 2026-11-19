@@ -1,6 +1,7 @@
 import {
   lazy,
   Suspense,
+  type CSSProperties,
   useCallback,
   useDeferredValue,
   useEffect,
@@ -24,8 +25,13 @@ import type { HeightGrid } from "@/features/plate/elevationCore";
 import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
 import {
   DEFAULT_PLATE,
+  DENSITY_LINES,
   PLATE_STYLES,
-  SIZE_LIMITS,
+  PICKER_BASES,
+  SIZE_PRESETS,
+  type PickerBase,
+  sizeToSlider,
+  sliderToSize,
   buildPlateLink,
   flagEmoji,
   parsePlateLink,
@@ -47,6 +53,26 @@ const DownloadSheet = lazy(() => import("@/features/plate/components/DownloadShe
 
 const GRID_CELLS = (navigator.hardwareConcurrency ?? 8) <= 4 ? 192 : 256;
 const DRAFT_DELAY_MS = 400;
+
+/** How this viewer likes the Move map; kept in this browser only. */
+interface PickerPrefs {
+  base: PickerBase;
+  dim: number;
+}
+const PICKER_PREFS_KEY = "teetangart.plate.picker";
+
+function readPickerPrefs(): PickerPrefs {
+  const fallback: PickerPrefs = { base: "map", dim: 0.25 };
+  try {
+    const saved = JSON.parse(window.localStorage.getItem(PICKER_PREFS_KEY) ?? "null");
+    return {
+      base: PICKER_BASES.includes(saved?.base) ? saved.base : fallback.base,
+      dim: typeof saved?.dim === "number" ? Math.min(0.8, Math.max(0, saved.dim)) : fallback.dim,
+    };
+  } catch {
+    return fallback;
+  }
+}
 
 type Load<T> = { status: "loading" } | { status: "error" } | { status: "ready"; value: T };
 
@@ -74,6 +100,7 @@ function PlateApp() {
   const [plate, setPlate] = useState<PlateSettings>(initialPlate);
   const [mode, setMode] = useState<"plate" | "move">("plate");
   const [area, setArea] = useState<AreaChange | null>(null);
+  const [picker, setPicker] = useState<PickerPrefs>(readPickerPrefs);
   const [sheet, setSheet] = useState<"adjust" | "download" | null>(null);
   const [terrain, setTerrain] = useState<Load<HeightGrid>>({ status: "loading" });
   const [drape, setDrape] = useState<Load<HTMLCanvasElement> | null>(null);
@@ -152,9 +179,27 @@ function PlateApp() {
       paper: plate.paper,
       side: plate.side,
       shadow: plate.shadow,
+      lines: DENSITY_LINES[plate.density],
     }),
-    [needsDrape, drapeReady, plate.style, plate.ink, plate.paper, plate.side, plate.shadow],
+    [
+      needsDrape,
+      drapeReady,
+      plate.style,
+      plate.ink,
+      plate.paper,
+      plate.side,
+      plate.shadow,
+      plate.density,
+    ],
   );
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(PICKER_PREFS_KEY, JSON.stringify(picker));
+    } catch {
+      // Preferences are a convenience; the picker works without them.
+    }
+  }, [picker]);
 
   useEffect(() => {
     const timer = setTimeout(() => writePlateDraft(plate), DRAFT_DELAY_MS);
@@ -278,15 +323,20 @@ function PlateApp() {
         <section className="plate-stage" data-mode={mode} aria-busy={terrain.status === "loading"}>
           {mode === "move" ? (
             <Suspense fallback={<div className="plate-stage__loading" />}>
-              <AreaPicker {...pickerArea} onChange={setArea} />
-              <p className="plate-stage__hint">{t("plate.moveHint")}</p>
+              <div className="area-picker-frame" style={{ "--dim": picker.dim } as CSSProperties}>
+                <AreaPicker
+                  {...pickerArea}
+                  base={picker.base}
+                  onBaseChange={(base) => setPicker((current) => ({ ...current, base }))}
+                  onChange={setArea}
+                />
+              </div>
             </Suspense>
           ) : (
             <>
               <PlateView
                 ref={viewRef}
                 geometry={geometry}
-                shape={deferred.shape}
                 look={look}
                 drape={drapeReady}
                 label={`${title} ${subtitle}`}
@@ -322,7 +372,7 @@ function PlateApp() {
           <p className="plate-credit">
             Elevation: AWS Terrain Tiles
             {plate.style === "satellite" && mode === "plate" ? ` · ${SATELLITE_CREDIT}` : ""}
-            {mode === "move" || plate.style === "map" ? " · © OpenStreetMap contributors" : ""}
+            {mode === "plate" && plate.style === "map" ? " · © OpenStreetMap contributors" : ""}
           </p>
         </section>
 
@@ -342,26 +392,56 @@ function PlateApp() {
           </div>
 
           {mode === "move" ? (
-            <div className="plate-bar">
-              <label className="plate-size">
-                <span className="visually-hidden">{t("plate.areaSize")}</span>
+            <>
+              <div className="plate-bar">
+                <label className="plate-size">
+                  <span className="visually-hidden">{t("plate.areaSize")}</span>
+                  <input
+                    type="range"
+                    className="plate-range"
+                    min={0}
+                    max={100}
+                    step={0.5}
+                    value={sizeToSlider(pickerArea.sizeKm)}
+                    onChange={(event) =>
+                      setArea({ ...pickerArea, sizeKm: sliderToSize(Number(event.target.value)) })
+                    }
+                  />
+                  <output>{pickerArea.sizeKm} km</output>
+                </label>
+                <button type="button" className="plate-btn plate-btn--light" onClick={showPlate}>
+                  {t("plate.showPlate")}
+                </button>
+              </div>
+              <div className="plate-chips" role="group" aria-label={t("plate.areaSize")}>
+                {SIZE_PRESETS.map((km) => (
+                  <button
+                    key={km}
+                    type="button"
+                    className="plate-chip"
+                    aria-pressed={pickerArea.sizeKm === km}
+                    onClick={() => setArea({ ...pickerArea, sizeKm: km })}
+                  >
+                    {km} km
+                  </button>
+                ))}
+              </div>
+              <label className="plate-dim">
+                <span>{t("plate.dim")}</span>
                 <input
                   type="range"
                   className="plate-range"
-                  min={SIZE_LIMITS.min}
-                  max={SIZE_LIMITS.max}
-                  step={0.5}
-                  value={pickerArea.sizeKm}
+                  min={0}
+                  max={0.8}
+                  step={0.05}
+                  value={picker.dim}
                   onChange={(event) =>
-                    setArea({ ...pickerArea, sizeKm: Number(event.target.value) })
+                    setPicker((current) => ({ ...current, dim: Number(event.target.value) }))
                   }
                 />
-                <output>{pickerArea.sizeKm} km</output>
+                <output>{Math.round(picker.dim * 100)}%</output>
               </label>
-              <button type="button" className="plate-btn plate-btn--light" onClick={showPlate}>
-                {t("plate.showPlate")}
-              </button>
-            </div>
+            </>
           ) : (
             <div className="plate-bar" role="toolbar" aria-label={t("plate.styles")}>
               <button type="button" className="plate-move" onClick={() => setMode("move")}>

@@ -1,5 +1,99 @@
 [
   {
+    "version": "2.2.0",
+    "date": "2026-11-19",
+    "labels": {
+      "summaryTitle": "What's new",
+      "summaryTitleKm": "អ្វីថ្មី",
+      "detailsTitle": "Update details",
+      "detailsTitleKm": "ព័ត៌មានលម្អិត"
+    },
+    "summary": {
+      "title": "Easier to pick your spot, more ways to style it",
+      "titleKm": "ជ្រើសទីតាំងងាយជាងមុន និងរចនាបានច្រើនជាងមុន",
+      "image": "/assets/updates/plate-elevation.webp",
+      "link": "/plate",
+      "linkLabel": "Open the 3D plate",
+      "linkLabelKm": "បើកផ្ទាំងដី 3D",
+      "points": [
+        {
+          "type": "improved",
+          "text": "Clear maps in Move: a street map with place names, Satellite with labels, or Terrain, and you choose how much to shade outside the square.",
+          "km": "ផែនទីច្បាស់ក្នុង «ផ្លាស់ទី»៖ ផែនទីផ្លូវមានឈ្មោះទីកន្លែង ផ្កាយរណបមានស្លាក ឬដីភ្នំ ហើយអ្នកកំណត់ម្លប់ខាងក្រៅការ៉េបាន។"
+        },
+        {
+          "type": "new",
+          "text": "Any size from 0.5 to 100 km, with one-tap sizes and a button to jump to your location.",
+          "km": "ទំហំពី ០.៥ ដល់ ១០០ គ.ម. មានប៊ូតុងទំហំរហ័ស និងប៊ូតុងទៅកាន់ទីតាំងរបស់អ្នក។"
+        },
+        {
+          "type": "new",
+          "text": "8 shapes: square, rounded, circle, hexagon, octagon, diamond, triangle and star.",
+          "km": "រាង ៨៖ ការ៉េ ជ្រុងមូល រង្វង់ ឆកោណ អដ្ឋកោណ ពេជ្រ ត្រីកោណ និងផ្កាយ។"
+        },
+        {
+          "type": "new",
+          "text": "New Elevation style colours the land by height, plus 12 colour presets and fewer or more contour lines.",
+          "km": "រចនាប័ទ្ម «កម្ពស់ពណ៌» ថ្មី លាបពណ៌ដីតាមកម្ពស់ ព្រមទាំងពណ៌សម្រេច ១២ និងកំណត់ខ្សែកម្ពស់តិច ឬច្រើន។"
+        }
+      ]
+    },
+    "steps": [
+      {
+        "title": "Pick the right spot",
+        "km": "ជ្រើសទីតាំងត្រឹមត្រូវ",
+        "image": null,
+        "points": [
+          {
+            "type": "improved",
+            "text": "Map, Satellite or Terrain: switch the map under the square with one tap.",
+            "km": "ផែនទី ផ្កាយរណប ឬដីភ្នំ៖ ប្ដូរផែនទីក្រោមការ៉េដោយចុចម្ដង។"
+          },
+          {
+            "type": "improved",
+            "text": "Clearer square: only an outline, with its size shown, so you see exactly what is inside.",
+            "km": "ការ៉េកាន់តែច្បាស់៖ មានតែគែម និងបង្ហាញទំហំ ដូច្នេះអ្នកឃើញច្បាស់អ្វីនៅខាងក្នុង។"
+          },
+          {
+            "type": "new",
+            "text": "Shade outside: choose how dark the map is around the square.",
+            "km": "ម្លប់ខាងក្រៅ៖ ជ្រើសថាតើផែនទីជុំវិញការ៉េងងឹតប៉ុណ្ណា។"
+          },
+          {
+            "type": "new",
+            "text": "0.5 to 100 km, quick sizes, and My location.",
+            "km": "០.៥ ដល់ ១០០ គ.ម. ទំហំរហ័ស និង «ទីតាំងខ្ញុំ»។"
+          }
+        ]
+      },
+      {
+        "title": "More shapes and colours",
+        "km": "រាង និងពណ៌ច្រើនជាងមុន",
+        "image": "/assets/updates/plate-elevation.webp",
+        "link": "/plate",
+        "linkLabel": "Open the 3D plate",
+        "linkLabelKm": "បើកផ្ទាំងដី 3D",
+        "points": [
+          {
+            "type": "new",
+            "text": "8 shapes, all ready for 3D printing and contour downloads.",
+            "km": "រាង ៨ ដែលអាចបោះពុម្ព 3D និងទាញយកខ្សែកម្ពស់បានទាំងអស់។"
+          },
+          {
+            "type": "new",
+            "text": "Elevation style: green lowlands, golden hills, brown mountains and pale peaks.",
+            "km": "រចនាប័ទ្មកម្ពស់ពណ៌៖ វាលទំនាបពណ៌បៃតង ទួលពណ៌មាស ភ្នំពណ៌ត្នោត និងកំពូលពណ៌ស។"
+          },
+          {
+            "type": "new",
+            "text": "12 colour presets and a contour line setting: fewer, normal or more.",
+            "km": "ពណ៌សម្រេច ១២ និងការកំណត់ខ្សែកម្ពស់៖ តិច ធម្មតា ឬច្រើន។"
+          }
+        ]
+      }
+    ]
+  },
+  {
     "version": "2.1.0",
     "date": "2026-11-19",
     "labels": {

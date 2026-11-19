@@ -1,5 +1,5 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
-import type { PlateGeometry, PlateShape } from "../geometry";
+import type { PlateGeometry } from "../geometry";
 import { PlateScene, type PlateLook } from "../PlateScene";
 import { useI18n } from "@/context/i18n/context";
 
@@ -9,7 +9,6 @@ export interface PlateViewHandle {
 
 interface PlateViewProps {
   geometry: PlateGeometry | null;
-  shape: PlateShape;
   look: PlateLook;
   drape: HTMLCanvasElement | null;
   label: string;
@@ -18,7 +17,7 @@ interface PlateViewProps {
 
 /** The interactive 3D plate. Owns the WebGL scene for as long as it is mounted. */
 const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView(
-  { geometry, shape, look, drape, label, onInteract },
+  { geometry, look, drape, label, onInteract },
   ref,
 ) {
   const { t } = useI18n();
@@ -44,8 +43,8 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
   }, [scene, onInteract]);
 
   useEffect(() => {
-    if (scene && geometry) scene.setGeometry(geometry, shape);
-  }, [scene, geometry, shape]);
+    if (scene && geometry) scene.setGeometry(geometry);
+  }, [scene, geometry]);
 
   useEffect(() => {
     scene?.setLook(look);
