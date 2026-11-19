@@ -24,18 +24,17 @@ interface AreaPickerProps {
   onChange: (area: AreaChange) => void;
 }
 
-// CARTO tiles go through our own proxy (api/carto.ts), which holds the key.
-const retina = typeof window !== "undefined" && window.devicePixelRatio > 1 ? "@2x" : "";
-const carto = (style: string) => `/api/carto/rastertiles/${style}/{z}/{x}/{y}${retina}.png`;
+type Layer = { tiles: string; maxzoom: number; attribution: string };
 
-const LAYERS: Record<PickerBase, { tiles: string; maxzoom: number; attribution: string }[]> = {
-  // A street map with clear place names, the closest free match to Google Maps.
+// CARTO tiles go through our own proxy (api/carto.ts), which holds the key.
+const dpr = typeof window !== "undefined" && window.devicePixelRatio > 1 ? 2 : 1;
+const carto = (style: string) =>
+  `/api/carto/rastertiles/${style}/{z}/{x}/{y}${dpr > 1 ? "@2x" : ""}.png`;
+
+/** Free maps, used when the site has no Google Maps key. */
+const FREE_LAYERS: Record<PickerBase, Layer[]> = {
   map: [
-    {
-      tiles: carto("voyager"),
-      maxzoom: 20,
-      attribution: "© CARTO © OpenStreetMap contributors",
-    },
+    { tiles: carto("voyager"), maxzoom: 20, attribution: "© CARTO © OpenStreetMap contributors" },
   ],
   satellite: [
     {
@@ -55,8 +54,38 @@ const LAYERS: Record<PickerBase, { tiles: string; maxzoom: number; attribution: 
   ],
 };
 
-function styleFor(base: PickerBase): StyleSpecification {
-  const layers = LAYERS[base];
+/** Google Map Tiles API through api/google.ts; labels follow the app language. */
+const googleTiles = (type: "roadmap" | "satellite", lang: string) =>
+  `/api/google?t=${type}&l=${lang}&r=${dpr}&z={z}&x={x}&y={y}`;
+
+function layersFor(base: PickerBase, google: boolean, lang: string): Layer[] {
+  if (!google || base === "terrain") return FREE_LAYERS[base];
+  // Google's credit is drawn by the picker itself (logo text and copyright).
+  return [
+    {
+      tiles: googleTiles(base === "map" ? "roadmap" : "satellite", lang),
+      maxzoom: 21,
+      attribution: "",
+    },
+  ];
+}
+
+/** Whether the server has a Google Maps key; asked once per page load. */
+let googleStatus: Promise<boolean> | undefined;
+const googleEnabled = () =>
+  (googleStatus ??= fetch("/api/google?status=1")
+    .then((response) => (response.ok ? response.json() : { enabled: false }))
+    .then((data: { enabled?: boolean }) => data.enabled === true)
+    .catch(() => false));
+
+const EMPTY_STYLE: StyleSpecification = {
+  version: 8,
+  sources: {},
+  layers: [{ id: "background", type: "background", paint: { "background-color": "#e8e4dc" } }],
+};
+
+function styleFor(base: PickerBase, google: boolean, lang: string): StyleSpecification {
+  const layers = layersFor(base, google, lang);
   return {
     version: 8,
     sources: Object.fromEntries(
@@ -72,7 +101,7 @@ function styleFor(base: PickerBase): StyleSpecification {
       ]),
     ),
     layers: [
-      { id: "background", type: "background", paint: { "background-color": "#e8e4dc" } },
+      ...EMPTY_STYLE.layers,
       ...layers.map((_, index) => ({
         id: `${base}-${index}`,
         type: "raster" as const,
@@ -102,7 +131,9 @@ export default function AreaPicker({
   onBaseChange,
   onChange,
 }: AreaPickerProps) {
-  const { t } = useI18n();
+  const { t, lang } = useI18n();
+  const [google, setGoogle] = useState<boolean | null>(null);
+  const [copyright, setCopyright] = useState("");
   const containerRef = useRef<HTMLDivElement>(null);
   const squareRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<maplibregl.Map | null>(null);
@@ -119,7 +150,8 @@ export default function AreaPicker({
   useEffect(() => {
     const map = new maplibregl.Map({
       container: containerRef.current!,
-      style: styleFor(base),
+      // The real style follows once we know whether Google tiles are available.
+      style: EMPTY_STYLE,
       center: [lon, lat],
       zoom: zoomFor(lat, sizeKm, squarePx()),
       attributionControl: { compact: true },
@@ -147,8 +179,53 @@ export default function AreaPicker({
   }, []);
 
   useEffect(() => {
-    mapRef.current?.setStyle(styleFor(base));
-  }, [base]);
+    let cancelled = false;
+    googleEnabled().then((enabled) => !cancelled && setGoogle(enabled));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const usesGoogle = google === true && base !== "terrain";
+
+  useEffect(() => {
+    if (google === null) return;
+    mapRef.current?.setStyle(styleFor(base, google, lang));
+  }, [base, google, lang]);
+
+  // Google asks for the copyright of what is on screen, kept up to date.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !usesGoogle) return;
+    const type = base === "map" ? "roadmap" : "satellite";
+    let controller: AbortController | undefined;
+    const update = () => {
+      controller?.abort();
+      controller = new AbortController();
+      const bounds = map.getBounds();
+      const query = new URLSearchParams({
+        t: type,
+        l: lang,
+        r: String(dpr),
+        viewport: "1",
+        zoom: String(Math.round(map.getZoom())),
+        n: bounds.getNorth().toFixed(6),
+        s: bounds.getSouth().toFixed(6),
+        e: bounds.getEast().toFixed(6),
+        w: bounds.getWest().toFixed(6),
+      });
+      fetch(`/api/google?${query}`, { signal: controller.signal })
+        .then((response) => (response.ok ? response.json() : { copyright: "" }))
+        .then((data: { copyright?: string }) => setCopyright(data.copyright ?? ""))
+        .catch(() => undefined);
+    };
+    update();
+    map.on("moveend", update);
+    return () => {
+      controller?.abort();
+      map.off("moveend", update);
+    };
+  }, [usesGoogle, base, lang]);
 
   // The size slider zooms the map so the square covers the chosen distance.
   useEffect(() => {
@@ -203,6 +280,12 @@ export default function AreaPicker({
           </button>
         ))}
       </div>
+      {usesGoogle && (
+        <p className="area-picker__credit">
+          <strong>Google</strong>
+          {copyright && <span> · {copyright}</span>}
+        </p>
+      )}
       <button
         type="button"
         className="area-picker__locate"
