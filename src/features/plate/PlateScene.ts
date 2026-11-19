@@ -22,6 +22,7 @@ import {
   Scene,
   ShaderMaterial,
   SRGBColorSpace,
+  Spherical,
   Sprite,
   SpriteMaterial,
   Vector3,
@@ -62,6 +63,10 @@ export interface PlateLook {
   water: boolean;
   /** Rock layers on the sides of the box. */
   strata: boolean;
+  /** Snow from this share of the relief upwards (0.3 to 0.95); 0 means none. */
+  snow: number;
+  /** Water up to this many metres above the plate's lowest point; 0 means none. */
+  flood: number;
 }
 
 const LIGHT = new Vector3(-0.55, 0.75, -0.35).normalize();
@@ -134,6 +139,12 @@ export class PlateScene {
         uAo: { value: 0.55 },
         uBake: { value: false },
         uWater: { value: true },
+        uSnow: { value: 2 },
+        uFlood: { value: -1e9 },
+        uWaterMask: { value: null },
+        uHasWaterMask: { value: false },
+        uOverlay: { value: null },
+        uHasOverlay: { value: false },
       },
     });
     this.ramp.colorSpace = NoColorSpace;
@@ -336,6 +347,7 @@ export class PlateScene {
     u.uMin.value = geometry.min;
     u.uMax.value = Math.max(geometry.max, geometry.min + 1);
     u.uInterval.value = contourInterval(geometry.min, geometry.max, this.lines);
+    if (this.look) u.uFlood.value = this.look.flood > 0 ? geometry.min + this.look.flood : -1e9;
     this.fitCamera();
     this.wake(IDLE_SPIN_MS);
   }
@@ -354,6 +366,8 @@ export class PlateScene {
       this.ramp.needsUpdate = true;
     }
     u.uWater.value = look.water;
+    u.uSnow.value = look.snow > 0 ? look.snow : 2;
+    u.uFlood.value = look.flood > 0 ? this.elevationRange[0] + look.flood : -1e9;
     this.shellMaterial.uniforms.uSide.value.set(look.side);
     this.shellMaterial.uniforms.uStrata.value = look.strata;
     this.labelMaterial.uniforms.uBase.value.set(look.side);
@@ -554,6 +568,51 @@ export class PlateScene {
     }
     const camera = this.camera.clone();
     return { group, camera, target: this.controls.target.clone(), baseDepth: this.baseDepth };
+  }
+
+  /** Lakes and rivers, white on black over the plate's square; null clears it. */
+  setWaterMask(image: HTMLCanvasElement | null) {
+    this.setSurfaceTexture("uWaterMask", "uHasWaterMask", image);
+  }
+
+  /** Routes and markers drawn on top of the surface, with transparency; null clears it. */
+  setOverlay(image: HTMLCanvasElement | null) {
+    this.setSurfaceTexture("uOverlay", "uHasOverlay", image);
+  }
+
+  private setSurfaceTexture(name: string, flag: string, image: HTMLCanvasElement | null) {
+    const u = this.surfaceMaterial.uniforms;
+    (u[name].value as CanvasTexture | null)?.dispose();
+    let texture: CanvasTexture | null = null;
+    if (image) {
+      texture = new CanvasTexture(image);
+      // Row 0 is the north edge, where v = 0.
+      texture.flipY = false;
+      texture.colorSpace = NoColorSpace;
+      texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
+    }
+    u[name].value = texture;
+    u[flag].value = Boolean(image);
+    this.wake(0);
+  }
+
+  /** Turns and zooms the view from the keyboard: angles in degrees, zoom as a factor. */
+  nudge(turnDegrees: number, tiltDegrees: number, zoom = 1) {
+    const offset = this.camera.position.clone().sub(this.controls.target);
+    const spherical = new Spherical().setFromVector3(offset);
+    spherical.theta += (turnDegrees * Math.PI) / 180;
+    spherical.phi = Math.min(
+      this.controls.maxPolarAngle,
+      Math.max(this.controls.minPolarAngle, spherical.phi + (tiltDegrees * Math.PI) / 180),
+    );
+    spherical.radius = Math.min(
+      this.controls.maxDistance,
+      Math.max(this.controls.minDistance, spherical.radius * zoom),
+    );
+    this.camera.position.copy(this.controls.target).add(offset.setFromSpherical(spherical));
+    this.controls.autoRotate = false;
+    this.onInteract?.();
+    this.wake(IDLE_SPIN_MS);
   }
 
   /** Map or satellite image laid over the terrain; null clears it. */

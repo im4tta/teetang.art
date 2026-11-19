@@ -67,6 +67,8 @@ const DownloadSheet = lazy(() => import("@/features/plate/components/DownloadShe
 const PhotoView = lazy(() => import("@/features/plate/components/PhotoView"));
 
 const LOW_END = (navigator.hardwareConcurrency ?? 8) <= 4;
+/** The quick first plate: few tiles to fetch, so it shows almost at once. */
+const PREVIEW_CELLS = 64;
 const GRID_CELLS = LOW_END ? 192 : 256;
 const DRAFT_DELAY_MS = 400;
 /** Nameplate grid cells per plate width: about 0.3 mm on a 10 cm print. */
@@ -120,6 +122,29 @@ const slug = (text: string) =>
     .replace(/\s+/g, "-")
     .toLowerCase() || "plate";
 
+const COMPASS = ["e", "ne", "n", "nw", "w", "sw", "s", "se"] as const;
+
+/** What a screen reader says about the plate: its highest and lowest points and where the summit is. */
+function describePlate(
+  t: (key: TranslationKey) => string,
+  title: string,
+  geometry: { max: number; min: number; peak: { u: number; v: number } },
+): string {
+  const dx = geometry.peak.u - 0.5;
+  const dy = 0.5 - geometry.peak.v;
+  const where =
+    Math.hypot(dx, dy) < 0.12
+      ? t("plate.dir.centre")
+      : t(
+          `plate.dir.${COMPASS[Math.round(Math.atan2(dy, dx) / (Math.PI / 4) + 8) % 8]}` as TranslationKey,
+        );
+  return t("plate.a11y.summary")
+    .replace("{title}", title)
+    .replace("{max}", formatMetres(geometry.max))
+    .replace("{where}", where)
+    .replace("{min}", formatMetres(geometry.min));
+}
+
 /** The page's background colour, so the photo's studio backdrop blends in. */
 function stageBackdrop(): string {
   const page = document.querySelector(".plate-page");
@@ -144,6 +169,7 @@ function PlateApp() {
   const [attempt, setAttempt] = useState(0);
   const [touched, setTouched] = useState(false);
   const [extras, setExtras] = useState<PlateExtras | null>(null);
+  const [fullDetail, setFullDetail] = useState(false);
   const [photo, setPhoto] = useState<PhotoInput | null>(null);
   const viewRef = useRef<PlateViewHandle>(null);
   const navigate = useNavigate();
@@ -170,12 +196,25 @@ function PlateApp() {
     [plate.lat, plate.lon, plate.sizeKm],
   );
 
-  // Terrain for the current square.
+  // Terrain for the current square: a quick low-detail plate first, then the full one.
   useEffect(() => {
     const controller = new AbortController();
-    queueMicrotask(() => setTerrain({ status: "loading" }));
+    let fullArrived = false;
+    queueMicrotask(() => {
+      setTerrain({ status: "loading" });
+      setFullDetail(false);
+    });
+    loadHeightGrid(bounds, PREVIEW_CELLS, controller.signal).then(
+      (value) =>
+        !fullArrived && !controller.signal.aborted && setTerrain({ status: "ready", value }),
+      () => undefined,
+    );
     loadHeightGrid(bounds, GRID_CELLS, controller.signal).then(
-      (value) => setTerrain({ status: "ready", value }),
+      (value) => {
+        fullArrived = true;
+        setTerrain({ status: "ready", value });
+        setFullDetail(true);
+      },
       () => !controller.signal.aborted && setTerrain({ status: "error" }),
     );
     return () => controller.abort();
@@ -237,6 +276,8 @@ function PlateApp() {
       palette: plate.palette,
       water: plate.water,
       strata: plate.strata,
+      snow: plate.snow,
+      flood: plate.flood,
     }),
     [
       needsDrape,
@@ -250,6 +291,8 @@ function PlateApp() {
       plate.palette,
       plate.water,
       plate.strata,
+      plate.snow,
+      plate.flood,
     ],
   );
 
@@ -342,6 +385,25 @@ function PlateApp() {
     if (kind === "studio") {
       writePlateDraft(plate);
       navigate("/plate/studio");
+      return;
+    }
+    if (kind === "card") {
+      const shot = viewRef.current?.snapshot(2048);
+      if (!geometry || !shot || !fullDetail) return;
+      try {
+        const { buildGiftCard } = await import("@/features/plate/giftCard");
+        const blob = await buildGiftCard(
+          shot,
+          plate,
+          buildPlateLink(plate),
+          { scan: t("plate.card.scan"), highest: t("plate.highest") },
+          geometry.max,
+        );
+        await triggerDownloadBlob(blob, `teetang-card-${slug(plate.name)}.png`);
+        notify(t("plate.downloaded"), { tone: "success" });
+      } catch {
+        notify(t("plate.downloadFailed"), { tone: "error" });
+      }
       return;
     }
     if (kind === "link") {
@@ -439,7 +501,7 @@ function PlateApp() {
                 drape={drapeReady}
                 extras={extras}
                 peakText={geometry && plate.pin ? `▲ ${highest}` : ""}
-                label={`${title} ${subtitle}`}
+                label={geometry ? describePlate(t, title, geometry) : `${title} ${subtitle}`}
                 onInteract={() => setTouched(true)}
               />
               {terrain.status === "loading" && (
@@ -469,7 +531,13 @@ function PlateApp() {
               {!touched && geometry && !photo && (
                 <p className="plate-stage__hint">{t("plate.dragHint")}</p>
               )}
-              {geometry && !photo && (
+              {geometry && !fullDetail && terrain.status === "ready" && (
+                <div className="plate-stage__pill" role="status">
+                  <span className="plate-spinner" aria-hidden="true" />
+                  {t("plate.addingDetail")}
+                </div>
+              )}
+              {geometry && fullDetail && !photo && (
                 <button
                   type="button"
                   className="plate-photo-btn"
@@ -637,7 +705,7 @@ function PlateApp() {
             <button
               type="button"
               className="plate-btn plate-btn--primary"
-              disabled={!geometry || mode === "move"}
+              disabled={!geometry || !fullDetail || mode === "move"}
               onClick={() => setSheet("download")}
             >
               <Download size={20} aria-hidden="true" />
@@ -665,6 +733,7 @@ function PlateApp() {
           <AdjustSheet
             plate={plate}
             autoExaggeration={autoHeight}
+            relief={geometry ? geometry.max - geometry.min : 0}
             onChange={update}
             onClose={() => setSheet(null)}
           />

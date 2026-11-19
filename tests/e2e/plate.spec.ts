@@ -345,6 +345,42 @@ test.describe("3D plate", () => {
   });
 });
 
+test.describe("3D plate extras", () => {
+  test("seasons, Vintage, keyboard control and a gift card", async ({ page }) => {
+    await openPlate(
+      page,
+      "/plate?lat=12.0333&lon=104.1667&name=Phnom%20Aural&style=vintage&snow=0.7&flood=250",
+    );
+    await expect(page.getByRole("button", { name: "Vintage" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    const canvas = page.locator(".plate-canvas");
+    // Screen readers hear where the summit is.
+    await expect(canvas).toHaveAttribute("aria-label", /Highest point 1,\d{3} m, near the centre/);
+    await canvas.focus();
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("+");
+
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await expect(page.getByRole("checkbox", { name: "Snow on the peaks" })).toBeChecked();
+    await expect(page.locator("#plate-flood")).toHaveValue("250");
+    await page.locator(".plate-sheet__header button").click();
+
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.locator(".plate-download[data-kind=card]").click(),
+    ]);
+    expect(download.suggestedFilename()).toBe("teetang-card-phnom-aural.png");
+    const chunks: Buffer[] = [];
+    for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer);
+    const png = Buffer.concat(chunks);
+    // 6 × 4 inches at 300 dpi.
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1800, 1200]);
+  });
+});
+
 test.describe("3D plate on a computer", () => {
   test.use({ viewport: { width: 1300, height: 820 }, isMobile: false, hasTouch: false });
 

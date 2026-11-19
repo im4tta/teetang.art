@@ -79,7 +79,24 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
         ref={canvasRef}
         className="plate-canvas"
         role="img"
-        aria-label={label}
+        aria-label={`${label} ${t("plate.a11y.keys")}`}
+        // Arrow keys turn and tilt the plate, + and − zoom.
+        tabIndex={0}
+        onKeyDown={(event) => {
+          const moves: Record<string, [number, number, number]> = {
+            ArrowLeft: [-12, 0, 1],
+            ArrowRight: [12, 0, 1],
+            ArrowUp: [0, -6, 1],
+            ArrowDown: [0, 6, 1],
+            "+": [0, 0, 0.88],
+            "=": [0, 0, 0.88],
+            "-": [0, 0, 1.14],
+          };
+          const move = moves[event.key];
+          if (!move || !scene) return;
+          event.preventDefault();
+          scene.nudge(...move);
+        }}
         data-ready={scene && geometry ? "true" : "false"}
       />
       {failed && (

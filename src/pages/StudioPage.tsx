@@ -273,9 +273,9 @@ function StudioApp() {
   );
 
   const labelKey = useMemo(() => {
-    const label = grid ? plateLabel(deferredPlate, grid.max) : null;
+    const label = grid ? plateLabel(deferredPlate, grid.max, deferredPrint.widthMm) : null;
     return label ? JSON.stringify(label) : "";
-  }, [grid, deferredPlate]);
+  }, [grid, deferredPlate, deferredPrint.widthMm]);
 
   useEffect(() => {
     if (!geometry) return;

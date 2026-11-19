@@ -399,13 +399,20 @@ export async function buildPlateExtras(
   return { label, pin, reach };
 }
 
-/** A round distance of at most a fifth of the plate's width, for the scale bar. */
-export function scaleBar(sizeKm: number): { text: string; fraction: number } {
+/**
+ * A round distance of at most a fifth of the plate's width for the scale bar,
+ * with the true map scale of the print, e.g. "2 km · 1:100,000".
+ */
+export function scaleBar(sizeKm: number, widthMm = 100): { text: string; fraction: number } {
   const target = sizeKm / 5;
   const power = 10 ** Math.floor(Math.log10(target));
   const step = [5, 2, 1].map((m) => m * power).find((value) => value <= target) ?? power;
-  const text = step < 1 ? `${Math.round(step * 1000)} m` : `${step} km`;
-  return { text, fraction: step / sizeKm };
+  const distance = step < 1 ? `${Math.round(step * 1000)} m` : `${step} km`;
+  // Round the ratio to two significant figures, as printed maps do.
+  const ratio = (sizeKm * 1e6) / widthMm;
+  const magnitude = 10 ** (Math.floor(Math.log10(ratio)) - 1);
+  const rounded = Math.round(ratio / magnitude) * magnitude;
+  return { text: `${distance} · 1:${rounded.toLocaleString("en-US")}`, fraction: step / sizeKm };
 }
 
 const hemisphere = (value: number, positive: string, negative: string) =>

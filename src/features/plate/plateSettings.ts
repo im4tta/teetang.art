@@ -57,6 +57,10 @@ export interface PlateSettings extends PlatePlace {
   water: boolean;
   /** Rock layers on the sides of the box. */
   strata: boolean;
+  /** Snow from this share of the relief upwards; 0 means none. */
+  snow: number;
+  /** Water up to this many metres above the lowest point; 0 means none. */
+  flood: number;
 }
 
 export type LabelRelief = "raised" | "engraved";
@@ -76,6 +80,7 @@ export const PLATE_STYLES: PlateStyle[] = [
   "topo",
   "map",
   "satellite",
+  "vintage",
 ];
 export const SIZE_LIMITS = { min: 0.5, max: 100 };
 /** Maps the Move mode can show under the square. */
@@ -148,6 +153,8 @@ export const DEFAULT_PLATE: PlateSettings = {
   pin: false,
   water: true,
   strata: false,
+  snow: 0,
+  flood: 0,
   name: "Phnom Aural",
   region: "Kampong Speu",
   country: "Cambodia",
@@ -197,6 +204,8 @@ const LINK = {
   pin: "pin",
   water: "water",
   strata: "strata",
+  snow: "snow",
+  flood: "flood",
   name: "name",
   region: "region",
   country: "country",
@@ -224,6 +233,10 @@ export function sanitizePlate(
         ? 0
         : clamp(exaggeration, EXAGGERATION_LIMITS.min, EXAGGERATION_LIMITS.max);
   }
+  const snow = num(input.snow);
+  if (Number.isFinite(snow)) out.snow = snow <= 0 ? 0 : clamp(snow, 0.3, 0.95);
+  const flood = num(input.flood);
+  if (Number.isFinite(flood)) out.flood = clamp(Math.round(flood), 0, 9000);
   const box = num(input.box);
   if (Number.isFinite(box)) out.box = clamp(box, BOX_LIMITS.min, BOX_LIMITS.max);
   if (PLATE_STYLES.includes(input.style as PlateStyle)) out.style = input.style as PlateStyle;
@@ -318,6 +331,7 @@ export const flagEmoji = (countryCode: string) =>
 export function plateLabel(
   plate: PlateSettings,
   highestMetres: number | null,
+  widthMm = 100,
 ): LabelContent | null {
   if (!plate.label || !plate.name.trim()) return null;
   const detail = [
@@ -336,6 +350,6 @@ export function plateLabel(
     lines,
     font: plate.labelFont,
     compass: plate.labelCompass,
-    scale: plate.labelScale ? scaleBar(plate.sizeKm) : null,
+    scale: plate.labelScale ? scaleBar(plate.sizeKm, widthMm) : null,
   };
 }

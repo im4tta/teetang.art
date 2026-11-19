@@ -22,6 +22,8 @@ import PlateSheet from "./PlateSheet";
 interface AdjustSheetProps {
   plate: PlateSettings;
   autoExaggeration: number;
+  /** Metres from the plate's lowest to its highest point, for the flood slider. */
+  relief: number;
   onChange: (patch: Partial<PlateSettings>) => void;
   onClose: () => void;
 }
@@ -38,6 +40,7 @@ const fromSlider = (position: number) => {
 export default function AdjustSheet({
   plate,
   autoExaggeration,
+  relief,
   onChange,
   onClose,
 }: AdjustSheetProps) {
@@ -349,6 +352,58 @@ export default function AdjustSheet({
           onChange={(event) => onChange({ box: Number(event.target.value) })}
         />
       </div>
+
+      <fieldset className="plate-field plate-group">
+        <legend className="plate-field__label">{t("plate.adj.season")}</legend>
+        <label className="plate-switch">
+          <input
+            type="checkbox"
+            checked={plate.snow > 0}
+            onChange={(event) => onChange({ snow: event.target.checked ? 0.7 : 0 })}
+          />
+          <span>{t("plate.adj.snow")}</span>
+        </label>
+        {plate.snow > 0 && (
+          <div className="plate-field">
+            <div className="plate-field__row">
+              <label className="plate-field__label" htmlFor="plate-snow">
+                {t("plate.adj.snowLine")}
+              </label>
+              <output className="plate-field__value">{Math.round(plate.snow * 100)}%</output>
+            </div>
+            <input
+              id="plate-snow"
+              type="range"
+              className="plate-range"
+              min={0.3}
+              max={0.95}
+              step={0.01}
+              value={plate.snow}
+              onChange={(event) => onChange({ snow: Number(event.target.value) })}
+            />
+          </div>
+        )}
+        <div className="plate-field">
+          <div className="plate-field__row">
+            <label className="plate-field__label" htmlFor="plate-flood">
+              {t("plate.adj.flood")}
+            </label>
+            <output className="plate-field__value">
+              {plate.flood > 0 ? `+${plate.flood.toLocaleString("en-US")} m` : t("plate.adj.off")}
+            </output>
+          </div>
+          <input
+            id="plate-flood"
+            type="range"
+            className="plate-range"
+            min={0}
+            max={Math.max(1, Math.round(relief))}
+            step={1}
+            value={Math.min(plate.flood, Math.round(relief))}
+            onChange={(event) => onChange({ flood: Number(event.target.value) })}
+          />
+        </div>
+      </fieldset>
 
       {(["water", "strata"] as const).map((key) => (
         <label key={key} className="plate-switch">
