@@ -10,7 +10,7 @@ import type { PlateExtras } from "./extras";
 import type { PlateGeometry } from "./geometry";
 
 export interface ModelPart {
-  id: "terrain" | "label" | "pin";
+  id: "terrain" | "label" | "pin" | "markers";
   /** Triangles in plate units (x, y up, z south), three corners each. */
   soup: Float32Array;
 }
@@ -39,6 +39,15 @@ export function modelParts(geometry: PlateGeometry, extras?: PlateExtras | null)
     parts.push({ id: "label", soup: indexedToSoup(surface, index, shell) });
   }
   if (extras?.pin) parts.push({ id: "pin", soup: extras.pin.soup });
+  if (extras?.markers.length) {
+    const soup = new Float32Array(extras.markers.reduce((sum, m) => sum + m.soup.length, 0));
+    let offset = 0;
+    for (const marker of extras.markers) {
+      soup.set(marker.soup, offset);
+      offset += marker.soup.length;
+    }
+    parts.push({ id: "markers", soup });
+  }
   return parts;
 }
 

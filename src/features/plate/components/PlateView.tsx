@@ -14,6 +14,12 @@ interface PlateViewProps {
   geometry: PlateGeometry | null;
   look: PlateLook;
   drape: HTMLCanvasElement | null;
+  /** Route, markers and measuring line drawn on the surface. */
+  overlay?: HTMLCanvasElement | null;
+  /** Lakes and rivers over the plate's square. */
+  waterMask?: HTMLCanvasElement | null;
+  /** While set, a tap on the plate reports the point under it (plate texture coordinates). */
+  onPick?: ((uv: [number, number]) => void) | null;
   extras: PlateExtras | null;
   /** Text on the summit pin's tag. */
   peakText: string;
@@ -23,7 +29,18 @@ interface PlateViewProps {
 
 /** The interactive 3D plate. Owns the WebGL scene for as long as it is mounted. */
 const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView(
-  { geometry, look, drape, extras, peakText, label, onInteract },
+  {
+    geometry,
+    look,
+    drape,
+    overlay = null,
+    waterMask = null,
+    onPick,
+    extras,
+    peakText,
+    label,
+    onInteract,
+  },
   ref,
 ) {
   const { t } = useI18n();
@@ -64,6 +81,17 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
     scene?.setExtras(extras, peakText);
   }, [scene, extras, peakText]);
 
+  useEffect(() => {
+    scene?.setOverlay(overlay);
+  }, [scene, overlay]);
+
+  useEffect(() => {
+    scene?.setWaterMask(waterMask);
+  }, [scene, waterMask]);
+
+  // A tap (not a drag) picks a point when picking is on.
+  const downAt = useRef<[number, number] | null>(null);
+
   useImperativeHandle(
     ref,
     () => ({
@@ -82,6 +110,18 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
         aria-label={`${label} ${t("plate.a11y.keys")}`}
         // Arrow keys turn and tilt the plate, + and − zoom.
         tabIndex={0}
+        data-picking={onPick ? "true" : undefined}
+        onPointerDown={(event) => {
+          downAt.current = [event.clientX, event.clientY];
+        }}
+        onPointerUp={(event) => {
+          const start = downAt.current;
+          downAt.current = null;
+          if (!onPick || !scene || !start) return;
+          if (Math.hypot(event.clientX - start[0], event.clientY - start[1]) > 6) return;
+          const uv = scene.pick(event.clientX, event.clientY);
+          if (uv) onPick(uv);
+        }}
         onKeyDown={(event) => {
           const moves: Record<string, [number, number, number]> = {
             ArrowLeft: [-12, 0, 1],

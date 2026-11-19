@@ -16,6 +16,7 @@ import {
   Dices,
   Download,
   Move,
+  Route,
   Share2,
   SlidersHorizontal,
   MapPinned,
@@ -29,7 +30,15 @@ import { triggerDownloadBlob } from "@/services/export/fileDownloader";
 import { tapFeedback } from "@/utils/haptics";
 import { useWheelScrollsRows } from "@/hooks/useWheelScrollsRows";
 import type { SearchResult } from "@/services/location/types";
-import { plateBounds } from "@/features/plate/geo";
+import { plateBounds, plateToLonLat } from "@/features/plate/geo";
+import {
+  decodeRoute,
+  drawOverlay,
+  elevationProfile,
+  routeMask,
+  toPlateUv,
+  type LatLon,
+} from "@/features/plate/routes";
 import { loadHeightGrid } from "@/features/plate/elevation";
 import type { HeightGrid } from "@/features/plate/elevationCore";
 import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
@@ -65,6 +74,7 @@ const AreaPicker = lazy(() => import("@/features/plate/components/AreaPicker"));
 const AdjustSheet = lazy(() => import("@/features/plate/components/AdjustSheet"));
 const DownloadSheet = lazy(() => import("@/features/plate/components/DownloadSheet"));
 const PhotoView = lazy(() => import("@/features/plate/components/PhotoView"));
+const RouteSheet = lazy(() => import("@/features/plate/components/RouteSheet"));
 
 const LOW_END = (navigator.hardwareConcurrency ?? 8) <= 4;
 /** The quick first plate: few tiles to fetch, so it shows almost at once. */
@@ -163,7 +173,12 @@ function PlateApp() {
   const [mode, setMode] = useState<"plate" | "move">("plate");
   const [area, setArea] = useState<AreaChange | null>(null);
   const [picker, setPicker] = useState<PickerPrefs>(readPickerPrefs);
-  const [sheet, setSheet] = useState<"adjust" | "download" | null>(null);
+  const [sheet, setSheet] = useState<"adjust" | "download" | "route" | null>(null);
+  /** Waiting for a tap on the plate: to drop a marker, or the two ends of a measuring line. */
+  const [picking, setPicking] = useState<
+    null | { kind: "marker" } | { kind: "line"; first: LatLon | null }
+  >(null);
+  const [measure, setMeasure] = useState<LatLon[] | null>(null);
   const [terrain, setTerrain] = useState<Load<HeightGrid>>({ status: "loading" });
   const [drape, setDrape] = useState<Load<HTMLCanvasElement> | null>(null);
   const [attempt, setAttempt] = useState(0);
@@ -250,6 +265,11 @@ function PlateApp() {
     () => (grid ? autoExaggeration(grid, bounds.sizeMeters) : 1),
     [grid, bounds.sizeMeters],
   );
+  const route = useMemo(
+    () => (deferred.route ? decodeRoute(deferred.route) : []),
+    [deferred.route],
+  );
+  const raiseRoute = deferred.routeRaise && route.length > 1;
   const geometry = useMemo(
     () =>
       grid
@@ -258,9 +278,71 @@ function PlateApp() {
             exaggeration: deferred.exaggeration || autoHeight,
             sizeMeters: bounds.sizeMeters,
             boxDepth: deferred.box,
+            // A ridge 0.8 mm high on a 10 cm print.
+            ridge: raiseRoute
+              ? { mask: routeMask(bounds, route, grid.size), size: grid.size, height: 0.008 }
+              : null,
           })
         : null,
-    [grid, deferred.shape, deferred.exaggeration, deferred.box, autoHeight, bounds.sizeMeters],
+    [
+      grid,
+      deferred.shape,
+      deferred.exaggeration,
+      deferred.box,
+      autoHeight,
+      bounds,
+      raiseRoute,
+      route,
+    ],
+  );
+
+  // Route, markers and measuring line, drawn on the surface.
+  const overlay = useMemo(
+    () =>
+      route.length > 1 || deferred.markers.length || measure
+        ? drawOverlay(bounds, {
+            route,
+            markers: deferred.markers,
+            color: deferred.routeColor,
+            ink: deferred.ink,
+            paper: deferred.paper,
+            line: measure ?? undefined,
+          })
+        : null,
+    [bounds, route, deferred.markers, deferred.routeColor, deferred.ink, deferred.paper, measure],
+  );
+
+  // Elevation profile: of the measuring line if there is one, else of the route.
+  const profileLine = measure ?? (route.length > 1 ? route : null);
+  const profile = useMemo(
+    () => (grid && profileLine ? elevationProfile(grid, bounds, profileLine) : null),
+    [grid, bounds, profileLine],
+  );
+
+  const handlePick = useCallback(
+    ([u, v]: [number, number]) => {
+      const [lon, lat] = plateToLonLat(bounds, u, v);
+      if (picking?.kind === "marker") {
+        update({
+          markers: [
+            ...plate.markers,
+            { lat, lon, label: `${t("plate.markers.default")} ${plate.markers.length + 1}` },
+          ],
+        });
+        setPicking(null);
+        setSheet("route");
+      } else if (picking?.kind === "line") {
+        if (!picking.first) {
+          setPicking({ kind: "line", first: [lat, lon] });
+          setMeasure(null);
+        } else {
+          setMeasure([picking.first, [lat, lon]]);
+          setPicking(null);
+          setSheet("route");
+        }
+      }
+    },
+    [bounds, picking, plate.markers, update, t],
   );
 
   const drapeReady = drape?.status === "ready" ? drape.value : null;
@@ -302,6 +384,14 @@ function PlateApp() {
     [geometry, deferred],
   );
   const labelKey = label ? JSON.stringify(label) : "";
+  const markerSpots = useMemo(
+    () =>
+      deferred.markers.map((marker) => {
+        const [u, v] = toPlateUv(bounds, [marker.lat, marker.lon]);
+        return { u, v, label: marker.label };
+      }),
+    [deferred.markers, bounds],
+  );
   useEffect(() => {
     if (!geometry) return;
     let cancelled = false;
@@ -313,6 +403,7 @@ function PlateApp() {
         widthMm: 100,
         reliefMm: 0.8,
         cellsPerUnit: LABEL_CELLS,
+        markers: markerSpots,
       }).then(
         (value) => !cancelled && setExtras(value),
         () => !cancelled && setExtras(null),
@@ -322,7 +413,7 @@ function PlateApp() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [geometry, labelKey, deferred.labelRelief, deferred.pin]);
+  }, [geometry, labelKey, deferred.labelRelief, deferred.pin, markerSpots]);
 
   useEffect(() => {
     try {
@@ -499,6 +590,8 @@ function PlateApp() {
                 geometry={geometry}
                 look={look}
                 drape={drapeReady}
+                overlay={overlay}
+                onPick={picking ? handlePick : null}
                 extras={extras}
                 peakText={geometry && plate.pin ? `▲ ${highest}` : ""}
                 label={geometry ? describePlate(t, title, geometry) : `${title} ${subtitle}`}
@@ -530,6 +623,27 @@ function PlateApp() {
               )}
               {!touched && geometry && !photo && (
                 <p className="plate-stage__hint">{t("plate.dragHint")}</p>
+              )}
+              {picking && (
+                <div className="plate-pick-banner" role="status">
+                  <span>
+                    {picking.kind === "marker"
+                      ? t("plate.pick.marker")
+                      : picking.first
+                        ? t("plate.pick.lineEnd")
+                        : t("plate.pick.lineStart")}
+                  </span>
+                  <button
+                    type="button"
+                    className="plate-btn plate-btn--light"
+                    onClick={() => {
+                      setPicking(null);
+                      setSheet("route");
+                    }}
+                  >
+                    {t("plate.pick.cancel")}
+                  </button>
+                </div>
               )}
               {geometry && !fullDetail && terrain.status === "ready" && (
                 <div className="plate-stage__pill" role="status">
@@ -694,6 +808,14 @@ function PlateApp() {
             <button
               type="button"
               className="plate-btn plate-btn--soft"
+              onClick={() => setSheet("route")}
+            >
+              <Route size={20} aria-hidden="true" />
+              {t("plate.route.button")}
+            </button>
+            <button
+              type="button"
+              className="plate-btn plate-btn--soft"
               onClick={() => download("studio")}
             >
               <Box size={20} aria-hidden="true" />
@@ -735,6 +857,21 @@ function PlateApp() {
             autoExaggeration={autoHeight}
             relief={geometry ? geometry.max - geometry.min : 0}
             onChange={update}
+            onClose={() => setSheet(null)}
+          />
+        )}
+        {sheet === "route" && (
+          <RouteSheet
+            plate={plate}
+            profile={profile}
+            profileTitle={
+              measure ? t("plate.profile.line") : `${title} · ${t("plate.profile.route")}`
+            }
+            onChange={update}
+            onPick={(kind) => {
+              setSheet(null);
+              setPicking(kind === "marker" ? { kind } : { kind, first: null });
+            }}
             onClose={() => setSheet(null)}
           />
         )}

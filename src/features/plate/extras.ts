@@ -75,9 +75,15 @@ export interface PinSolid {
   metres: number;
 }
 
+export interface MarkerSolid extends PinSolid {
+  label: string;
+}
+
 export interface PlateExtras {
   label: LabelSolid | null;
   pin: PinSolid | null;
+  /** Your own places on the plate, each a small cone with its name. */
+  markers: MarkerSolid[];
   /** How far the model reaches south of the plate's centre. */
   reach: number;
 }
@@ -92,6 +98,8 @@ export interface ExtrasOptions {
   reliefMm: number;
   /** Grid cells per plate unit for the nameplate's top. */
   cellsPerUnit: number;
+  /** Markers in plate texture coordinates (0..1, north at v = 0). */
+  markers?: { u: number; v: number; label: string }[];
 }
 
 const LABEL_WIDTH = 0.84;
@@ -363,8 +371,35 @@ function buildPin(geometry: PlateGeometry, widthMm: number): PinSolid {
   const z = geometry.peak.v - 0.5;
   const ground = (geometry.peak.metres - geometry.min) * geometry.verticalScale;
   // About 6 mm tall and 2.6 mm across on a 10 cm plate, never thinner than 1.6 mm.
-  const height = 0.06;
-  const radius = Math.max(0.013, 0.8 / widthMm);
+  return cone(x, z, ground, 0.06, Math.max(0.013, 0.8 / widthMm), geometry.peak.metres);
+}
+
+/** Height of the surface at a point, from the nearest surface vertex. */
+function surfaceHeightAt(
+  geometry: PlateGeometry,
+  u: number,
+  v: number,
+): { y: number; metres: number } {
+  let best = Infinity;
+  let index = 0;
+  for (let k = 0; k < geometry.uvs.length / 2; k++) {
+    const d = (geometry.uvs[k * 2] - u) ** 2 + (geometry.uvs[k * 2 + 1] - v) ** 2;
+    if (d < best) {
+      best = d;
+      index = k;
+    }
+  }
+  return { y: geometry.surface[index * 3 + 1], metres: geometry.elevations[index] };
+}
+
+function cone(
+  x: number,
+  z: number,
+  ground: number,
+  height: number,
+  radius: number,
+  metres: number,
+): PinSolid {
   const base = ground - 0.012;
   const apex = [x, ground + height, z];
   const out: number[] = [];
@@ -381,7 +416,7 @@ function buildPin(geometry: PlateGeometry, widthMm: number): PinSolid {
   return {
     soup: new Float32Array(out),
     tip: apex as [number, number, number],
-    metres: geometry.peak.metres,
+    metres,
   };
 }
 
@@ -395,8 +430,16 @@ export async function buildPlateExtras(
     label = buildLabel(geometry, options.label, options);
   }
   const pin = options.pin ? buildPin(geometry, options.widthMm) : null;
+  const markers = (options.markers ?? [])
+    .filter(({ u, v }) => u >= 0 && u <= 1 && v >= 0 && v <= 1)
+    .map(({ u, v, label }) => {
+      const { y, metres } = surfaceHeightAt(geometry, u, v);
+      // A little smaller than the summit pin: 4 mm tall on a 10 cm plate.
+      const solid = cone(u - 0.5, v - 0.5, y, 0.04, Math.max(0.01, 0.7 / options.widthMm), metres);
+      return { ...solid, label };
+    });
   const reach = label ? label.rect.z0 + label.rect.depth : 0.5;
-  return { label, pin, reach };
+  return { label, pin, markers, reach };
 }
 
 /**

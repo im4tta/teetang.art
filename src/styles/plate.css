@@ -1079,6 +1079,11 @@
   grid-template-columns: repeat(3, 1fr);
 }
 
+/* Four actions: two rows of two. */
+.plate-actions:has(> :nth-child(4)) {
+  grid-template-columns: repeat(2, 1fr);
+}
+
 .plate-actions:has(> :nth-child(3)) .plate-btn {
   gap: 6px;
   padding: 0 8px;
@@ -1266,4 +1271,67 @@
   height: 100%;
   background: var(--plate-ink);
   transition: width 0.2s;
+}
+
+/* ── Routes, markers and profiles ── */
+
+.plate-pick-banner {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  top: 12px;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 6px 6px 16px;
+  border-radius: 999px;
+  background: var(--plate-accent);
+  color: var(--plate-on-accent);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.plate-pick-banner span {
+  flex: 1;
+}
+
+.plate-canvas[data-picking] {
+  cursor: crosshair;
+}
+
+.plate-route-colors {
+  display: flex;
+  gap: 8px;
+}
+
+.plate-route-color {
+  width: 44px;
+  height: 44px;
+  border: 3px solid var(--plate-raised);
+  border-radius: 50%;
+  box-shadow: 0 0 0 1px var(--plate-line);
+  cursor: pointer;
+}
+
+.plate-route-color[aria-pressed="true"] {
+  box-shadow: 0 0 0 3px var(--plate-ink);
+}
+
+.plate-marker-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plate-marker-row .plate-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.plate-profile svg {
+  display: block;
+  width: 100%;
+  height: auto;
+  border-radius: 12px;
 }

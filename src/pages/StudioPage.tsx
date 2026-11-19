@@ -26,6 +26,7 @@ import { triggerDownloadBlob } from "@/services/export/fileDownloader";
 import { tapFeedback } from "@/utils/haptics";
 import { useWheelScrollsRows } from "@/hooks/useWheelScrollsRows";
 import { plateBounds } from "@/features/plate/geo";
+import { decodeRoute, routeMask, toPlateUv } from "@/features/plate/routes";
 import { loadHeightGrid } from "@/features/plate/elevation";
 import type { HeightGrid } from "@/features/plate/elevationCore";
 import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
@@ -252,6 +253,11 @@ function StudioApp() {
     [grid, deferredPrint.smooth, deferredPrint.trimLow, deferredPrint.trimHigh],
   );
   const exaggeration = deferredPlate.exaggeration || autoHeight;
+  const route = useMemo(
+    () => (deferredPlate.route ? decodeRoute(deferredPlate.route) : []),
+    [deferredPlate.route],
+  );
+  const raiseRoute = deferredPlate.routeRaise;
   const geometry = useMemo(
     () =>
       edited
@@ -260,16 +266,35 @@ function StudioApp() {
             exaggeration,
             sizeMeters: bounds.sizeMeters,
             boxDepth: deferredPrint.baseMm / deferredPrint.widthMm,
+            // The same 0.8 mm ridge as on the plate page, whatever the print width.
+            ridge:
+              raiseRoute && route.length > 1
+                ? {
+                    mask: routeMask(bounds, route, edited.size),
+                    size: edited.size,
+                    height: 0.8 / deferredPrint.widthMm,
+                  }
+                : null,
           })
         : null,
     [
       edited,
       deferredPlate.shape,
       exaggeration,
-      bounds.sizeMeters,
+      bounds,
       deferredPrint.baseMm,
       deferredPrint.widthMm,
+      raiseRoute,
+      route,
     ],
+  );
+  const markerSpots = useMemo(
+    () =>
+      deferredPlate.markers.map((marker) => {
+        const [u, v] = toPlateUv(bounds, [marker.lat, marker.lon]);
+        return { u, v, label: marker.label };
+      }),
+    [deferredPlate.markers, bounds],
   );
 
   const labelKey = useMemo(() => {
@@ -289,6 +314,7 @@ function StudioApp() {
         reliefMm: deferredPrint.reliefMm,
         // About 0.2 mm per cell, whatever the print size.
         cellsPerUnit: Math.min(1000, deferredPrint.widthMm / 0.2),
+        markers: markerSpots,
       }).then(
         (value) => !cancelled && setExtras(value),
         () => !cancelled && setExtras(null),
@@ -305,6 +331,7 @@ function StudioApp() {
     deferredPlate.pin,
     deferredPrint.widthMm,
     deferredPrint.reliefMm,
+    markerSpots,
   ]);
 
   // Extras follow the terrain by a moment; parts always pair the latest of each.
@@ -350,6 +377,7 @@ function StudioApp() {
       terrain: print.colors[0],
       label: print.colors[Math.min(1, print.bands - 1)] ?? print.colors[0],
       pin: print.colors[Math.max(0, print.bands - 1)],
+      markers: print.colors[Math.max(0, print.bands - 1)],
     };
     return printSoups(parts, widthMm, lift).map((part) => ({
       ...part,

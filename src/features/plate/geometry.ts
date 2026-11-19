@@ -61,9 +61,16 @@ export function autoExaggeration(grid: HeightGrid, sizeMeters: number): number {
 
 export function buildPlateGeometry(
   grid: HeightGrid,
-  options: { shape: PlateShape; exaggeration: number; sizeMeters: number; boxDepth: number },
+  options: {
+    shape: PlateShape;
+    exaggeration: number;
+    sizeMeters: number;
+    boxDepth: number;
+    /** Raises the surface along a route: a 0..1 mask over the plate's square and the ridge height in plate units. */
+    ridge?: { mask: Float32Array; size: number; height: number } | null;
+  },
 ): PlateGeometry {
-  const { shape, exaggeration, sizeMeters, boxDepth } = options;
+  const { shape, exaggeration, sizeMeters, boxDepth, ridge } = options;
   const size = grid.size;
   const count = size * size;
   const surface = new Float32Array(count * 3);
@@ -95,6 +102,12 @@ export function buildPlateGeometry(
 
   const verticalScale = exaggeration / sizeMeters;
   for (let k = 0; k < count; k++) surface[k * 3 + 1] = (elevations[k] - min) * verticalScale;
+  if (ridge && ridge.height > 0) {
+    const maskGrid = { size: ridge.size, heights: ridge.mask, min: 0, max: 1 };
+    for (let k = 0; k < count; k++) {
+      surface[k * 3 + 1] += sampleGrid(maskGrid, uvs[k * 2], uvs[k * 2 + 1]) * ridge.height;
+    }
+  }
 
   const cells = size - 1;
   const surfaceIndex = new Uint32Array(cells * cells * 6);

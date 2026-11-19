@@ -401,4 +401,39 @@ test.describe("3D plate on a computer", () => {
     await page.getByRole("button", { name: "Satellite" }).click({ force: true });
     await expect(page.getByRole("button", { name: "Satellite" })).toBeInViewport({ ratio: 0.9 });
   });
+
+  test("a GPX track, a pin and a measured profile", async ({ page }) => {
+    const points = Array.from({ length: 60 }, (_, k) => {
+      const t = k / 59;
+      return `<trkpt lat="${(12.005 + t * 0.028).toFixed(6)}" lon="${(104.14 + t * 0.026).toFixed(6)}"/>`;
+    });
+    const gpx = `<?xml version="1.0"?><gpx version="1.1"><trk><name>Summit trail</name><trkseg>${points.join("")}</trkseg></trk></gpx>`;
+    await openPlate(page);
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await page.locator(".plate-sheet input[type=file]").setInputFiles({
+      name: "trail.gpx",
+      mimeType: "application/gpx+xml",
+      buffer: Buffer.from(gpx),
+    });
+    await expect(page.locator(".app-toast--success")).toContainText("Track added");
+    // The plate moved to fit the track, and the track's profile is ready.
+    await expect(page.locator(".plate-profile svg")).toContainText("km");
+
+    await page.getByRole("button", { name: "Add a pin: tap the plate" }).click();
+    const box = (await page.locator(".plate-canvas").boundingBox())!;
+    await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.55);
+    await expect(page.locator(".plate-marker-row input")).toHaveValue("Pin 1");
+
+    await page.getByRole("button", { name: "Draw a line: tap two points" }).click();
+    await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.5);
+    await page.mouse.click(box.x + box.width * 0.62, box.y + box.height * 0.45);
+    await expect(page.locator(".plate-profile svg")).toContainText("Measured line");
+
+    // Pins and the track travel in share links.
+    const draft = await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("teetangart.plate.v1")!),
+    );
+    expect(draft.markers).toHaveLength(1);
+    expect(draft.route.length).toBeGreaterThan(20);
+  });
 });

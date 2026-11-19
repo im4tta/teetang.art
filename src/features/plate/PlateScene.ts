@@ -22,8 +22,10 @@ import {
   Scene,
   ShaderMaterial,
   SRGBColorSpace,
+  Raycaster,
   Spherical,
   Sprite,
+  Vector2,
   SpriteMaterial,
   Vector3,
   WebGLRenderTarget,
@@ -93,6 +95,8 @@ export class PlateScene {
   private readonly labelTop = new Mesh(new BufferGeometry());
   private readonly labelShell = new Mesh(new BufferGeometry());
   private readonly pin = new Mesh(new BufferGeometry());
+  private readonly markerPins = new Mesh(new BufferGeometry());
+  private markerTags: Sprite[] = [];
   private readonly peakTag = new Sprite(
     new SpriteMaterial({ depthTest: false, transparent: true }),
   );
@@ -186,6 +190,8 @@ export class PlateScene {
     this.labelTop.material = this.labelMaterial;
     this.labelShell.material = this.shellMaterial;
     this.pin.material = this.pinMaterial;
+    this.markerPins.material = this.pinMaterial;
+    this.markerPins.visible = false;
     this.peakTag.renderOrder = 10;
     this.peakTag.center.set(0.5, 0);
     for (const object of [this.labelTop, this.labelShell, this.pin, this.peakTag]) {
@@ -202,6 +208,7 @@ export class PlateScene {
       this.labelTop,
       this.labelShell,
       this.pin,
+      this.markerPins,
       this.peakTag,
     );
 
@@ -430,6 +437,42 @@ export class PlateScene {
     }
     this.peakTag.visible = Boolean(pin && peakText);
 
+    // Markers: one mesh for every cone, and a name tag above each.
+    for (const tag of this.markerTags) {
+      this.scene.remove(tag);
+      tag.material.map?.dispose();
+      tag.material.dispose();
+    }
+    this.markerTags = [];
+    const markers = extras?.markers ?? [];
+    if (markers.length) {
+      const total = markers.reduce((sum, marker) => sum + marker.soup.length, 0);
+      const soup = new Float32Array(total);
+      let offset = 0;
+      for (const marker of markers) {
+        soup.set(marker.soup, offset);
+        offset += marker.soup.length;
+        if (!marker.label) continue;
+        const canvas = tagCanvas(marker.label);
+        const map = new CanvasTexture(canvas);
+        map.colorSpace = NoColorSpace;
+        const tag = new Sprite(new SpriteMaterial({ map, depthTest: false, transparent: true }));
+        tag.renderOrder = 10;
+        tag.center.set(0.5, 0);
+        const height = 0.042;
+        tag.scale.set((height * canvas.width) / canvas.height, height, 1);
+        tag.position.set(marker.tip[0], marker.tip[1] + 0.008, marker.tip[2]);
+        this.markerTags.push(tag);
+        this.scene.add(tag);
+      }
+      const geometry = new BufferGeometry();
+      geometry.setAttribute("position", new BufferAttribute(soup, 3));
+      geometry.computeVertexNormals();
+      this.markerPins.geometry.dispose();
+      this.markerPins.geometry = geometry;
+    }
+    this.markerPins.visible = markers.length > 0;
+
     this.reach = extras?.reach ?? 0.5;
     this.fitCamera();
     this.wake(IDLE_SPIN_MS);
@@ -566,6 +609,19 @@ export class PlateScene {
         ),
       );
     }
+    if (this.extras?.markers.length) {
+      group.add(
+        solid(
+          this.markerPins.geometry,
+          new MeshStandardMaterial({
+            color: linear(look?.ink ?? "#1b1a17"),
+            roughness: 0.45,
+            name: "Markers",
+          }),
+          "Markers",
+        ),
+      );
+    }
     const camera = this.camera.clone();
     return { group, camera, target: this.controls.target.clone(), baseDepth: this.baseDepth };
   }
@@ -594,6 +650,19 @@ export class PlateScene {
     u[name].value = texture;
     u[flag].value = Boolean(image);
     this.wake(0);
+  }
+
+  /** The point of the terrain under a screen position, in plate texture coordinates; null off the plate. */
+  pick(clientX: number, clientY: number): [number, number] | null {
+    const rect = this.canvas.getBoundingClientRect();
+    const pointer = new Vector2(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    const raycaster = new Raycaster();
+    raycaster.setFromCamera(pointer, this.camera);
+    const hit = raycaster.intersectObject(this.surface, false)[0];
+    return hit?.uv ? [hit.uv.x, hit.uv.y] : null;
   }
 
   /** Turns and zooms the view from the keyboard: angles in degrees, zoom as a factor. */
@@ -695,8 +764,13 @@ export class PlateScene {
       this.labelTop,
       this.labelShell,
       this.pin,
+      this.markerPins,
     ]) {
       object.geometry.dispose();
+    }
+    for (const tag of this.markerTags) {
+      tag.material.map?.dispose();
+      tag.material.dispose();
     }
     for (const material of [
       this.surfaceMaterial,
