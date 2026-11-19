@@ -191,3 +191,22 @@ test.describe("first visit", () => {
     await expect(page.locator(".quick-start")).toHaveCount(0);
   });
 });
+
+test.describe("desktop", () => {
+  // A computer with a mouse: the wide-screen styles apply, unlike on the phones above.
+  test.use({ viewport: { width: 1400, height: 850 }, isMobile: false, hasTouch: false });
+
+  test("the home page scrolls with the wheel and Go to top brings it back", async ({ page }) => {
+    await page.goto("/");
+    await expect(page.locator(".home-hero-title")).toBeVisible();
+    const scrolled = () =>
+      page.evaluate(() =>
+        Math.max(document.scrollingElement?.scrollTop ?? 0, document.body.scrollTop),
+      );
+    await page.mouse.move(700, 400);
+    for (let k = 0; k < 4; k++) await page.mouse.wheel(0, 800);
+    await expect.poll(scrolled).toBeGreaterThan(1000);
+    await page.getByRole("button", { name: "Go to top" }).click();
+    await expect.poll(scrolled).toBe(0);
+  });
+});
