@@ -214,7 +214,9 @@
   inset: 0;
 }
 
-.area-picker__map {
+/* MapLibre's stylesheet loads after this one and sets position: relative on
+   .maplibregl-map, which collapsed the map to zero height. */
+.area-picker .area-picker__map {
   position: absolute;
   inset: 0;
 }
@@ -356,6 +358,16 @@
   font-family: var(--plate-mono);
   font-size: 14px;
   color: var(--plate-muted);
+}
+
+/* Letter-spacing splits Khmer letter clusters apart, and the mono font has no
+   Khmer letters: Khmer text gets the normal font and spacing. */
+.plate-page:lang(km) .plate-header__title,
+.plate-place__meta small,
+.plate-place__name[data-script="khmer"] {
+  font-family: "Kantumruy Pro", "Noto Sans Khmer", var(--plate-mono);
+  letter-spacing: normal;
+  text-transform: none;
 }
 
 .plate-place__meta small {
