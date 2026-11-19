@@ -138,6 +138,10 @@ test.describe("3D plate", () => {
     await openPlate(page);
     await page.locator(".plate-move").click();
     await expect(page.locator(".area-picker__square")).toBeVisible();
+    // The map must fill the stage (MapLibre's own CSS once collapsed it to 0 px).
+    const map = await page.locator(".area-picker__map").boundingBox();
+    const stage = await page.locator(".plate-stage").boundingBox();
+    expect(map!.height).toBeGreaterThan(stage!.height * 0.9);
 
     // Base map and shading are remembered for next time.
     await page.locator(".area-picker__bases").getByRole("button", { name: "Satellite" }).click();

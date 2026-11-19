@@ -378,7 +378,12 @@ function PlateApp() {
 
         <section className="plate-panel">
           <div className="plate-place">
-            <h1 className="plate-place__name">{title}</h1>
+            <h1
+              className="plate-place__name"
+              data-script={/[\u1780-\u17ff]/.test(title) ? "khmer" : undefined}
+            >
+              {title}
+            </h1>
             <p className="plate-place__meta">
               {plate.countryCode && <span aria-hidden="true">{flagEmoji(plate.countryCode)} </span>}
               {subtitle}
