@@ -35,12 +35,16 @@ export default defineConfig({
       },
     },
     {
+      // Both phones run Chromium, so a second size only adds information for
+      // layout and touch checks (tagged @layout); behaviour is tested once.
       name: "iphone",
+      grep: /@layout/,
       use: { ...devices["iPhone 13"], browserName: "chromium" },
     },
   ],
   webServer: {
-    command: `npm run build && npx vite preview --port ${PORT} --strictPort`,
+    // CI builds in its own step just before, so the tests reuse that build.
+    command: `${process.env.CI ? "" : "npm run build && "}npx vite preview --port ${PORT} --strictPort`,
     url: `http://localhost:${PORT}`,
     reuseExistingServer: !process.env.CI,
     timeout: 120_000,

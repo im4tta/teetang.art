@@ -1,4 +1,4 @@
-/** Builds the plate's downloadable files: contour SVG and 3D-printable STL. */
+/** Contour SVG download. The STL and 3MF writers live in printModel.ts. */
 import { simplify, traceContours } from "./contours";
 import { contourInterval, type PlateGeometry } from "./geometry";
 
@@ -65,59 +65,4 @@ export function buildContourSvg(
     text,
     `</svg>`,
   ].join("\n");
-}
-
-/**
- * Binary STL in millimetres, Z up, as slicers expect. The surface, walls and
- * base close into one solid.
- */
-export function buildStl(geometry: PlateGeometry, widthMm = 100): ArrayBuffer {
-  const { surface, surfaceIndex, shell } = geometry;
-  const triangles = surfaceIndex.length / 3 + shell.length / 9;
-  const buffer = new ArrayBuffer(84 + triangles * 50);
-  const view = new DataView(buffer);
-  const header = "teetang.art plate";
-  for (let k = 0; k < header.length; k++) view.setUint8(k, header.charCodeAt(k));
-  view.setUint32(80, triangles, true);
-
-  // Lift the solid so its base rests on z = 0.
-  const lift = geometry.baseDepth;
-  let offset = 84;
-  const writeTriangle = (corners: number[]) => {
-    // Plate (x, y up, z south) → STL (x, y north, z up).
-    const p = [0, 1, 2].map((c) => [
-      corners[c * 3] * widthMm,
-      -corners[c * 3 + 2] * widthMm,
-      (corners[c * 3 + 1] + lift) * widthMm,
-    ]);
-    const ux = p[1][0] - p[0][0],
-      uy = p[1][1] - p[0][1],
-      uz = p[1][2] - p[0][2];
-    const vx = p[2][0] - p[0][0],
-      vy = p[2][1] - p[0][1],
-      vz = p[2][2] - p[0][2];
-    let nx = uy * vz - uz * vy;
-    let ny = uz * vx - ux * vz;
-    let nz = ux * vy - uy * vx;
-    const length = Math.hypot(nx, ny, nz) || 1;
-    nx /= length;
-    ny /= length;
-    nz /= length;
-    for (const value of [nx, ny, nz, ...p[0], ...p[1], ...p[2]]) {
-      view.setFloat32(offset, value, true);
-      offset += 4;
-    }
-    offset += 2;
-  };
-
-  for (let k = 0; k < surfaceIndex.length; k += 3) {
-    const corners: number[] = [];
-    for (let c = 0; c < 3; c++) {
-      const v = surfaceIndex[k + c] * 3;
-      corners.push(surface[v], surface[v + 1], surface[v + 2]);
-    }
-    writeTriangle(corners);
-  }
-  for (let k = 0; k < shell.length; k += 9) writeTriangle(Array.from(shell.subarray(k, k + 9)));
-  return buffer;
 }

@@ -1,6 +1,7 @@
 import type { Page } from "@playwright/test";
 import { auditTouchSizes, expect, settleAnimations, test } from "./fixtures";
-import { serveTiles, SUMMIT_METRES } from "./plateTiles";
+import sharp from "sharp";
+import { serveTiles, splitTile, SUMMIT_METRES } from "./plateTiles";
 
 // CI machines have no GPU. The plate needs WebGL, so these tests (and only
 // these: the editor's map would render slowly in software and time out) get
@@ -34,7 +35,7 @@ test.describe("3D plate", () => {
     expect(await highest(page)).toBeLessThanOrEqual(SUMMIT_METRES);
   });
 
-  test("fits the phone and meets touch and text minimums", async ({ page }) => {
+  test("fits the phone and meets touch and text minimums", { tag: "@layout" }, async ({ page }) => {
     await openPlate(page);
     const main = await auditTouchSizes(page);
     expect(main.overflowsSideways).toBe(false);
@@ -134,35 +135,41 @@ test.describe("3D plate", () => {
     await expect(page.locator(".plate-canvas")).toHaveAttribute("data-ready", "true");
   });
 
-  test("Move picks a new square and Surprise me jumps somewhere new", async ({ page }) => {
-    await openPlate(page);
-    await page.locator(".plate-move").click();
-    await expect(page.locator(".area-picker__square")).toBeVisible();
-    // The map must fill the stage (MapLibre's own CSS once collapsed it to 0 px).
-    const map = await page.locator(".area-picker__map").boundingBox();
-    const stage = await page.locator(".plate-stage").boundingBox();
-    expect(map!.height).toBeGreaterThan(stage!.height * 0.9);
+  test(
+    "Move picks a new square and Surprise me jumps somewhere new",
+    { tag: "@layout" },
+    async ({ page }) => {
+      await openPlate(page);
+      await page.locator(".plate-move").click();
+      await expect(page.locator(".area-picker__square")).toBeVisible();
+      // The map must fill the stage (MapLibre's own CSS once collapsed it to 0 px).
+      const map = await page.locator(".area-picker__map").boundingBox();
+      const stage = await page.locator(".plate-stage").boundingBox();
+      expect(map!.height).toBeGreaterThan(stage!.height * 0.9);
 
-    // Base map and shading are remembered for next time.
-    await page.locator(".area-picker__bases").getByRole("button", { name: "Satellite" }).click();
-    await page.locator(".plate-dim input").fill("0.5");
-    await expect
-      .poll(() => page.evaluate(() => localStorage.getItem("teetangart.plate.picker")))
-      .toBe(JSON.stringify({ base: "satellite", dim: 0.5 }));
+      // Base map and shading are remembered for next time.
+      await page.locator(".area-picker__bases").getByRole("button", { name: "Satellite" }).click();
+      await page.locator(".plate-dim input").fill("0.5");
+      await expect
+        .poll(() => page.evaluate(() => localStorage.getItem("teetangart.plate.picker")))
+        .toBe(JSON.stringify({ base: "satellite", dim: 0.5 }));
 
-    await page.getByRole("button", { name: "25 km" }).click();
-    await expect(page.locator(".area-picker__size")).toHaveText("25 km");
-    await page.getByRole("button", { name: "Show plate" }).click();
-    await expect(page.locator(".plate-canvas")).toHaveAttribute("data-ready", "true");
-    await expect
-      .poll(() =>
-        page.evaluate(() => JSON.parse(localStorage.getItem("teetangart.plate.v1") ?? "{}").sizeKm),
-      )
-      .toBe(25);
+      await page.getByRole("button", { name: "25 km" }).click();
+      await expect(page.locator(".area-picker__size")).toHaveText("25 km");
+      await page.getByRole("button", { name: "Show plate" }).click();
+      await expect(page.locator(".plate-canvas")).toHaveAttribute("data-ready", "true");
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => JSON.parse(localStorage.getItem("teetangart.plate.v1") ?? "{}").sizeKm,
+          ),
+        )
+        .toBe(25);
 
-    await page.getByRole("button", { name: "Surprise me" }).click();
-    await expect(page.locator(".plate-place__name")).not.toHaveText("Phnom Aural");
-  });
+      await page.getByRole("button", { name: "Surprise me" }).click();
+      await expect(page.locator(".plate-place__name")).not.toHaveText("Phnom Aural");
+    },
+  );
 
   test("Move uses Google tiles for Map and Satellite when the site has a key", async ({ page }) => {
     const tiles: string[] = [];
@@ -212,5 +219,108 @@ test.describe("3D plate", () => {
     expect(link).toContain("style=elevation");
     expect(link).toContain("lines=more");
     await expect(page.locator(".app-toast--error")).toHaveCount(0);
+  });
+
+  test("a draped map keeps north at the far side of the plate", async ({ page }) => {
+    // A topographic map that is red north of the summit and blue south of it.
+    await page.route(/opentopomap\.org\/(\d+)\/(\d+)\/(\d+)\.png$/, (route) => {
+      const [, z, , y] = route
+        .request()
+        .url()
+        .match(/(\d+)\/(\d+)\/(\d+)\.png$/)!
+        .map(Number);
+      return route.fulfill({
+        body: splitTile(z, y),
+        contentType: "image/png",
+        headers: { "access-control-allow-origin": "*" },
+      });
+    });
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&style=topo&label=0");
+    await expect(page.locator(".plate-stage__pill")).toHaveCount(0, { timeout: 15_000 });
+    await expect(page.locator(".plate-credit")).toContainText("OpenTopoMap");
+    const shot = await page.locator(".plate-canvas").screenshot();
+    const { data, info } = await sharp(shot).raw().toBuffer({ resolveWithObject: true });
+    const hue = (fy: number) => {
+      const k =
+        (Math.round(info.height * fy) * info.width + Math.round(info.width / 2)) * info.channels;
+      return data[k] > data[k + 2] ? "red" : "blue";
+    };
+    // The camera looks north, so the far (upper) half is north.
+    expect(hue(0.38)).toBe("red");
+    expect(hue(0.62)).toBe("blue");
+  });
+
+  test("the nameplate is part of the STL", async ({ page }) => {
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&name=Phnom%20Aural&label=0");
+    const stlTriangles = async () => {
+      await page.getByRole("button", { name: "Download", exact: true }).click();
+      const [download] = await Promise.all([
+        page.waitForEvent("download"),
+        page.locator(".plate-download[data-kind=stl]").click(),
+      ]);
+      const stream = await download.createReadStream();
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) chunks.push(chunk as Buffer);
+      await page.locator(".plate-sheet__header button").click();
+      return Buffer.concat(chunks).readUInt32LE(80);
+    };
+    const plain = await stlTriangles();
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await page.getByRole("checkbox", { name: "Name in front of the plate" }).check();
+    await page.getByRole("checkbox", { name: "Pin on the summit" }).check();
+    await page.locator(".plate-sheet__header button").click();
+    // The nameplate is built a moment after a change.
+    await expect.poll(stlTriangles, { timeout: 15_000 }).toBeGreaterThan(plain + 5_000);
+  });
+
+  test("the STL Studio checks the model and exports STL and 3MF", async ({ page }) => {
+    await openPlate(page);
+    await page.getByRole("button", { name: "STL Studio" }).click();
+    await expect(page).toHaveURL(/\/plate\/studio$/);
+    await expect(page.locator(".studio-canvas")).toHaveAttribute("data-ready", "true", {
+      timeout: 20_000,
+    });
+    // Terrain, nameplate and every other part close into solids a slicer accepts.
+    await expect(page.locator(".studio-check")).toHaveAttribute("data-ok", "true", {
+      timeout: 30_000,
+    });
+    await expect(page.locator(".studio-dims")).toContainText("100 ×");
+
+    await page.getByLabel("Width").fill("150");
+    await expect(page.locator(".studio-dims")).toContainText("150 ×");
+    await page.getByRole("button", { name: "3", exact: true }).click();
+    await expect(page.locator(".studio-band")).toHaveCount(3);
+
+    const save = async (name: string) => {
+      const [download] = await Promise.all([
+        page.waitForEvent("download"),
+        page.getByRole("button", { name }).click(),
+      ]);
+      const stream = await download.createReadStream();
+      const chunks: Buffer[] = [];
+      for await (const chunk of stream) chunks.push(chunk as Buffer);
+      return { name: download.suggestedFilename(), file: Buffer.concat(chunks) };
+    };
+    const stl = await save("Download STL");
+    expect(stl.name).toBe("teetang-phnom-aural-150mm.stl");
+    const triangles = stl.file.readUInt32LE(80);
+    expect(stl.file.length).toBe(84 + triangles * 50);
+    // Every corner lies on or above the bed and inside the width.
+    let lowest = Infinity;
+    let widest = 0;
+    for (let k = 0; k < triangles; k += 97) {
+      for (let c = 0; c < 3; c++) {
+        const at = 84 + k * 50 + 12 + c * 12;
+        widest = Math.max(widest, Math.abs(stl.file.readFloatLE(at)));
+        lowest = Math.min(lowest, stl.file.readFloatLE(at + 8));
+      }
+    }
+    expect(lowest).toBeGreaterThanOrEqual(-0.001);
+    expect(widest).toBeLessThanOrEqual(75.01);
+
+    const threeMf = await save("Download 3MF");
+    expect(threeMf.name).toBe("teetang-phnom-aural-150mm.3mf");
+    expect(threeMf.file.subarray(0, 2).toString()).toBe("PK");
+    expect(threeMf.file.includes(Buffer.from("3D/3dmodel.model"))).toBe(true);
   });
 });

@@ -4,7 +4,14 @@
  * shows is what the plate shows.
  */
 
-export const STYLE_CODE = { drawing: 0, print: 1, elevation: 4, map: 2, satellite: 3 } as const;
+export const STYLE_CODE = {
+  drawing: 0,
+  print: 1,
+  elevation: 4,
+  topo: 5,
+  map: 2,
+  satellite: 3,
+} as const;
 
 export const surfaceVertex = /* glsl */ `
   attribute float elevation;
@@ -30,6 +37,7 @@ export const surfaceFragment = /* glsl */ `
   uniform vec3 uLight;
   uniform sampler2D uDrape;
   uniform bool uHasDrape;
+  uniform sampler2D uRamp;
   varying float vElevation;
   varying vec3 vNormal;
   varying vec2 vUv;
@@ -61,11 +69,9 @@ export const surfaceFragment = /* glsl */ `
       color = mix(uInk, uPaper, 0.25 + 0.75 * shade);
       color = mix(color, uInk, contour(0.18));
     } else if (uStyle == 4) {
-      // Hypsometric tint: low green, through ochre and brown, to pale peaks.
+      // Hypsometric tint from the chosen palette, lowest point on the left.
       float h = clamp((vElevation - uMin) / (uMax - uMin), 0.0, 1.0);
-      vec3 tint = mix(vec3(0.36, 0.56, 0.36), vec3(0.83, 0.77, 0.5), smoothstep(0.0, 0.45, h));
-      tint = mix(tint, vec3(0.6, 0.42, 0.29), smoothstep(0.4, 0.8, h));
-      tint = mix(tint, vec3(0.96, 0.95, 0.93), smoothstep(0.82, 1.0, h));
+      vec3 tint = texture2D(uRamp, vec2(0.002 + h * 0.996, 0.5)).rgb;
       color = tint * (0.7 + 0.42 * light);
       color = mix(color, uInk, contour(0.2));
     } else {
@@ -75,6 +81,32 @@ export const surfaceFragment = /* glsl */ `
       if (uStyle == 2) color = mix(color, uInk, contour(0.12));
     }
     gl_FragColor = vec4(color, 1.0);
+  }
+`;
+
+/** The nameplate's top: box colour, with the letters in the surface colour. */
+export const labelVertex = /* glsl */ `
+  varying vec3 vNormal;
+  varying vec2 vUv;
+  void main() {
+    vNormal = normal;
+    vUv = uv;
+    gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+  }
+`;
+
+export const labelFragment = /* glsl */ `
+  uniform sampler2D uMask;
+  uniform vec3 uBase;
+  uniform vec3 uText;
+  uniform vec3 uLight;
+  varying vec3 vNormal;
+  varying vec2 vUv;
+  void main() {
+    float light = clamp(dot(normalize(vNormal), uLight), 0.0, 1.0);
+    float text = texture2D(uMask, vUv).a;
+    vec3 color = mix(uBase, uText, smoothstep(0.25, 0.75, text));
+    gl_FragColor = vec4(color * (0.78 + 0.32 * light), 1.0);
   }
 `;
 

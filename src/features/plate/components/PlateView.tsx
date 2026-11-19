@@ -1,5 +1,6 @@
 import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from "react";
 import type { PlateGeometry } from "../geometry";
+import type { PlateExtras } from "../extras";
 import { PlateScene, type PlateLook } from "../PlateScene";
 import { useI18n } from "@/context/i18n/context";
 
@@ -11,13 +12,16 @@ interface PlateViewProps {
   geometry: PlateGeometry | null;
   look: PlateLook;
   drape: HTMLCanvasElement | null;
+  extras: PlateExtras | null;
+  /** Text on the summit pin's tag. */
+  peakText: string;
   label: string;
   onInteract?: () => void;
 }
 
 /** The interactive 3D plate. Owns the WebGL scene for as long as it is mounted. */
 const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView(
-  { geometry, look, drape, label, onInteract },
+  { geometry, look, drape, extras, peakText, label, onInteract },
   ref,
 ) {
   const { t } = useI18n();
@@ -53,6 +57,10 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
   useEffect(() => {
     scene?.setDrape(drape);
   }, [scene, drape]);
+
+  useEffect(() => {
+    scene?.setExtras(extras, peakText);
+  }, [scene, extras, peakText]);
 
   useImperativeHandle(ref, () => ({ snapshot: (size) => scene?.snapshot(size) ?? null }), [scene]);
 

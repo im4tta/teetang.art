@@ -4,12 +4,17 @@ import type { TranslationKey } from "@/context/i18n/types";
 import type { ThemeOption } from "@/services/theme/types";
 import { tapFeedback } from "@/utils/haptics";
 import { shapeIconPath } from "../shapes";
+import { BASEMAPS, covers, resolveBasemap } from "../basemaps";
+import { paletteGradient } from "../palettes";
 import {
   BOX_LIMITS,
   EXAGGERATION_LIMITS,
   INK_PRESETS,
+  LABEL_FONTS,
+  LABEL_RELIEFS,
   PLATE_DENSITIES,
   PLATE_SHAPES,
+  RELIEF_PALETTE_IDS,
   type PlateSettings,
 } from "../plateSettings";
 import PlateSheet from "./PlateSheet";
@@ -39,6 +44,8 @@ export default function AdjustSheet({
   const { t } = useI18n();
   const [themes, setThemes] = useState<ThemeOption[]>([]);
   const exaggeration = plate.exaggeration || autoExaggeration;
+  const mapKind = plate.style === "satellite" ? "imagery" : plate.style === "topo" ? "topo" : null;
+  const activeMap = mapKind ? resolveBasemap(mapKind, plate.basemap, plate.lat, plate.lon) : null;
 
   useEffect(() => {
     if (plate.style !== "map" || themes.length) return;
@@ -64,6 +71,143 @@ export default function AdjustSheet({
           onChange={(event) => onChange({ name: event.target.value })}
         />
       </label>
+
+      {mapKind && (
+        <fieldset className="plate-field">
+          <legend className="plate-field__label">{t("plate.adj.basemap")}</legend>
+          <div className="plate-basemaps">
+            {BASEMAPS.filter((map) => map.kind === mapKind).map((map) => {
+              const available = covers(map, plate.lat, plate.lon);
+              return (
+                <button
+                  key={map.id}
+                  type="button"
+                  className="plate-basemap"
+                  aria-pressed={activeMap?.id === map.id}
+                  disabled={!available}
+                  onClick={() => {
+                    tapFeedback();
+                    onChange({ basemap: map.id });
+                  }}
+                >
+                  <strong>{map.name}</strong>
+                  {map.region && (
+                    <span>
+                      {available ? map.region : `${map.region} · ${t("plate.adj.notHere")}`}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </fieldset>
+      )}
+
+      {plate.style === "elevation" && (
+        <fieldset className="plate-field">
+          <legend className="plate-field__label">{t("plate.adj.palette")}</legend>
+          <div className="plate-palettes">
+            {RELIEF_PALETTE_IDS.map((palette) => (
+              <button
+                key={palette}
+                type="button"
+                className="plate-palette"
+                aria-pressed={plate.palette === palette}
+                onClick={() => onChange({ palette })}
+              >
+                <span
+                  className="plate-palette__swatch"
+                  aria-hidden="true"
+                  style={{ background: paletteGradient(palette) }}
+                />
+                {t(`plate.palette.${palette}` as TranslationKey)}
+              </button>
+            ))}
+          </div>
+        </fieldset>
+      )}
+
+      <fieldset className="plate-field plate-group">
+        <legend className="plate-field__label">{t("plate.adj.nameplate")}</legend>
+        <label className="plate-switch">
+          <input
+            type="checkbox"
+            checked={plate.label}
+            onChange={(event) => onChange({ label: event.target.checked })}
+          />
+          <span>{t("plate.adj.showNameplate")}</span>
+        </label>
+        {plate.label && (
+          <>
+            <label className="plate-field">
+              <span className="plate-field__label">{t("plate.adj.note")}</span>
+              <input
+                type="text"
+                className="plate-input"
+                value={plate.note}
+                maxLength={60}
+                placeholder={t("plate.adj.notePlaceholder")}
+                onChange={(event) => onChange({ note: event.target.value })}
+              />
+            </label>
+            <div
+              className="plate-segmented plate-segmented--wide"
+              role="group"
+              aria-label={t("plate.adj.font")}
+            >
+              {LABEL_FONTS.map((labelFont) => (
+                <button
+                  key={labelFont}
+                  type="button"
+                  aria-pressed={plate.labelFont === labelFont}
+                  data-font={labelFont}
+                  onClick={() => onChange({ labelFont })}
+                >
+                  {t(`plate.font.${labelFont}` as TranslationKey)}
+                </button>
+              ))}
+            </div>
+            <div
+              className="plate-segmented plate-segmented--wide"
+              role="group"
+              aria-label={t("plate.adj.letters")}
+            >
+              {LABEL_RELIEFS.map((labelRelief) => (
+                <button
+                  key={labelRelief}
+                  type="button"
+                  aria-pressed={plate.labelRelief === labelRelief}
+                  onClick={() => onChange({ labelRelief })}
+                >
+                  {t(`plate.relief.${labelRelief}` as TranslationKey)}
+                </button>
+              ))}
+            </div>
+            <div className="plate-toggles">
+              {(["labelCoords", "labelElevation", "labelCompass", "labelScale"] as const).map(
+                (key) => (
+                  <label key={key} className="plate-switch">
+                    <input
+                      type="checkbox"
+                      checked={plate[key]}
+                      onChange={(event) => onChange({ [key]: event.target.checked })}
+                    />
+                    <span>{t(`plate.adj.${key}` as TranslationKey)}</span>
+                  </label>
+                ),
+              )}
+            </div>
+          </>
+        )}
+        <label className="plate-switch">
+          <input
+            type="checkbox"
+            checked={plate.pin}
+            onChange={(event) => onChange({ pin: event.target.checked })}
+          />
+          <span>{t("plate.adj.pin")}</span>
+        </label>
+      </fieldset>
 
       <div className="plate-field">
         <div className="plate-field__row">

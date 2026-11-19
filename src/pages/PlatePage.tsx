@@ -9,8 +9,8 @@ import {
   useRef,
   useState,
 } from "react";
-import { Link } from "react-router-dom";
-import { Dices, Download, Move, Share2, SlidersHorizontal, MapPinned } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Box, Dices, Download, Move, Share2, SlidersHorizontal, MapPinned } from "lucide-react";
 import { I18nProvider, useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
 import Toaster from "@/components/ui/Toaster";
@@ -35,12 +35,15 @@ import {
   buildPlateLink,
   flagEmoji,
   parsePlateLink,
+  plateLabel,
   readPlateDraft,
   writePlateDraft,
   type PlateSettings,
 } from "@/features/plate/plateSettings";
 import { pickSurprise } from "@/features/plate/surprisePlaces";
-import { SATELLITE_CREDIT, loadMapDrape, loadSatelliteDrape } from "@/features/plate/drape";
+import { loadMapDrape, loadTileDrape } from "@/features/plate/drape";
+import { resolveBasemap, type Basemap } from "@/features/plate/basemaps";
+import { buildPlateExtras, type PlateExtras } from "@/features/plate/extras";
 import PlateView, { type PlateViewHandle } from "@/features/plate/components/PlateView";
 import PlaceSearch from "@/features/plate/components/PlaceSearch";
 import type { AreaChange } from "@/features/plate/components/AreaPicker";
@@ -51,8 +54,20 @@ const AreaPicker = lazy(() => import("@/features/plate/components/AreaPicker"));
 const AdjustSheet = lazy(() => import("@/features/plate/components/AdjustSheet"));
 const DownloadSheet = lazy(() => import("@/features/plate/components/DownloadSheet"));
 
-const GRID_CELLS = (navigator.hardwareConcurrency ?? 8) <= 4 ? 192 : 256;
+const LOW_END = (navigator.hardwareConcurrency ?? 8) <= 4;
+const GRID_CELLS = LOW_END ? 192 : 256;
 const DRAFT_DELAY_MS = 400;
+/** Nameplate grid cells per plate width: about 0.3 mm on a 10 cm print. */
+const LABEL_CELLS = LOW_END ? 240 : 340;
+const EXTRAS_DELAY_MS = 120;
+
+/** The raster map behind a style, or null for styles drawn from the terrain alone. */
+function basemapFor(plate: PlateSettings): Basemap | null {
+  if (plate.style === "satellite")
+    return resolveBasemap("imagery", plate.basemap, plate.lat, plate.lon);
+  if (plate.style === "topo") return resolveBasemap("topo", plate.basemap, plate.lat, plate.lon);
+  return null;
+}
 
 /** How this viewer likes the Move map; kept in this browser only. */
 interface PickerPrefs {
@@ -106,7 +121,9 @@ function PlateApp() {
   const [drape, setDrape] = useState<Load<HTMLCanvasElement> | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [touched, setTouched] = useState(false);
+  const [extras, setExtras] = useState<PlateExtras | null>(null);
   const viewRef = useRef<PlateViewHandle>(null);
+  const navigate = useNavigate();
 
   const update = useCallback((patch: Partial<PlateSettings>) => {
     setPlate((current) => ({ ...current, ...patch }));
@@ -128,8 +145,9 @@ function PlateApp() {
     return () => controller.abort();
   }, [bounds, attempt]);
 
-  // Map or satellite image over the terrain.
-  const needsDrape = plate.style === "map" || plate.style === "satellite";
+  // Map, imagery or topographic map over the terrain.
+  const basemap = basemapFor(plate);
+  const needsDrape = plate.style === "map" || basemap !== null;
   useEffect(() => {
     if (!needsDrape) {
       queueMicrotask(() => setDrape(null));
@@ -137,9 +155,9 @@ function PlateApp() {
     }
     const controller = new AbortController();
     queueMicrotask(() => setDrape({ status: "loading" }));
-    (plate.style === "map"
-      ? loadMapDrape(bounds, plate.theme, controller.signal)
-      : loadSatelliteDrape(bounds, controller.signal)
+    (basemap
+      ? loadTileDrape(bounds, basemap, controller.signal)
+      : loadMapDrape(bounds, plate.theme, controller.signal)
     ).then(
       (value) => setDrape({ status: "ready", value }),
       () => {
@@ -149,7 +167,7 @@ function PlateApp() {
       },
     );
     return () => controller.abort();
-  }, [needsDrape, plate.style, plate.theme, bounds, t]);
+  }, [needsDrape, basemap, plate.theme, bounds, t]);
 
   const deferred = useDeferredValue(plate);
   const grid = terrain.status === "ready" ? terrain.value : null;
@@ -180,6 +198,7 @@ function PlateApp() {
       side: plate.side,
       shadow: plate.shadow,
       lines: DENSITY_LINES[plate.density],
+      palette: plate.palette,
     }),
     [
       needsDrape,
@@ -190,8 +209,37 @@ function PlateApp() {
       plate.side,
       plate.shadow,
       plate.density,
+      plate.palette,
     ],
   );
+
+  // Nameplate and summit pin. Text is drawn on a canvas, so wait for typing to pause.
+  const label = useMemo(
+    () => (geometry ? plateLabel(deferred, geometry.max) : null),
+    [geometry, deferred],
+  );
+  const labelKey = label ? JSON.stringify(label) : "";
+  useEffect(() => {
+    if (!geometry) return;
+    let cancelled = false;
+    const timer = setTimeout(() => {
+      buildPlateExtras(geometry, {
+        label: labelKey ? (JSON.parse(labelKey) as typeof label) : null,
+        raised: deferred.labelRelief === "raised",
+        pin: deferred.pin,
+        widthMm: 100,
+        reliefMm: 0.8,
+        cellsPerUnit: LABEL_CELLS,
+      }).then(
+        (value) => !cancelled && setExtras(value),
+        () => !cancelled && setExtras(null),
+      );
+    }, EXTRAS_DELAY_MS);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  }, [geometry, labelKey, deferred.labelRelief, deferred.pin]);
 
   useEffect(() => {
     try {
@@ -251,6 +299,11 @@ function PlateApp() {
   const highest = geometry ? formatMetres(geometry.max) : "";
 
   const download = async (kind: PlateDownload) => {
+    if (kind === "studio") {
+      writePlateDraft(plate);
+      navigate("/plate/studio");
+      return;
+    }
     if (kind === "link") {
       const outcome = await copyText(buildPlateLink(plate));
       notify(outcome === "copied" ? t("plate.linkCopied") : t("plate.downloadFailed"), {
@@ -269,18 +322,18 @@ function PlateApp() {
       if (kind === "png") {
         const shot = viewRef.current?.snapshot(window.innerWidth >= 900 ? 3072 : 2048);
         if (!shot) throw new Error("No image");
-        blob = await composePoster(shot, plate, caption, plate.style === "satellite");
-      } else {
+        blob = await composePoster(shot, plate, caption, basemap?.credit ?? "");
+      } else if (kind === "svg") {
         const files = await import("@/features/plate/plateFiles");
-        blob =
-          kind === "svg"
-            ? new Blob(
-                [files.buildContourSvg(geometry, { ink: plate.ink, paper: plate.paper, caption })],
-                {
-                  type: "image/svg+xml",
-                },
-              )
-            : new Blob([files.buildStl(geometry)], { type: "model/stl" });
+        blob = new Blob(
+          [files.buildContourSvg(geometry, { ink: plate.ink, paper: plate.paper, caption })],
+          { type: "image/svg+xml" },
+        );
+      } else {
+        const model = await import("@/features/plate/printModel");
+        const parts = model.modelParts(geometry, extras);
+        const soups = model.printSoups(parts, 100, geometry.baseDepth);
+        blob = new Blob([model.writeStl(soups)], { type: "model/stl" });
       }
       await triggerDownloadBlob(blob, `${name}.${kind}`);
       notify(t("plate.downloaded"), { tone: "success" });
@@ -339,6 +392,8 @@ function PlateApp() {
                 geometry={geometry}
                 look={look}
                 drape={drapeReady}
+                extras={extras}
+                peakText={geometry && plate.pin ? `▲ ${highest}` : ""}
                 label={`${title} ${subtitle}`}
                 onInteract={() => setTouched(true)}
               />
@@ -371,7 +426,7 @@ function PlateApp() {
           )}
           <p className="plate-credit">
             Elevation: AWS Terrain Tiles
-            {plate.style === "satellite" && mode === "plate" ? ` · ${SATELLITE_CREDIT}` : ""}
+            {mode === "plate" && basemap ? ` · ${basemap.credit}` : ""}
             {mode === "plate" && plate.style === "map" ? " · © OpenStreetMap contributors" : ""}
           </p>
         </section>
@@ -493,6 +548,14 @@ function PlateApp() {
               <SlidersHorizontal size={20} aria-hidden="true" />
               {t("plate.adjust")}
             </button>
+            <button
+              type="button"
+              className="plate-btn plate-btn--soft"
+              onClick={() => download("studio")}
+            >
+              <Box size={20} aria-hidden="true" />
+              {t("plate.studio")}
+            </button>
           </div>
 
           <div className="plate-cta">
@@ -535,7 +598,7 @@ function PlateApp() {
           <DownloadSheet
             onDownload={download}
             onClose={() => setSheet(null)}
-            satellite={plate.style === "satellite"}
+            satellite={basemap !== null}
           />
         )}
       </Suspense>
@@ -549,7 +612,7 @@ async function composePoster(
   shot: HTMLCanvasElement,
   plate: PlateSettings,
   caption: { title: string; subtitle: string },
-  satellite: boolean,
+  credit: string,
 ): Promise<Blob> {
   const size = shot.width;
   const canvas = Object.assign(document.createElement("canvas"), {
@@ -605,7 +668,7 @@ async function composePoster(
   ctx.font = `400 ${13 * unit}px ui-monospace, Menlo, monospace`;
   ctx.letterSpacing = "0px";
   ctx.fillText(
-    `${plate.lat.toFixed(4)}°, ${plate.lon.toFixed(4)}° · ${plate.sizeKm} km · teetang.art${satellite ? ` · ${SATELLITE_CREDIT}` : ""}`,
+    `${plate.lat.toFixed(4)}°, ${plate.lon.toFixed(4)}° · ${plate.sizeKm} km · teetang.art${credit ? ` · ${credit}` : ""}`,
     size / 2,
     canvas.height - 40 * unit,
   );

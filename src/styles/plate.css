@@ -1072,3 +1072,127 @@
   font-weight: 700;
   letter-spacing: -0.01em;
 }
+
+/* ── Base maps, colour ramps and the nameplate ── */
+
+.plate-actions:has(> :nth-child(3)) {
+  grid-template-columns: repeat(3, 1fr);
+}
+
+.plate-actions:has(> :nth-child(3)) .plate-btn {
+  gap: 6px;
+  padding: 0 8px;
+  font-size: 14px;
+}
+
+.plate-basemaps {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.plate-basemap {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  justify-content: center;
+  gap: 2px;
+  min-height: 52px;
+  padding: 8px 12px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: var(--plate-surface);
+  text-align: left;
+  cursor: pointer;
+}
+
+.plate-basemap strong {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.plate-basemap span {
+  font-size: 12px;
+  color: var(--plate-muted);
+}
+
+.plate-basemap[aria-pressed="true"] {
+  border-color: var(--plate-ink);
+}
+
+.plate-basemap:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.plate-palettes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(92px, 1fr));
+  gap: 8px;
+}
+
+.plate-palette {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: var(--plate-surface);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.plate-palette[aria-pressed="true"] {
+  border-color: var(--plate-ink);
+}
+
+.plate-palette__swatch {
+  width: 100%;
+  height: 22px;
+  border-radius: 7px;
+}
+
+.plate-group {
+  gap: 10px;
+  padding: 14px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--plate-surface) 55%, transparent);
+}
+
+.plate-group > legend {
+  float: left;
+  width: 100%;
+  margin-bottom: 2px;
+}
+
+.plate-toggles {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  column-gap: 12px;
+}
+
+.plate-toggles .plate-switch {
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.plate-segmented [data-font="serif"] {
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+.plate-segmented [data-font="mono"] {
+  font-family: var(--plate-mono);
+}
+
+.plate-segmented [data-font="display"] {
+  font-family: "Bebas Neue", Impact, sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.04em;
+}
+
+.plate-segmented [data-font="grotesk"] {
+  font-family: "Space Grotesk", system-ui, sans-serif;
+}

@@ -6,6 +6,7 @@ import { loadEditorPage } from "@/pages/editorLoader";
 
 const EditorPage = lazy(loadEditorPage);
 const PlatePage = lazy(() => import("@/pages/PlatePage"));
+const StudioPage = lazy(() => import("@/pages/StudioPage"));
 
 function RouteLoadingFallback({ label = "Opening the editor…" }: { label?: string }) {
   return (
@@ -34,6 +35,14 @@ export default function App() {
           element={
             <Suspense fallback={<RouteLoadingFallback label="Opening the 3D plate…" />}>
               <PlatePage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/plate/studio"
+          element={
+            <Suspense fallback={<RouteLoadingFallback label="Opening the STL Studio…" />}>
+              <StudioPage />
             </Suspense>
           }
         />

@@ -1,15 +1,16 @@
 import { useState } from "react";
-import { Box, Image, Link2, PenTool, type LucideIcon } from "lucide-react";
+import { Box, Image, Link2, PenTool, Wrench, type LucideIcon } from "lucide-react";
 import { useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
 import PlateSheet from "./PlateSheet";
 
-export type PlateDownload = "png" | "svg" | "stl" | "link";
+export type PlateDownload = "png" | "svg" | "stl" | "studio" | "link";
 
 const OPTIONS: { id: PlateDownload; icon: LucideIcon }[] = [
   { id: "png", icon: Image },
   { id: "svg", icon: PenTool },
   { id: "stl", icon: Box },
+  { id: "studio", icon: Wrench },
   { id: "link", icon: Link2 },
 ];
 

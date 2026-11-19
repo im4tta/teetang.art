@@ -28,8 +28,25 @@ jobs:
       - run: npm run lint
       - run: npm run build
 
+      # The tests run headless, so only Chromium's headless shell is needed.
+      # The browser is cached between runs; system libraries install each time.
+      - name: Playwright version
+        id: playwright
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - uses: actions/cache@v4
+        id: browsers
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}-shell
+
       - name: Install Chromium for Playwright
-        run: npx playwright install --with-deps chromium
+        if: steps.browsers.outputs.cache-hit != 'true'
+        run: npx playwright install --with-deps --only-shell chromium
+
+      - name: Install browser system libraries
+        if: steps.browsers.outputs.cache-hit == 'true'
+        run: npx playwright install-deps chromium
 
       - name: Mobile end-to-end tests
         run: npm run test:mobile
