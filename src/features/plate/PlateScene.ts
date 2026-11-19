@@ -318,14 +318,8 @@ export class PlateScene {
     this.shell.geometry = shell;
 
     // The rim line sits on the top edge of the walls.
-    const ringCount = geometry.outline.length / 2;
-    const rim = new Float32Array((ringCount + 1) * 3);
-    for (let k = 0; k <= ringCount; k++) {
-      const wall = (k % ringCount) * 27;
-      rim.set(geometry.shell.subarray(wall, wall + 3), k * 3);
-    }
     const rimGeometry = new BufferGeometry();
-    rimGeometry.setAttribute("position", new BufferAttribute(rim, 3));
+    rimGeometry.setAttribute("position", new BufferAttribute(geometry.rim, 3));
     this.rim.geometry.dispose();
     this.rim.geometry = rimGeometry;
 

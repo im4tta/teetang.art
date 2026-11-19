@@ -194,7 +194,7 @@ function StudioApp() {
   const [reports, setReports] = useState<PartReport[] | null>(null);
   const [wireframe, setWireframe] = useState(false);
   const [section, setSection] = useState<number | null>(null);
-  const [busy, setBusy] = useState<"stl" | "3mf" | "png" | null>(null);
+  const [busy, setBusy] = useState<"stl" | "3mf" | "png" | "tiles" | "litho" | null>(null);
   const [scene, setScene] = useState<StudioScene | null>(null);
   const [failed, setFailed] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -294,6 +294,15 @@ function StudioApp() {
             exaggeration,
             sizeMeters: bounds.sizeMeters,
             boxDepth: deferredPrint.baseMm / deferredPrint.widthMm,
+            // Walls 2.4 mm, roof 1.6 mm, and a 3 mm lip that a nail hooks behind.
+            hollow: deferredPrint.hollow
+              ? {
+                  wall: 2.4 / deferredPrint.widthMm,
+                  roof: 1.6 / deferredPrint.widthMm,
+                  lip: 3 / deferredPrint.widthMm,
+                  lipHeight: 1.2 / deferredPrint.widthMm,
+                }
+              : null,
             reliefs: [
               // The same 0.8 mm ridge as on the plate page, whatever the print width.
               raiseRoute && route.length > 1
@@ -321,6 +330,7 @@ function StudioApp() {
       bounds,
       deferredPrint.baseMm,
       deferredPrint.widthMm,
+      deferredPrint.hollow,
       raiseRoute,
       route,
       waterGrid,
@@ -464,10 +474,56 @@ function StudioApp() {
   const subtitle = [plate.region, plate.country].filter(Boolean).join(", ");
   const fileBase = `teetang-${slug(plate.name)}-${Math.round(widthMm)}mm`;
 
-  const exportFile = async (kind: "stl" | "3mf" | "png") => {
-    if (!printParts.length || busy) return;
+  const exportFile = async (kind: "stl" | "3mf" | "png" | "tiles" | "litho") => {
+    if (!printParts.length || busy || !edited) return;
     setBusy(kind);
+    // Let the spinner show before the heavy work blocks the page.
+    await new Promise((resolve) => setTimeout(resolve, 30));
     try {
+      if (kind === "tiles" || kind === "litho") {
+        const tools = await import("@/features/studio/tilesAndLitho");
+        const common = { exaggeration, sizeMeters: bounds.sizeMeters, widthMm: print.widthMm };
+        const blob =
+          kind === "tiles"
+            ? tools.buildTilesZip(edited, {
+                ...common,
+                count: print.tiles,
+                baseMm: print.baseMm,
+                hollow: print.hollow,
+                reliefs: [
+                  ...(raiseRoute && route.length > 1
+                    ? [
+                        {
+                          mask: routeMask(bounds, route, edited.size),
+                          size: edited.size,
+                          heightMm: 0.8,
+                        },
+                      ]
+                    : []),
+                  ...(waterGrid
+                    ? [{ mask: waterGrid, size: edited.size, heightMm: -WATER_DEPTH_MM }]
+                    : []),
+                ],
+              })
+            : new Blob(
+                [
+                  tools.buildLithophaneStl(edited, {
+                    ...common,
+                    thinMm: print.lithoThin,
+                    thickMm: print.lithoThick,
+                  }),
+                ],
+                { type: "model/stl" },
+              );
+        await triggerDownloadBlob(
+          blob,
+          kind === "tiles"
+            ? `${fileBase}-tiles-${print.tiles}x${print.tiles}.zip`
+            : `${fileBase}-lithophane.stl`,
+        );
+        notify(t("plate.downloaded"), { tone: "success" });
+        return;
+      }
       let blob: Blob | null;
       if (kind === "stl") {
         // One-colour STL: the carved water stays open; the inlay is for the 3MF.
@@ -1029,6 +1085,91 @@ function StudioApp() {
               )}
             </p>
             {!fitsBed && <p className="plate-note studio-warn-text">{t("studio.tooBigHint")}</p>}
+          </Section>
+
+          <Section title={t("studio.ways")} open={false}>
+            <label className="plate-switch">
+              <input
+                type="checkbox"
+                checked={print.hollow}
+                onChange={(event) => updatePrint({ hollow: event.target.checked })}
+              />
+              <span>{t("studio.hollow")}</span>
+            </label>
+            <p className="plate-note">{t("studio.hollowHint")}</p>
+
+            <fieldset className="plate-field">
+              <legend className="plate-field__label">{t("studio.tiles")}</legend>
+              <div className="plate-segmented plate-segmented--wide">
+                {[1, 2, 3, 4].map((count) => (
+                  <button
+                    key={count}
+                    type="button"
+                    aria-pressed={print.tiles === count}
+                    onClick={() => updatePrint({ tiles: count })}
+                  >
+                    {count === 1 ? t("studio.tilesOne") : `${count} × ${count}`}
+                  </button>
+                ))}
+              </div>
+              {print.tiles > 1 && (
+                <>
+                  <p className="plate-note">
+                    {t("studio.tilesHint").replace(
+                      "{size}",
+                      (print.widthMm / print.tiles).toFixed(0),
+                    )}
+                  </p>
+                  <button
+                    type="button"
+                    className="plate-btn plate-btn--soft"
+                    disabled={!geometry || busy !== null}
+                    aria-busy={busy === "tiles"}
+                    onClick={() => exportFile("tiles")}
+                  >
+                    {busy === "tiles" ? (
+                      <span className="plate-spinner" aria-hidden="true" />
+                    ) : null}
+                    {t("studio.downloadTiles")}
+                  </button>
+                </>
+              )}
+            </fieldset>
+
+            <fieldset className="plate-field">
+              <legend className="plate-field__label">{t("studio.litho")}</legend>
+              <p className="plate-note">{t("studio.lithoHint")}</p>
+              <Slider
+                id="studio-litho-thin"
+                label={t("studio.lithoThin")}
+                value={print.lithoThin}
+                display={mm(print.lithoThin)}
+                min={0.4}
+                max={2}
+                step={0.1}
+                onChange={(lithoThin) => updatePrint({ lithoThin })}
+              />
+              <Slider
+                id="studio-litho-thick"
+                label={t("studio.lithoThick")}
+                value={print.lithoThick}
+                display={mm(print.lithoThick)}
+                min={1.6}
+                max={6}
+                step={0.1}
+                onChange={(lithoThick) => updatePrint({ lithoThick })}
+              />
+              <button
+                type="button"
+                className="plate-btn plate-btn--soft"
+                disabled={!geometry || busy !== null}
+                aria-busy={busy === "litho"}
+                onClick={() => exportFile("litho")}
+              >
+                {busy === "litho" ? <span className="plate-spinner" aria-hidden="true" /> : null}
+                {t("studio.downloadLitho")}
+              </button>
+            </fieldset>
           </Section>
 
           <div className="studio-export">

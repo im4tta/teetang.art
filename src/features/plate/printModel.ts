@@ -222,8 +222,8 @@ function crc32(bytes: Uint8Array): number {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-/** An uncompressed zip; 3MF readers accept stored entries. */
-function zip(files: { name: string; data: Uint8Array }[]): Blob {
+/** An uncompressed zip; 3MF readers and every unzip tool accept stored entries. */
+export function zip(files: { name: string; data: Uint8Array }[], type = "model/3mf"): Blob {
   const encoder = new TextEncoder();
   const chunks: BlobPart[] = [];
   const central: Uint8Array[] = [];
@@ -263,9 +263,7 @@ function zip(files: { name: string; data: Uint8Array }[]): Blob {
   end.setUint16(10, files.length, true);
   end.setUint32(12, centralSize, true);
   end.setUint32(16, offset, true);
-  return new Blob([...chunks, ...(central as Uint8Array<ArrayBuffer>[]), end.buffer], {
-    type: "model/3mf",
-  });
+  return new Blob([...chunks, ...(central as Uint8Array<ArrayBuffer>[]), end.buffer], { type });
 }
 
 const escapeXml = (text: string) => text.replace(/[<>&"']/g, (c) => `&#${c.charCodeAt(0)};`);

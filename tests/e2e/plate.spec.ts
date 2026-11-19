@@ -381,6 +381,44 @@ test.describe("3D plate extras", () => {
   });
 });
 
+test.describe("STL Studio print options", () => {
+  test("hollow base, tiles and a lithophane", async ({ page }) => {
+    await openPlate(page);
+    await page.getByRole("button", { name: "STL Studio" }).click();
+    await expect(page.locator(".studio-canvas")).toHaveAttribute("data-ready", "true", {
+      timeout: 20_000,
+    });
+    await page.getByText("More ways to print").click();
+    await page.getByRole("checkbox", { name: "Hollow base with a hanging lip" }).check();
+    // Still one closed solid, and lighter than before.
+    await expect(page.locator(".studio-check")).toHaveAttribute("data-ok", "true", {
+      timeout: 30_000,
+    });
+
+    const save = async (name: string) => {
+      const [download] = await Promise.all([
+        page.waitForEvent("download"),
+        page.getByRole("button", { name }).click(),
+      ]);
+      const chunks: Buffer[] = [];
+      for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer);
+      return { name: download.suggestedFilename(), file: Buffer.concat(chunks) };
+    };
+    await page.getByRole("button", { name: "2 × 2" }).click();
+    const tiles = await save("Download tiles (ZIP)");
+    expect(tiles.name).toBe("teetang-phnom-aural-100mm-tiles-2x2.zip");
+    expect(tiles.file.subarray(0, 2).toString()).toBe("PK");
+    for (const tile of ["tile-r1-c1.stl", "tile-r2-c2.stl", "README.txt"]) {
+      expect(tiles.file.includes(Buffer.from(tile))).toBe(true);
+    }
+
+    const litho = await save("Download lithophane (STL)");
+    const triangles = litho.file.readUInt32LE(80);
+    expect(triangles).toBeGreaterThan(100_000);
+    expect(litho.file.length).toBe(84 + triangles * 50);
+  });
+});
+
 test.describe("3D plate on a computer", () => {
   test.use({ viewport: { width: 1300, height: 820 }, isMobile: false, hasTouch: false });
 
