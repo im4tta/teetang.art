@@ -12,23 +12,25 @@ const draft = (page: import("@playwright/test").Page) =>
   page.evaluate(() => JSON.parse(localStorage.getItem("teetangart.draft.v1") ?? "null"));
 
 test.describe("layout", () => {
-  test("the editor fits the phone: no sideways scroll, controls above the tab bar", async ({
-    page,
-  }) => {
-    await openEditor(page);
-    const { overflowsSideways } = await auditTouchSizes(page);
-    expect(overflowsSideways).toBe(false);
+  test(
+    "the editor fits the phone: no sideways scroll, controls above the tab bar",
+    { tag: "@layout" },
+    async ({ page }) => {
+      await openEditor(page);
+      const { overflowsSideways } = await auditTouchSizes(page);
+      expect(overflowsSideways).toBe(false);
 
-    const controls = await page.locator(".preview-panel .map-controls").boundingBox();
-    const nav = await page.locator(".mobile-nav").boundingBox();
-    expect(controls, "map controls").not.toBeNull();
-    expect(nav, "tab bar").not.toBeNull();
-    expect(controls!.y + controls!.height, "controls end above the tab bar").toBeLessThanOrEqual(
-      nav!.y,
-    );
-  });
+      const controls = await page.locator(".preview-panel .map-controls").boundingBox();
+      const nav = await page.locator(".mobile-nav").boundingBox();
+      expect(controls, "map controls").not.toBeNull();
+      expect(nav, "tab bar").not.toBeNull();
+      expect(controls!.y + controls!.height, "controls end above the tab bar").toBeLessThanOrEqual(
+        nav!.y,
+      );
+    },
+  );
 
-  test("every screen meets touch and text size minimums", async ({ page }) => {
+  test("every screen meets touch and text size minimums", { tag: "@layout" }, async ({ page }) => {
     await openEditor(page);
     const screens: [string, () => Promise<void>][] = [
       ["editor", async () => {}],
@@ -105,7 +107,7 @@ test.describe("editing", () => {
     await expect(page.locator(".theme-strip__item[aria-pressed='true']")).toHaveText(before);
   });
 
-  test("typing in a sheet field keeps focus", async ({ page }) => {
+  test("typing in a sheet field keeps focus", { tag: "@layout" }, async ({ page }) => {
     await openEditor(page);
     await openSheet(page, "text");
     const city = page.locator(".mobile-drawer-content input[name='displayCity']");
@@ -115,16 +117,20 @@ test.describe("editing", () => {
     await expect(city).toBeFocused();
   });
 
-  test("the sheet steps between peek, half and full height", async ({ page }) => {
-    await openEditor(page);
-    await openSheet(page, "look");
-    const sheet = page.locator(".mobile-drawer-sheet");
-    await expect(sheet).toHaveAttribute("data-snap", "peek");
-    await page.locator(".mobile-drawer-handle").click();
-    await expect(sheet).toHaveAttribute("data-snap", "half");
-    await page.locator(".mobile-drawer-handle").click();
-    await expect(sheet).toHaveAttribute("data-snap", "full");
-  });
+  test(
+    "the sheet steps between peek, half and full height",
+    { tag: "@layout" },
+    async ({ page }) => {
+      await openEditor(page);
+      await openSheet(page, "look");
+      const sheet = page.locator(".mobile-drawer-sheet");
+      await expect(sheet).toHaveAttribute("data-snap", "peek");
+      await page.locator(".mobile-drawer-handle").click();
+      await expect(sheet).toHaveAttribute("data-snap", "half");
+      await page.locator(".mobile-drawer-handle").click();
+      await expect(sheet).toHaveAttribute("data-snap", "full");
+    },
+  );
 });
 
 test.describe("download and share", () => {

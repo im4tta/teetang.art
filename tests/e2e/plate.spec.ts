@@ -35,7 +35,7 @@ test.describe("3D plate", () => {
     expect(await highest(page)).toBeLessThanOrEqual(SUMMIT_METRES);
   });
 
-  test("fits the phone and meets touch and text minimums", async ({ page }) => {
+  test("fits the phone and meets touch and text minimums", { tag: "@layout" }, async ({ page }) => {
     await openPlate(page);
     const main = await auditTouchSizes(page);
     expect(main.overflowsSideways).toBe(false);
@@ -135,35 +135,41 @@ test.describe("3D plate", () => {
     await expect(page.locator(".plate-canvas")).toHaveAttribute("data-ready", "true");
   });
 
-  test("Move picks a new square and Surprise me jumps somewhere new", async ({ page }) => {
-    await openPlate(page);
-    await page.locator(".plate-move").click();
-    await expect(page.locator(".area-picker__square")).toBeVisible();
-    // The map must fill the stage (MapLibre's own CSS once collapsed it to 0 px).
-    const map = await page.locator(".area-picker__map").boundingBox();
-    const stage = await page.locator(".plate-stage").boundingBox();
-    expect(map!.height).toBeGreaterThan(stage!.height * 0.9);
+  test(
+    "Move picks a new square and Surprise me jumps somewhere new",
+    { tag: "@layout" },
+    async ({ page }) => {
+      await openPlate(page);
+      await page.locator(".plate-move").click();
+      await expect(page.locator(".area-picker__square")).toBeVisible();
+      // The map must fill the stage (MapLibre's own CSS once collapsed it to 0 px).
+      const map = await page.locator(".area-picker__map").boundingBox();
+      const stage = await page.locator(".plate-stage").boundingBox();
+      expect(map!.height).toBeGreaterThan(stage!.height * 0.9);
 
-    // Base map and shading are remembered for next time.
-    await page.locator(".area-picker__bases").getByRole("button", { name: "Satellite" }).click();
-    await page.locator(".plate-dim input").fill("0.5");
-    await expect
-      .poll(() => page.evaluate(() => localStorage.getItem("teetangart.plate.picker")))
-      .toBe(JSON.stringify({ base: "satellite", dim: 0.5 }));
+      // Base map and shading are remembered for next time.
+      await page.locator(".area-picker__bases").getByRole("button", { name: "Satellite" }).click();
+      await page.locator(".plate-dim input").fill("0.5");
+      await expect
+        .poll(() => page.evaluate(() => localStorage.getItem("teetangart.plate.picker")))
+        .toBe(JSON.stringify({ base: "satellite", dim: 0.5 }));
 
-    await page.getByRole("button", { name: "25 km" }).click();
-    await expect(page.locator(".area-picker__size")).toHaveText("25 km");
-    await page.getByRole("button", { name: "Show plate" }).click();
-    await expect(page.locator(".plate-canvas")).toHaveAttribute("data-ready", "true");
-    await expect
-      .poll(() =>
-        page.evaluate(() => JSON.parse(localStorage.getItem("teetangart.plate.v1") ?? "{}").sizeKm),
-      )
-      .toBe(25);
+      await page.getByRole("button", { name: "25 km" }).click();
+      await expect(page.locator(".area-picker__size")).toHaveText("25 km");
+      await page.getByRole("button", { name: "Show plate" }).click();
+      await expect(page.locator(".plate-canvas")).toHaveAttribute("data-ready", "true");
+      await expect
+        .poll(() =>
+          page.evaluate(
+            () => JSON.parse(localStorage.getItem("teetangart.plate.v1") ?? "{}").sizeKm,
+          ),
+        )
+        .toBe(25);
 
-    await page.getByRole("button", { name: "Surprise me" }).click();
-    await expect(page.locator(".plate-place__name")).not.toHaveText("Phnom Aural");
-  });
+      await page.getByRole("button", { name: "Surprise me" }).click();
+      await expect(page.locator(".plate-place__name")).not.toHaveText("Phnom Aural");
+    },
+  );
 
   test("Move uses Google tiles for Map and Satellite when the site has a key", async ({ page }) => {
     const tiles: string[] = [];
