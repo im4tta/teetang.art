@@ -24,6 +24,7 @@ import Toaster from "@/components/ui/Toaster";
 import { notify } from "@/services/notify";
 import { triggerDownloadBlob } from "@/services/export/fileDownloader";
 import { tapFeedback } from "@/utils/haptics";
+import { useWheelScrollsRows } from "@/hooks/useWheelScrollsRows";
 import { plateBounds } from "@/features/plate/geo";
 import { loadHeightGrid } from "@/features/plate/elevation";
 import type { HeightGrid } from "@/features/plate/elevationCore";
@@ -186,6 +187,7 @@ function StudioApp() {
   const [scene, setScene] = useState<StudioScene | null>(null);
   const [failed, setFailed] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  useWheelScrollsRows(".plate-segmented, .plate-chips");
 
   const updatePlate = useCallback(
     (patch: Partial<PlateSettings>) => setPlate((current) => ({ ...current, ...patch })),

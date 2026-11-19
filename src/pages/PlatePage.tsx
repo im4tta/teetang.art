@@ -27,6 +27,7 @@ import { notify } from "@/services/notify";
 import { copyText, shareOrCopy } from "@/services/share/shareSheet";
 import { triggerDownloadBlob } from "@/services/export/fileDownloader";
 import { tapFeedback } from "@/utils/haptics";
+import { useWheelScrollsRows } from "@/hooks/useWheelScrollsRows";
 import type { SearchResult } from "@/services/location/types";
 import { plateBounds } from "@/features/plate/geo";
 import { loadHeightGrid } from "@/features/plate/elevation";
@@ -126,6 +127,9 @@ function stageBackdrop(): string {
   return /^#[0-9a-f]{6}$/i.test(value) ? value : "#f1efe9";
 }
 
+/** Rows that scroll sideways; the mouse wheel scrolls them too. */
+const SIDEWAYS_ROWS = ".plate-segmented, .plate-chips, .plate-theme-row";
+
 const formatMetres = (metres: number) => `${Math.round(metres).toLocaleString("en-US")} m`;
 
 function PlateApp() {
@@ -143,6 +147,19 @@ function PlateApp() {
   const [photo, setPhoto] = useState<PhotoInput | null>(null);
   const viewRef = useRef<PlateViewHandle>(null);
   const navigate = useNavigate();
+  const stylesRef = useRef<HTMLDivElement>(null);
+  useWheelScrollsRows(SIDEWAYS_ROWS);
+
+  // Keep the chosen style in sight when the style row is wider than the panel.
+  useEffect(() => {
+    const row = stylesRef.current;
+    const chosen = row?.querySelector<HTMLElement>('[aria-pressed="true"]');
+    if (!row || !chosen) return;
+    const left = chosen.offsetLeft - row.offsetLeft;
+    if (left < row.scrollLeft || left + chosen.offsetWidth > row.scrollLeft + row.clientWidth) {
+      row.scrollTo({ left: left - (row.clientWidth - chosen.offsetWidth) / 2, behavior: "smooth" });
+    }
+  }, [plate.style, mode]);
 
   const update = useCallback((patch: Partial<PlateSettings>) => {
     setPlate((current) => ({ ...current, ...patch }));
@@ -561,7 +578,12 @@ function PlateApp() {
                 <Move size={20} aria-hidden="true" />
                 <span>{t("plate.move")}</span>
               </button>
-              <div className="plate-segmented" role="group" aria-label={t("plate.styles")}>
+              <div
+                ref={stylesRef}
+                className="plate-segmented"
+                role="group"
+                aria-label={t("plate.styles")}
+              >
                 {PLATE_STYLES.map((style) => (
                   <button
                     key={style}

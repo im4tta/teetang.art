@@ -344,3 +344,25 @@ test.describe("3D plate", () => {
     expect(text).toContain("Rendering");
   });
 });
+
+test.describe("3D plate on a computer", () => {
+  test.use({ viewport: { width: 1300, height: 820 }, isMobile: false, hasTouch: false });
+
+  test("the mouse wheel scrolls the style row sideways", async ({ page }) => {
+    await openPlate(page);
+    const row = page.getByRole("group", { name: "Style" });
+    const scroll = () => row.evaluate((el) => [el.scrollLeft, el.scrollWidth - el.clientWidth]);
+    const [start, max] = await scroll();
+    expect(max, "the six styles overflow the panel").toBeGreaterThan(20);
+    expect(start).toBe(0);
+    const box = (await row.boundingBox())!;
+    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+    await page.mouse.wheel(0, 300);
+    await expect.poll(async () => (await scroll())[0]).toBeGreaterThan(0);
+    // Picking the last style keeps it in view.
+    await page.mouse.wheel(0, -1000);
+    await expect.poll(async () => (await scroll())[0]).toBe(0);
+    await page.getByRole("button", { name: "Satellite" }).click({ force: true });
+    await expect(page.getByRole("button", { name: "Satellite" })).toBeInViewport({ ratio: 0.9 });
+  });
+});
