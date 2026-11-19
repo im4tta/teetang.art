@@ -402,6 +402,47 @@ test.describe("fly-over video", () => {
   });
 });
 
+test.describe("explore, classroom and offline", () => {
+  test("open a curated place, compare, take the lesson and save offline", async ({ page }) => {
+    await openPlate(page);
+    await page.getByRole("button", { name: "Explore" }).click();
+    await page.getByRole("button", { name: /^Phnom Kulen/ }).click();
+    await expect(page.locator(".plate-place__name")).toHaveText("Phnom Kulen");
+    await expect(page.locator(".plate-canvas")).toHaveAttribute("data-ready", "true", {
+      timeout: 20_000,
+    });
+
+    await page.getByRole("button", { name: "Explore" }).click();
+    await page.getByRole("button", { name: "Compare side by side with Mount Fuji" }).click();
+    await page.getByRole("button", { name: "Explore" }).click();
+    await expect(page.locator(".plate-explore-comparing")).toContainText("Mount Fuji");
+    await page.getByRole("button", { name: "Stop comparing" }).click();
+
+    await page.getByRole("button", { name: "Classroom: how contour lines work" }).click();
+    const lesson = page.getByRole("dialog", { name: "Classroom: how contour lines work" });
+    await expect(lesson).toContainText("1 / 4");
+    for (const step of ["2 / 4", "3 / 4", "4 / 4"]) {
+      await lesson.getByRole("button", { name: "Next" }).click();
+      await expect(lesson).toContainText(step);
+    }
+    await lesson.getByRole("button", { name: "Finish" }).click();
+    await expect(lesson).toHaveCount(0);
+
+    await expect(page.getByRole("button", { name: "Download", exact: true })).toBeEnabled({
+      timeout: 20_000,
+    });
+    await page.getByRole("button", { name: "Explore" }).click();
+    await page.getByRole("button", { name: "Save this plate for offline use" }).click();
+    await expect(page.locator(".app-toast--success")).toContainText("opens offline");
+    await expect(page.locator(".plate-explore-saved")).toContainText("Phnom Kulen");
+    // The tiles are in the offline cache that the service worker reads.
+    const cached = await page.evaluate(
+      async () => (await (await caches.open("teetangart-offline-v1")).keys()).length,
+    );
+    expect(cached).toBeGreaterThan(0);
+  });
+});
+
 test.describe("STL Studio print options", () => {
   test("hollow base, tiles and a lithophane", async ({ page }) => {
     await openPlate(page);

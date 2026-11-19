@@ -205,8 +205,19 @@ test.describe("desktop", () => {
       );
     await page.mouse.move(700, 400);
     for (let k = 0; k < 4; k++) await page.mouse.wheel(0, 800);
-    await expect.poll(scrolled).toBeGreaterThan(1000);
+    // Wheel scrolling is animated: wait until it has come to rest before
+    // pressing the button, or the two scrolls race on a busy machine.
+    await expect
+      .poll(
+        async () => {
+          const before = await scrolled();
+          await page.waitForTimeout(200);
+          return before > 1000 && before === (await scrolled());
+        },
+        { timeout: 15_000 },
+      )
+      .toBe(true);
     await page.getByRole("button", { name: "Go to top" }).click();
-    await expect.poll(scrolled).toBe(0);
+    await expect.poll(scrolled, { timeout: 15_000 }).toBe(0);
   });
 });

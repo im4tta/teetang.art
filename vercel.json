@@ -1,6 +1,23 @@
 {
   "rewrites": [
-    { "source": "/api/carto/:path*", "destination": "/api/carto?path=:path*" },
-    { "source": "/((?!api/).*)", "destination": "/index.html" }
+    {
+      "source": "/plate",
+      "has": [
+        {
+          "type": "header",
+          "key": "user-agent",
+          "value": "(?i).*(bot|crawler|spider|facebookexternalhit|facebookcatalog|telegram|whatsapp|slack|discord|linkedin|embedly|pinterest|skype|vkshare|redditbot|applebot|line-poker|viber|zalo).*"
+        }
+      ],
+      "destination": "/api/plate-preview"
+    },
+    {
+      "source": "/api/carto/:path*",
+      "destination": "/api/carto?path=:path*"
+    },
+    {
+      "source": "/((?!api/).*)",
+      "destination": "/index.html"
+    }
   ]
 }

@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Box,
   Camera,
+  Compass,
   Glasses,
   Dices,
   Download,
@@ -67,6 +68,14 @@ import { buildPlateExtras, type PlateExtras } from "@/features/plate/extras";
 import type { PhotoInput } from "@/features/plate/photo";
 import type { ArMode } from "@/features/plate/ar";
 import { videoType } from "@/features/plate/flyover";
+import {
+  cachePlateOffline,
+  explorePlate,
+  readSaved,
+  writeSaved,
+  type ExplorePlace,
+  type SavedPlate,
+} from "@/features/plate/explore";
 import PlateView, { type PlateViewHandle } from "@/features/plate/components/PlateView";
 import PlaceSearch from "@/features/plate/components/PlaceSearch";
 import type { AreaChange } from "@/features/plate/components/AreaPicker";
@@ -78,6 +87,7 @@ const AdjustSheet = lazy(() => import("@/features/plate/components/AdjustSheet")
 const DownloadSheet = lazy(() => import("@/features/plate/components/DownloadSheet"));
 const PhotoView = lazy(() => import("@/features/plate/components/PhotoView"));
 const RouteSheet = lazy(() => import("@/features/plate/components/RouteSheet"));
+const ExploreSheet = lazy(() => import("@/features/plate/components/ExploreSheet"));
 
 const LOW_END = (navigator.hardwareConcurrency ?? 8) <= 4;
 /** The quick first plate: few tiles to fetch, so it shows almost at once. */
@@ -172,6 +182,9 @@ function stageBackdrop(): string {
   return /^#[0-9a-f]{6}$/i.test(value) ? value : "#f1efe9";
 }
 
+/** Steps of the classroom lesson on contour lines. */
+const LESSON_STEPS = 4;
+
 /** Rows that scroll sideways; the mouse wheel scrolls them too. */
 const SIDEWAYS_ROWS = ".plate-segmented, .plate-chips, .plate-theme-row";
 
@@ -183,7 +196,14 @@ function PlateApp() {
   const [mode, setMode] = useState<"plate" | "move">("plate");
   const [area, setArea] = useState<AreaChange | null>(null);
   const [picker, setPicker] = useState<PickerPrefs>(readPickerPrefs);
-  const [sheet, setSheet] = useState<"adjust" | "download" | "route" | null>(null);
+  const [sheet, setSheet] = useState<"adjust" | "download" | "route" | "explore" | null>(null);
+  const [saved, setSaved] = useState<SavedPlate[]>(readSaved);
+  /** A second place shown beside this one, at the same scale. */
+  const [comparePlace, setComparePlace] = useState<ExplorePlace | null>(null);
+  const [compareGrid, setCompareGrid] = useState<HeightGrid | null>(null);
+  /** Classroom lesson: which step is showing, and how raised the relief is. */
+  const [lesson, setLesson] = useState<number | null>(null);
+  const [reliefScale, setReliefScale] = useState(1);
   /** Waiting for a tap on the plate: to drop a marker, or the two ends of a measuring line. */
   const [picking, setPicking] = useState<
     null | { kind: "marker" } | { kind: "line"; first: LatLon | null }
@@ -312,6 +332,8 @@ function PlateApp() {
             exaggeration: deferred.exaggeration || autoHeight,
             sizeMeters: bounds.sizeMeters,
             boxDepth: deferred.box,
+            // Compared plates share one base level, so their heights compare truly.
+            baseMin: compareGrid ? Math.min(grid.min, compareGrid.min) : undefined,
             // A ridge 0.8 mm high on a 10 cm print.
             reliefs: [
               raiseRoute
@@ -334,8 +356,72 @@ function PlateApp() {
       raiseRoute,
       route,
       waterReady,
+      compareGrid,
     ],
   );
+
+  // The compared place: same square size and vertical scale as this plate.
+  useEffect(() => {
+    if (!comparePlace) {
+      queueMicrotask(() => setCompareGrid(null));
+      return;
+    }
+    const controller = new AbortController();
+    const otherBounds = plateBounds(comparePlace.lat, comparePlace.lon, plate.sizeKm);
+    loadHeightGrid(otherBounds, GRID_CELLS, controller.signal).then(setCompareGrid, () => {
+      if (!controller.signal.aborted) {
+        setComparePlace(null);
+        notify(t("plate.error"), { tone: "error" });
+      }
+    });
+    return () => controller.abort();
+  }, [comparePlace, plate.sizeKm, t]);
+  const compare = useMemo(() => {
+    if (!compareGrid || !grid || !comparePlace) return null;
+    return {
+      geometry: buildPlateGeometry(compareGrid, {
+        shape: deferred.shape,
+        exaggeration: deferred.exaggeration || autoHeight,
+        sizeMeters: bounds.sizeMeters,
+        boxDepth: deferred.box,
+        baseMin: Math.min(grid.min, compareGrid.min),
+      }),
+      names: [plate.name || t("plate.untitled"), comparePlace.name] as [string, string],
+    };
+  }, [
+    compareGrid,
+    grid,
+    comparePlace,
+    deferred.shape,
+    deferred.exaggeration,
+    deferred.box,
+    autoHeight,
+    bounds.sizeMeters,
+    plate.name,
+    t,
+  ]);
+
+  // Lesson step 2 lifts the contour map into its real shape.
+  useEffect(() => {
+    if (lesson === null) {
+      queueMicrotask(() => setReliefScale(1));
+      return;
+    }
+    if (lesson === 0) {
+      queueMicrotask(() => setReliefScale(0.02));
+      return;
+    }
+    if (lesson !== 1) return;
+    let frame = 0;
+    const start = performance.now();
+    const step = () => {
+      const t = Math.min(1, (performance.now() - start) / 2600);
+      setReliefScale(0.02 + (1 - 0.02) * (t * t * (3 - 2 * t)));
+      if (t < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [lesson]);
 
   // Route, markers and measuring line, drawn on the surface.
   const overlay = useMemo(
@@ -663,6 +749,15 @@ function PlateApp() {
         <span className="plate-header__title">{t("plate.title")}</span>
         <button
           type="button"
+          className="plate-icon-btn"
+          onClick={() => setSheet("explore")}
+          aria-label={t("plate.explore.title")}
+          title={t("plate.explore.title")}
+        >
+          <Compass size={22} />
+        </button>
+        <button
+          type="button"
           className="plate-icon-btn plate-lang"
           onClick={toggleLang}
           aria-label={lang === "en" ? "Switch to Khmer" : "ប្ដូរទៅអង់គ្លេស"}
@@ -692,6 +787,8 @@ function PlateApp() {
                 look={look}
                 drape={drapeReady}
                 overlay={overlay}
+                reliefScale={reliefScale}
+                compare={compare}
                 waterMask={waterReady}
                 onPick={picking ? handlePick : null}
                 extras={extras}
@@ -723,8 +820,41 @@ function PlateApp() {
                   {t("plate.loadingImagery")}
                 </div>
               )}
-              {!touched && geometry && !photo && (
+              {!touched && geometry && !photo && lesson === null && (
                 <p className="plate-stage__hint">{t("plate.dragHint")}</p>
+              )}
+              {lesson !== null && (
+                <div className="plate-lesson" role="dialog" aria-label={t("plate.lesson.start")}>
+                  <p className="plate-lesson__step">
+                    {lesson + 1} / {LESSON_STEPS}
+                  </p>
+                  <p>{t(`plate.lesson.${lesson + 1}` as TranslationKey)}</p>
+                  <div className="plate-lesson__actions">
+                    <button
+                      type="button"
+                      className="plate-btn plate-btn--soft"
+                      onClick={() => setLesson(null)}
+                    >
+                      {t("plate.close")}
+                    </button>
+                    {lesson > 0 && (
+                      <button
+                        type="button"
+                        className="plate-btn plate-btn--soft"
+                        onClick={() => setLesson(lesson - 1)}
+                      >
+                        {t("updates.back")}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="plate-btn plate-btn--light"
+                      onClick={() => setLesson(lesson + 1 < LESSON_STEPS ? lesson + 1 : null)}
+                    >
+                      {lesson + 1 < LESSON_STEPS ? t("updates.next") : t("updates.finish")}
+                    </button>
+                  </div>
+                </div>
               )}
               {picking && (
                 <div className="plate-pick-banner" role="status">
@@ -981,6 +1111,63 @@ function PlateApp() {
             autoExaggeration={autoHeight}
             relief={geometry ? geometry.max - geometry.min : 0}
             onChange={update}
+            onClose={() => setSheet(null)}
+          />
+        )}
+        {sheet === "explore" && (
+          <ExploreSheet
+            saved={saved}
+            comparing={comparePlace?.name ?? null}
+            onOpen={(place) => {
+              setSheet(null);
+              setComparePlace(null);
+              goTo(explorePlate(place) as PlateSettings);
+            }}
+            onCompare={(place) => {
+              setComparePlace(place);
+              if (place) setSheet(null);
+            }}
+            onLesson={() => {
+              setSheet(null);
+              setMode("plate");
+              setLesson(0);
+            }}
+            onSaveOffline={async () => {
+              try {
+                await cachePlateOffline(
+                  bounds,
+                  [PREVIEW_CELLS, GRID_CELLS],
+                  basemap,
+                  window.innerWidth >= 900 ? 2048 : 1024,
+                );
+                const entry: SavedPlate = {
+                  name: plate.name,
+                  lat: plate.lat,
+                  lon: plate.lon,
+                  sizeKm: plate.sizeKm,
+                  savedAt: Date.now(),
+                  plate,
+                };
+                const next = [
+                  entry,
+                  ...saved.filter((s) => s.name !== plate.name || s.lat !== plate.lat),
+                ];
+                setSaved(next);
+                writeSaved(next);
+                notify(t("plate.explore.savedDone"), { tone: "success" });
+              } catch {
+                notify(t("plate.downloadFailed"), { tone: "error" });
+              }
+            }}
+            onOpenSaved={(entry) => {
+              setSheet(null);
+              goTo({ ...entry.plate, lat: entry.lat, lon: entry.lon } as PlateSettings);
+            }}
+            onDeleteSaved={(entry) => {
+              const next = saved.filter((s) => s.savedAt !== entry.savedAt);
+              setSaved(next);
+              writeSaved(next);
+            }}
             onClose={() => setSheet(null)}
           />
         )}

@@ -1364,3 +1364,93 @@
   flex: 1;
   margin: 0;
 }
+
+/* ── Explore, lessons and comparing ── */
+
+.plate-explore-card,
+.plate-explore-saved {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 16px;
+  background: var(--plate-surface);
+}
+
+.plate-explore-card__open,
+.plate-explore-saved__open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 3px;
+  min-height: 52px;
+  padding: 10px 4px 10px 14px;
+  border: 0;
+  background: none;
+  text-align: left;
+  cursor: pointer;
+}
+
+.plate-explore-card__open strong,
+.plate-explore-saved__open strong {
+  font-size: 15px;
+}
+
+.plate-explore-card__meta,
+.plate-explore-saved__open span {
+  font-family: var(--plate-mono);
+  font-size: 12px;
+  color: var(--plate-muted);
+}
+
+.plate-explore-card__story {
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.plate-explore-comparing {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 8px 8px 14px;
+  border-radius: 16px;
+  background: var(--plate-surface);
+  font-size: 14px;
+}
+
+.plate-explore-comparing span {
+  flex: 1;
+}
+
+.plate-lesson {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 12px;
+  z-index: 1;
+  max-width: 520px;
+  margin: 0 auto;
+  padding: 14px 16px;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--plate-raised) 94%, transparent);
+  box-shadow: 0 4px 24px rgb(0 0 0 / 14%);
+  font-size: 15px;
+  line-height: 1.5;
+}
+
+.plate-lesson p {
+  margin: 0 0 10px;
+}
+
+.plate-lesson__step {
+  font-family: var(--plate-mono);
+  font-size: 12px;
+  color: var(--plate-muted);
+}
+
+.plate-lesson__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}

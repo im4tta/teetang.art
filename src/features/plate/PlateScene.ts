@@ -105,6 +105,10 @@ export class PlateScene {
   private palette: ReliefPalette | null = null;
   private reach = 0.5;
   private extras: PlateExtras | null = null;
+  /** A second plate beside the first, at the same scale. */
+  private compare: { surface: Mesh; shell: Mesh; material: ShaderMaterial; tags: Sprite[] } | null =
+    null;
+  private compareShift = 0;
   private look: PlateLook | null = null;
   private drape: CanvasTexture | null = null;
   private frame = 0;
@@ -283,15 +287,19 @@ export class PlateScene {
 
   /** Distance that keeps the whole plate and its shadow in view for this aspect ratio. */
   private fitCamera() {
-    // Half the diagonal, plus room for the shadow, the relief and the nameplate.
-    const radius = 0.76 + this.plateHeight * 0.3 + Math.max(0, this.reach - 0.5) * 0.7;
+    // Half the diagonal, plus room for the shadow, the relief, the nameplate and a second plate.
+    const radius =
+      0.76 +
+      this.plateHeight * 0.3 +
+      Math.max(0, this.reach - 0.5) * 0.7 +
+      this.compareShift * 0.55;
     const vertical = ((FOV / 2) * Math.PI) / 180;
     const horizontal = Math.atan(Math.tan(vertical) * this.camera.aspect);
     const distance = radius / Math.sin(Math.min(vertical, horizontal));
     const offset = this.camera.position.clone().sub(this.controls.target);
     offset.setLength(distance);
     this.controls.target.set(
-      0.04,
+      0.04 + this.compareShift / 2,
       (this.plateHeight - this.baseDepth) / 2,
       0.04 + Math.max(0, this.reach - 0.5) / 2,
     );
@@ -704,6 +712,91 @@ export class PlateScene {
         this.wake(0);
       },
     };
+  }
+
+  /**
+   * Squashes the relief towards a flat contour map (0) and back up to its
+   * real shape (1), for the classroom lesson. Pins hide while it is flat.
+   */
+  setReliefScale(scale: number) {
+    for (const object of [this.surface, this.shell, this.rim])
+      object.scale.y = Math.max(0.001, scale);
+    const full = scale >= 0.999;
+    this.pin.visible = full && Boolean(this.extras?.pin);
+    this.peakTag.visible = full && this.peakTag.material.map !== null && Boolean(this.extras?.pin);
+    this.markerPins.visible = full && Boolean(this.extras?.markers.length);
+    for (const tag of this.markerTags) tag.visible = full;
+    this.wake(0);
+  }
+
+  /**
+   * A second plate beside this one, for comparing two places. Both must be
+   * built with the same vertical scale and base level; this one's colours
+   * and contours follow the first plate's look. Null removes it.
+   */
+  setCompare(geometry: PlateGeometry | null, names: [string, string] = ["", ""]) {
+    if (this.compare) {
+      const { surface, shell, material, tags } = this.compare;
+      this.scene.remove(surface, shell, ...tags);
+      surface.geometry.dispose();
+      shell.geometry.dispose();
+      material.dispose();
+      for (const tag of tags) {
+        tag.material.map?.dispose();
+        tag.material.dispose();
+      }
+      this.compare = null;
+    }
+    this.compareShift = 0;
+    if (geometry) {
+      const gap = 1.18;
+      const u = this.surfaceMaterial.uniforms;
+      // Share every uniform with the first plate, except its own images.
+      const material = new ShaderMaterial({
+        vertexShader: surfaceVertex,
+        fragmentShader: surfaceFragment,
+        uniforms: {
+          ...u,
+          uDrape: { value: null },
+          uHasDrape: { value: false },
+          uWaterMask: { value: null },
+          uHasWaterMask: { value: false },
+          uOverlay: { value: null },
+          uHasOverlay: { value: false },
+        },
+      });
+      u.uMax.value = Math.max(u.uMax.value, geometry.max);
+      const surfaceGeometry = new BufferGeometry();
+      surfaceGeometry.setAttribute("position", new BufferAttribute(geometry.surface, 3));
+      surfaceGeometry.setAttribute("uv", new BufferAttribute(geometry.uvs, 2));
+      surfaceGeometry.setAttribute("elevation", new BufferAttribute(geometry.elevations, 1));
+      surfaceGeometry.setAttribute("ao", new BufferAttribute(geometry.ao, 1));
+      surfaceGeometry.setIndex(new BufferAttribute(geometry.surfaceIndex, 1));
+      surfaceGeometry.computeVertexNormals();
+      const shellGeometry = new BufferGeometry();
+      shellGeometry.setAttribute("position", new BufferAttribute(geometry.shell, 3));
+      shellGeometry.computeVertexNormals();
+      const surface = new Mesh(surfaceGeometry, material);
+      const shell = new Mesh(shellGeometry, this.shellMaterial);
+      surface.position.x = shell.position.x = gap;
+      // Name tags over the far edge of each plate.
+      const tags = names.map((name, index) => {
+        const canvas = tagCanvas(name);
+        const map = new CanvasTexture(canvas);
+        map.colorSpace = NoColorSpace;
+        const tag = new Sprite(new SpriteMaterial({ map, depthTest: false, transparent: true }));
+        tag.renderOrder = 10;
+        tag.center.set(0.5, 0);
+        tag.scale.set((0.06 * canvas.width) / canvas.height, 0.06, 1);
+        tag.position.set(index * gap, this.plateHeight + 0.08, -0.5);
+        return tag;
+      });
+      this.scene.add(surface, shell, ...tags);
+      this.compare = { surface, shell, material, tags };
+      this.compareShift = gap;
+    }
+    this.fitCamera();
+    this.wake(IDLE_SPIN_MS);
   }
 
   /** The canvas the plate is drawn on, for recording. */

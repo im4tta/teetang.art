@@ -20,6 +20,10 @@ interface PlateViewProps {
   overlay?: HTMLCanvasElement | null;
   /** Lakes and rivers over the plate's square. */
   waterMask?: HTMLCanvasElement | null;
+  /** 0 flattens the relief into a contour map, 1 is its real shape. */
+  reliefScale?: number;
+  /** A second plate beside this one, at the same scale, with both names. */
+  compare?: { geometry: PlateGeometry; names: [string, string] } | null;
   /** While set, a tap on the plate reports the point under it (plate texture coordinates). */
   onPick?: ((uv: [number, number]) => void) | null;
   extras: PlateExtras | null;
@@ -37,6 +41,8 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
     drape,
     overlay = null,
     waterMask = null,
+    reliefScale = 1,
+    compare = null,
     onPick,
     extras,
     peakText,
@@ -86,6 +92,16 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
   useEffect(() => {
     scene?.setOverlay(overlay);
   }, [scene, overlay]);
+
+  useEffect(() => {
+    scene?.setReliefScale(reliefScale);
+  }, [scene, reliefScale, geometry, extras]);
+
+  // After the main plate, so the shared colour range covers both.
+  useEffect(() => {
+    if (!scene || !geometry) return;
+    scene.setCompare(compare?.geometry ?? null, compare?.names);
+  }, [scene, geometry, compare]);
 
   useEffect(() => {
     scene?.setWaterMask(waterMask);
