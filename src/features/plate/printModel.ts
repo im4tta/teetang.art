@@ -10,7 +10,7 @@ import type { PlateExtras } from "./extras";
 import type { PlateGeometry } from "./geometry";
 
 export interface ModelPart {
-  id: "terrain" | "label" | "pin";
+  id: "terrain" | "label" | "pin" | "markers" | "water";
   /** Triangles in plate units (x, y up, z south), three corners each. */
   soup: Float32Array;
 }
@@ -39,6 +39,15 @@ export function modelParts(geometry: PlateGeometry, extras?: PlateExtras | null)
     parts.push({ id: "label", soup: indexedToSoup(surface, index, shell) });
   }
   if (extras?.pin) parts.push({ id: "pin", soup: extras.pin.soup });
+  if (extras?.markers.length) {
+    const soup = new Float32Array(extras.markers.reduce((sum, m) => sum + m.soup.length, 0));
+    let offset = 0;
+    for (const marker of extras.markers) {
+      soup.set(marker.soup, offset);
+      offset += marker.soup.length;
+    }
+    parts.push({ id: "markers", soup });
+  }
   return parts;
 }
 
@@ -213,8 +222,8 @@ function crc32(bytes: Uint8Array): number {
   return (crc ^ 0xffffffff) >>> 0;
 }
 
-/** An uncompressed zip; 3MF readers accept stored entries. */
-function zip(files: { name: string; data: Uint8Array }[]): Blob {
+/** An uncompressed zip; 3MF readers and every unzip tool accept stored entries. */
+export function zip(files: { name: string; data: Uint8Array }[], type = "model/3mf"): Blob {
   const encoder = new TextEncoder();
   const chunks: BlobPart[] = [];
   const central: Uint8Array[] = [];
@@ -254,9 +263,7 @@ function zip(files: { name: string; data: Uint8Array }[]): Blob {
   end.setUint16(10, files.length, true);
   end.setUint32(12, centralSize, true);
   end.setUint32(16, offset, true);
-  return new Blob([...chunks, ...(central as Uint8Array<ArrayBuffer>[]), end.buffer], {
-    type: "model/3mf",
-  });
+  return new Blob([...chunks, ...(central as Uint8Array<ArrayBuffer>[]), end.buffer], { type });
 }
 
 const escapeXml = (text: string) => text.replace(/[<>&"']/g, (c) => `&#${c.charCodeAt(0)};`);
@@ -371,4 +378,90 @@ export function editTerrain(grid: HeightGrid, edits: TerrainEdits): HeightGrid {
     if (h > max) max = h;
   }
   return { size, heights: out, min, max };
+}
+
+// ── Water inlay ──
+
+/**
+ * A solid that fills the carved lakes and rivers: for multi-material
+ * printers, the water prints in its own colour. Built cell by cell over the
+ * terrain's surface grid, with walls only where water meets land, so it closes
+ * into a watertight solid. `depth` is the carve depth in plate units.
+ */
+export function buildWaterInlay(
+  geometry: PlateGeometry,
+  mask: Float32Array,
+  maskSize: number,
+  depth: number,
+): Float32Array | null {
+  const { size, surface, uvs } = geometry;
+  const cells = size - 1;
+  const sample = (u: number, v: number) => {
+    const x = Math.min(maskSize - 1, Math.max(0, Math.round(u * (maskSize - 1))));
+    const y = Math.min(maskSize - 1, Math.max(0, Math.round(v * (maskSize - 1))));
+    return mask[y * maskSize + x];
+  };
+  const wet = new Uint8Array(cells * cells);
+  for (let j = 0; j < cells; j++) {
+    for (let i = 0; i < cells; i++) {
+      const a = j * size + i;
+      const d = a + size + 1;
+      wet[j * cells + i] =
+        sample((uvs[a * 2] + uvs[d * 2]) / 2, (uvs[a * 2 + 1] + uvs[d * 2 + 1]) / 2) >= 0.5 ? 1 : 0;
+    }
+  }
+  // Two water cells touching only at a corner would make an edge with four
+  // faces, which slicers reject: fill one of the dry cells beside them.
+  for (let changed = true; changed;) {
+    changed = false;
+    for (let j = 0; j + 1 < cells; j++) {
+      for (let i = 0; i + 1 < cells; i++) {
+        const nw = wet[j * cells + i];
+        const ne = wet[j * cells + i + 1];
+        const sw = wet[(j + 1) * cells + i];
+        const sE = wet[(j + 1) * cells + i + 1];
+        if ((nw && sE && !ne && !sw) || (ne && sw && !nw && !sE)) {
+          wet[j * cells + i + 1] = 1;
+          wet[j * cells + i] = 1;
+          changed = true;
+        }
+      }
+    }
+  }
+  const out: number[] = [];
+  const top = (k: number) => [surface[k * 3], surface[k * 3 + 1] + depth, surface[k * 3 + 2]];
+  const low = (k: number) => [surface[k * 3], surface[k * 3 + 1], surface[k * 3 + 2]];
+  const tri = (p: number[], q: number[], r: number[]) => out.push(...p, ...q, ...r);
+  const isWet = (i: number, j: number) =>
+    i >= 0 && j >= 0 && i < cells && j < cells && wet[j * cells + i] === 1;
+  // Faces are oriented from the grid's structure, not from geometry: the top
+  // copies the terrain's own winding, the bottom mirrors it, and each wall
+  // runs against the top edge it closes. Warped shapes squeeze some cells
+  // almost flat, where a geometric test would guess wrong.
+  for (let j = 0; j < cells; j++) {
+    for (let i = 0; i < cells; i++) {
+      if (!isWet(i, j)) continue;
+      const a = j * size + i;
+      const s = a + size;
+      const e = a + 1;
+      const se = s + 1;
+      tri(top(a), top(s), top(e));
+      tri(top(e), top(s), top(se));
+      tri(low(a), low(e), low(s));
+      tri(low(e), low(se), low(s));
+      // The top's boundary edges, as directed in its triangles, with the neighbour across each.
+      const edges: [number, number, number, number][] = [
+        [e, a, i, j - 1],
+        [se, e, i + 1, j],
+        [s, se, i, j + 1],
+        [a, s, i - 1, j],
+      ];
+      for (const [p, q, ni, nj] of edges) {
+        if (isWet(ni, nj)) continue;
+        tri(top(q), top(p), low(p));
+        tri(top(q), low(p), low(q));
+      }
+    }
+  }
+  return out.length ? new Float32Array(out) : null;
 }

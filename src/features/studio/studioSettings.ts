@@ -27,6 +27,13 @@ export interface PrintSettings {
   bedMm: number;
   infill: number;
   material: Material;
+  /** Hollow base with a hanging lip. */
+  hollow: boolean;
+  /** Tiles per side for a print bigger than the bed; 1 means one piece. */
+  tiles: number;
+  /** Lithophane thickness where the relief is brightest and darkest. */
+  lithoThin: number;
+  lithoThick: number;
 }
 
 export const WIDTH_LIMITS = { min: 40, max: 300 };
@@ -69,6 +76,10 @@ export const DEFAULT_PRINT: PrintSettings = {
   bedMm: 256,
   infill: 15,
   material: "pla",
+  hollow: false,
+  tiles: 1,
+  lithoThin: 0.8,
+  lithoThick: 3.2,
 };
 
 const KEY = "teetangart.studio.v1";
@@ -110,6 +121,10 @@ export function readPrintSettings(): PrintSettings {
     material: MATERIALS.includes(saved.material as Material)
       ? (saved.material as Material)
       : d.material,
+    hollow: saved.hollow === true,
+    tiles: Math.round(clamp(saved.tiles, 1, 4, d.tiles)),
+    lithoThin: clamp(saved.lithoThin, 0.4, 2, d.lithoThin),
+    lithoThick: clamp(saved.lithoThick, 1.6, 6, d.lithoThick),
   };
 }
 

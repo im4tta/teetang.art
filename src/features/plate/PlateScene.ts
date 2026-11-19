@@ -22,7 +22,10 @@ import {
   Scene,
   ShaderMaterial,
   SRGBColorSpace,
+  Raycaster,
+  Spherical,
   Sprite,
+  Vector2,
   SpriteMaterial,
   Vector3,
   WebGLRenderTarget,
@@ -62,6 +65,10 @@ export interface PlateLook {
   water: boolean;
   /** Rock layers on the sides of the box. */
   strata: boolean;
+  /** Snow from this share of the relief upwards (0.3 to 0.95); 0 means none. */
+  snow: number;
+  /** Water up to this many metres above the plate's lowest point; 0 means none. */
+  flood: number;
 }
 
 const LIGHT = new Vector3(-0.55, 0.75, -0.35).normalize();
@@ -88,6 +95,8 @@ export class PlateScene {
   private readonly labelTop = new Mesh(new BufferGeometry());
   private readonly labelShell = new Mesh(new BufferGeometry());
   private readonly pin = new Mesh(new BufferGeometry());
+  private readonly markerPins = new Mesh(new BufferGeometry());
+  private markerTags: Sprite[] = [];
   private readonly peakTag = new Sprite(
     new SpriteMaterial({ depthTest: false, transparent: true }),
   );
@@ -96,6 +105,10 @@ export class PlateScene {
   private palette: ReliefPalette | null = null;
   private reach = 0.5;
   private extras: PlateExtras | null = null;
+  /** A second plate beside the first, at the same scale. */
+  private compare: { surface: Mesh; shell: Mesh; material: ShaderMaterial; tags: Sprite[] } | null =
+    null;
+  private compareShift = 0;
   private look: PlateLook | null = null;
   private drape: CanvasTexture | null = null;
   private frame = 0;
@@ -134,6 +147,12 @@ export class PlateScene {
         uAo: { value: 0.55 },
         uBake: { value: false },
         uWater: { value: true },
+        uSnow: { value: 2 },
+        uFlood: { value: -1e9 },
+        uWaterMask: { value: null },
+        uHasWaterMask: { value: false },
+        uOverlay: { value: null },
+        uHasOverlay: { value: false },
       },
     });
     this.ramp.colorSpace = NoColorSpace;
@@ -175,6 +194,8 @@ export class PlateScene {
     this.labelTop.material = this.labelMaterial;
     this.labelShell.material = this.shellMaterial;
     this.pin.material = this.pinMaterial;
+    this.markerPins.material = this.pinMaterial;
+    this.markerPins.visible = false;
     this.peakTag.renderOrder = 10;
     this.peakTag.center.set(0.5, 0);
     for (const object of [this.labelTop, this.labelShell, this.pin, this.peakTag]) {
@@ -191,6 +212,7 @@ export class PlateScene {
       this.labelTop,
       this.labelShell,
       this.pin,
+      this.markerPins,
       this.peakTag,
     );
 
@@ -265,15 +287,19 @@ export class PlateScene {
 
   /** Distance that keeps the whole plate and its shadow in view for this aspect ratio. */
   private fitCamera() {
-    // Half the diagonal, plus room for the shadow, the relief and the nameplate.
-    const radius = 0.76 + this.plateHeight * 0.3 + Math.max(0, this.reach - 0.5) * 0.7;
+    // Half the diagonal, plus room for the shadow, the relief, the nameplate and a second plate.
+    const radius =
+      0.76 +
+      this.plateHeight * 0.3 +
+      Math.max(0, this.reach - 0.5) * 0.7 +
+      this.compareShift * 0.55;
     const vertical = ((FOV / 2) * Math.PI) / 180;
     const horizontal = Math.atan(Math.tan(vertical) * this.camera.aspect);
     const distance = radius / Math.sin(Math.min(vertical, horizontal));
     const offset = this.camera.position.clone().sub(this.controls.target);
     offset.setLength(distance);
     this.controls.target.set(
-      0.04,
+      0.04 + this.compareShift / 2,
       (this.plateHeight - this.baseDepth) / 2,
       0.04 + Math.max(0, this.reach - 0.5) / 2,
     );
@@ -300,14 +326,8 @@ export class PlateScene {
     this.shell.geometry = shell;
 
     // The rim line sits on the top edge of the walls.
-    const ringCount = geometry.outline.length / 2;
-    const rim = new Float32Array((ringCount + 1) * 3);
-    for (let k = 0; k <= ringCount; k++) {
-      const wall = (k % ringCount) * 27;
-      rim.set(geometry.shell.subarray(wall, wall + 3), k * 3);
-    }
     const rimGeometry = new BufferGeometry();
-    rimGeometry.setAttribute("position", new BufferAttribute(rim, 3));
+    rimGeometry.setAttribute("position", new BufferAttribute(geometry.rim, 3));
     this.rim.geometry.dispose();
     this.rim.geometry = rimGeometry;
 
@@ -336,6 +356,7 @@ export class PlateScene {
     u.uMin.value = geometry.min;
     u.uMax.value = Math.max(geometry.max, geometry.min + 1);
     u.uInterval.value = contourInterval(geometry.min, geometry.max, this.lines);
+    if (this.look) u.uFlood.value = this.look.flood > 0 ? geometry.min + this.look.flood : -1e9;
     this.fitCamera();
     this.wake(IDLE_SPIN_MS);
   }
@@ -354,6 +375,8 @@ export class PlateScene {
       this.ramp.needsUpdate = true;
     }
     u.uWater.value = look.water;
+    u.uSnow.value = look.snow > 0 ? look.snow : 2;
+    u.uFlood.value = look.flood > 0 ? this.elevationRange[0] + look.flood : -1e9;
     this.shellMaterial.uniforms.uSide.value.set(look.side);
     this.shellMaterial.uniforms.uStrata.value = look.strata;
     this.labelMaterial.uniforms.uBase.value.set(look.side);
@@ -415,6 +438,42 @@ export class PlateScene {
       this.peakTag.position.set(pin.tip[0], pin.tip[1] + 0.012, pin.tip[2]);
     }
     this.peakTag.visible = Boolean(pin && peakText);
+
+    // Markers: one mesh for every cone, and a name tag above each.
+    for (const tag of this.markerTags) {
+      this.scene.remove(tag);
+      tag.material.map?.dispose();
+      tag.material.dispose();
+    }
+    this.markerTags = [];
+    const markers = extras?.markers ?? [];
+    if (markers.length) {
+      const total = markers.reduce((sum, marker) => sum + marker.soup.length, 0);
+      const soup = new Float32Array(total);
+      let offset = 0;
+      for (const marker of markers) {
+        soup.set(marker.soup, offset);
+        offset += marker.soup.length;
+        if (!marker.label) continue;
+        const canvas = tagCanvas(marker.label);
+        const map = new CanvasTexture(canvas);
+        map.colorSpace = NoColorSpace;
+        const tag = new Sprite(new SpriteMaterial({ map, depthTest: false, transparent: true }));
+        tag.renderOrder = 10;
+        tag.center.set(0.5, 0);
+        const height = 0.042;
+        tag.scale.set((height * canvas.width) / canvas.height, height, 1);
+        tag.position.set(marker.tip[0], marker.tip[1] + 0.008, marker.tip[2]);
+        this.markerTags.push(tag);
+        this.scene.add(tag);
+      }
+      const geometry = new BufferGeometry();
+      geometry.setAttribute("position", new BufferAttribute(soup, 3));
+      geometry.computeVertexNormals();
+      this.markerPins.geometry.dispose();
+      this.markerPins.geometry = geometry;
+    }
+    this.markerPins.visible = markers.length > 0;
 
     this.reach = extras?.reach ?? 0.5;
     this.fitCamera();
@@ -552,8 +611,216 @@ export class PlateScene {
         ),
       );
     }
+    if (this.extras?.markers.length) {
+      group.add(
+        solid(
+          this.markerPins.geometry,
+          new MeshStandardMaterial({
+            color: linear(look?.ink ?? "#1b1a17"),
+            roughness: 0.45,
+            name: "Markers",
+          }),
+          "Markers",
+        ),
+      );
+    }
     const camera = this.camera.clone();
     return { group, camera, target: this.controls.target.clone(), baseDepth: this.baseDepth };
+  }
+
+  /** Lakes and rivers, white on black over the plate's square; null clears it. */
+  setWaterMask(image: HTMLCanvasElement | null) {
+    this.setSurfaceTexture("uWaterMask", "uHasWaterMask", image);
+  }
+
+  /** Routes and markers drawn on top of the surface, with transparency; null clears it. */
+  setOverlay(image: HTMLCanvasElement | null) {
+    this.setSurfaceTexture("uOverlay", "uHasOverlay", image);
+  }
+
+  private setSurfaceTexture(name: string, flag: string, image: HTMLCanvasElement | null) {
+    const u = this.surfaceMaterial.uniforms;
+    (u[name].value as CanvasTexture | null)?.dispose();
+    let texture: CanvasTexture | null = null;
+    if (image) {
+      texture = new CanvasTexture(image);
+      // Row 0 is the north edge, where v = 0.
+      texture.flipY = false;
+      texture.colorSpace = NoColorSpace;
+      texture.anisotropy = Math.min(8, this.renderer.capabilities.getMaxAnisotropy());
+    }
+    u[name].value = texture;
+    u[flag].value = Boolean(image);
+    this.wake(0);
+  }
+
+  /** The point of the terrain under a screen position, in plate texture coordinates; null off the plate. */
+  pick(clientX: number, clientY: number): [number, number] | null {
+    const rect = this.canvas.getBoundingClientRect();
+    const pointer = new Vector2(
+      ((clientX - rect.left) / rect.width) * 2 - 1,
+      -((clientY - rect.top) / rect.height) * 2 + 1,
+    );
+    const raycaster = new Raycaster();
+    raycaster.setFromCamera(pointer, this.camera);
+    const hit = raycaster.intersectObject(this.surface, false)[0];
+    return hit?.uv ? [hit.uv.x, hit.uv.y] : null;
+  }
+
+  /**
+   * Hands the camera to a script (a fly-over): the opening spin and user
+   * controls stop until the returned function puts everything back.
+   */
+  direct(): {
+    /** The view when directing began: distance, angles and target. */
+    start: { radius: number; theta: number; phi: number; target: Vector3 };
+    /** Places the camera and draws a frame at once. */
+    shoot: (position: Vector3, target: Vector3) => void;
+    /** Height of the surface at a plate texture point (from above), or null off the plate. */
+    groundAt: (u: number, v: number) => number | null;
+    release: () => void;
+  } {
+    const saved = { position: this.camera.position.clone(), target: this.controls.target.clone() };
+    const spherical = new Spherical().setFromVector3(saved.position.clone().sub(saved.target));
+    this.controls.autoRotate = false;
+    this.controls.enabled = false;
+    const down = new Raycaster();
+    const downward = new Vector3(0, -1, 0);
+    return {
+      start: {
+        radius: spherical.radius,
+        theta: spherical.theta,
+        phi: spherical.phi,
+        target: saved.target.clone(),
+      },
+      shoot: (position, target) => {
+        this.camera.position.copy(position);
+        // Keep the controls in step, so a stray frame of the idle loop agrees with this one.
+        this.controls.target.copy(target);
+        this.camera.lookAt(target);
+        this.renderer.render(this.scene, this.camera);
+      },
+      groundAt: (u, v) => {
+        down.set(new Vector3(u - 0.5, 50, v - 0.5), downward);
+        return down.intersectObject(this.surface, false)[0]?.point.y ?? null;
+      },
+      release: () => {
+        this.camera.position.copy(saved.position);
+        this.controls.target.copy(saved.target);
+        this.camera.lookAt(saved.target);
+        this.controls.enabled = true;
+        this.wake(0);
+      },
+    };
+  }
+
+  /**
+   * Squashes the relief towards a flat contour map (0) and back up to its
+   * real shape (1), for the classroom lesson. Pins hide while it is flat.
+   */
+  setReliefScale(scale: number) {
+    for (const object of [this.surface, this.shell, this.rim])
+      object.scale.y = Math.max(0.001, scale);
+    const full = scale >= 0.999;
+    this.pin.visible = full && Boolean(this.extras?.pin);
+    this.peakTag.visible = full && this.peakTag.material.map !== null && Boolean(this.extras?.pin);
+    this.markerPins.visible = full && Boolean(this.extras?.markers.length);
+    for (const tag of this.markerTags) tag.visible = full;
+    this.wake(0);
+  }
+
+  /**
+   * A second plate beside this one, for comparing two places. Both must be
+   * built with the same vertical scale and base level; this one's colours
+   * and contours follow the first plate's look. Null removes it.
+   */
+  setCompare(geometry: PlateGeometry | null, names: [string, string] = ["", ""]) {
+    if (this.compare) {
+      const { surface, shell, material, tags } = this.compare;
+      this.scene.remove(surface, shell, ...tags);
+      surface.geometry.dispose();
+      shell.geometry.dispose();
+      material.dispose();
+      for (const tag of tags) {
+        tag.material.map?.dispose();
+        tag.material.dispose();
+      }
+      this.compare = null;
+    }
+    this.compareShift = 0;
+    if (geometry) {
+      const gap = 1.18;
+      const u = this.surfaceMaterial.uniforms;
+      // Share every uniform with the first plate, except its own images.
+      const material = new ShaderMaterial({
+        vertexShader: surfaceVertex,
+        fragmentShader: surfaceFragment,
+        uniforms: {
+          ...u,
+          uDrape: { value: null },
+          uHasDrape: { value: false },
+          uWaterMask: { value: null },
+          uHasWaterMask: { value: false },
+          uOverlay: { value: null },
+          uHasOverlay: { value: false },
+        },
+      });
+      u.uMax.value = Math.max(u.uMax.value, geometry.max);
+      const surfaceGeometry = new BufferGeometry();
+      surfaceGeometry.setAttribute("position", new BufferAttribute(geometry.surface, 3));
+      surfaceGeometry.setAttribute("uv", new BufferAttribute(geometry.uvs, 2));
+      surfaceGeometry.setAttribute("elevation", new BufferAttribute(geometry.elevations, 1));
+      surfaceGeometry.setAttribute("ao", new BufferAttribute(geometry.ao, 1));
+      surfaceGeometry.setIndex(new BufferAttribute(geometry.surfaceIndex, 1));
+      surfaceGeometry.computeVertexNormals();
+      const shellGeometry = new BufferGeometry();
+      shellGeometry.setAttribute("position", new BufferAttribute(geometry.shell, 3));
+      shellGeometry.computeVertexNormals();
+      const surface = new Mesh(surfaceGeometry, material);
+      const shell = new Mesh(shellGeometry, this.shellMaterial);
+      surface.position.x = shell.position.x = gap;
+      // Name tags over the far edge of each plate.
+      const tags = names.map((name, index) => {
+        const canvas = tagCanvas(name);
+        const map = new CanvasTexture(canvas);
+        map.colorSpace = NoColorSpace;
+        const tag = new Sprite(new SpriteMaterial({ map, depthTest: false, transparent: true }));
+        tag.renderOrder = 10;
+        tag.center.set(0.5, 0);
+        tag.scale.set((0.06 * canvas.width) / canvas.height, 0.06, 1);
+        tag.position.set(index * gap, this.plateHeight + 0.08, -0.5);
+        return tag;
+      });
+      this.scene.add(surface, shell, ...tags);
+      this.compare = { surface, shell, material, tags };
+      this.compareShift = gap;
+    }
+    this.fitCamera();
+    this.wake(IDLE_SPIN_MS);
+  }
+
+  /** The canvas the plate is drawn on, for recording. */
+  get domElement(): HTMLCanvasElement {
+    return this.canvas;
+  }
+
+  /** Turns and zooms the view from the keyboard: angles in degrees, zoom as a factor. */
+  nudge(turnDegrees: number, tiltDegrees: number, zoom = 1) {
+    const offset = this.camera.position.clone().sub(this.controls.target);
+    const spherical = new Spherical().setFromVector3(offset);
+    spherical.theta += (turnDegrees * Math.PI) / 180;
+    spherical.phi = Math.min(
+      this.controls.maxPolarAngle,
+      Math.max(this.controls.minPolarAngle, spherical.phi + (tiltDegrees * Math.PI) / 180),
+    );
+    spherical.radius = Math.min(
+      this.controls.maxDistance,
+      Math.max(this.controls.minDistance, spherical.radius * zoom),
+    );
+    this.camera.position.copy(this.controls.target).add(offset.setFromSpherical(spherical));
+    this.controls.autoRotate = false;
+    this.onInteract?.();
+    this.wake(IDLE_SPIN_MS);
   }
 
   /** Map or satellite image laid over the terrain; null clears it. */
@@ -636,8 +903,13 @@ export class PlateScene {
       this.labelTop,
       this.labelShell,
       this.pin,
+      this.markerPins,
     ]) {
       object.geometry.dispose();
+    }
+    for (const tag of this.markerTags) {
+      tag.material.map?.dispose();
+      tag.material.dispose();
     }
     for (const material of [
       this.surfaceMaterial,

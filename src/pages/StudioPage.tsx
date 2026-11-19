@@ -26,11 +26,20 @@ import { triggerDownloadBlob } from "@/services/export/fileDownloader";
 import { tapFeedback } from "@/utils/haptics";
 import { useWheelScrollsRows } from "@/hooks/useWheelScrollsRows";
 import { plateBounds } from "@/features/plate/geo";
+import { decodeRoute, routeMask, toPlateUv } from "@/features/plate/routes";
+import { loadWaterMask, maskToGrid } from "@/features/plate/drape";
 import { loadHeightGrid } from "@/features/plate/elevation";
 import type { HeightGrid } from "@/features/plate/elevationCore";
 import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
 import { buildPlateExtras, type PlateExtras } from "@/features/plate/extras";
-import { editTerrain, modelParts, printSoups, writeStl } from "@/features/plate/printModel";
+import {
+  buildWaterInlay,
+  editTerrain,
+  modelParts,
+  printSoups,
+  writeStl,
+  type ModelPart,
+} from "@/features/plate/printModel";
 import { shapeIconPath } from "@/features/plate/shapes";
 import {
   DEFAULT_PLATE,
@@ -74,6 +83,8 @@ import "@/styles/studio.css";
 type Load<T> = { status: "loading" } | { status: "error" } | { status: "ready"; value: T };
 
 const SAVE_DELAY_MS = 400;
+/** How deep lakes and rivers are carved, and how thick their inlay is. */
+const WATER_DEPTH_MM = 0.6;
 const CHECK_DELAY_MS = 700;
 const VIEWS: StudioView[] = ["iso", "top", "front", "side"];
 
@@ -183,7 +194,7 @@ function StudioApp() {
   const [reports, setReports] = useState<PartReport[] | null>(null);
   const [wireframe, setWireframe] = useState(false);
   const [section, setSection] = useState<number | null>(null);
-  const [busy, setBusy] = useState<"stl" | "3mf" | "png" | null>(null);
+  const [busy, setBusy] = useState<"stl" | "3mf" | "png" | "tiles" | "litho" | null>(null);
   const [scene, setScene] = useState<StudioScene | null>(null);
   const [failed, setFailed] = useState(false);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -252,6 +263,29 @@ function StudioApp() {
     [grid, deferredPrint.smooth, deferredPrint.trimLow, deferredPrint.trimHigh],
   );
   const exaggeration = deferredPlate.exaggeration || autoHeight;
+  // Lakes and rivers from OpenStreetMap, when the plate asks for them.
+  const [waterMask, setWaterMask] = useState<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    if (!plate.lakes) {
+      queueMicrotask(() => setWaterMask(null));
+      return;
+    }
+    const controller = new AbortController();
+    loadWaterMask(bounds, controller.signal).then(setWaterMask, () => {
+      if (!controller.signal.aborted) setWaterMask(null);
+    });
+    return () => controller.abort();
+  }, [plate.lakes, bounds]);
+  const waterGrid = useMemo(
+    () => (waterMask && edited && deferredPlate.lakes ? maskToGrid(waterMask, edited.size) : null),
+    [waterMask, edited, deferredPlate.lakes],
+  );
+
+  const route = useMemo(
+    () => (deferredPlate.route ? decodeRoute(deferredPlate.route) : []),
+    [deferredPlate.route],
+  );
+  const raiseRoute = deferredPlate.routeRaise;
   const geometry = useMemo(
     () =>
       edited
@@ -260,22 +294,61 @@ function StudioApp() {
             exaggeration,
             sizeMeters: bounds.sizeMeters,
             boxDepth: deferredPrint.baseMm / deferredPrint.widthMm,
+            // Walls 2.4 mm, roof 1.6 mm, and a 3 mm lip that a nail hooks behind.
+            hollow: deferredPrint.hollow
+              ? {
+                  wall: 2.4 / deferredPrint.widthMm,
+                  roof: 1.6 / deferredPrint.widthMm,
+                  lip: 3 / deferredPrint.widthMm,
+                  lipHeight: 1.2 / deferredPrint.widthMm,
+                }
+              : null,
+            reliefs: [
+              // The same 0.8 mm ridge as on the plate page, whatever the print width.
+              raiseRoute && route.length > 1
+                ? {
+                    mask: routeMask(bounds, route, edited.size),
+                    size: edited.size,
+                    height: 0.8 / deferredPrint.widthMm,
+                  }
+                : null,
+              // Lakes and rivers carved 0.6 mm deep.
+              waterGrid
+                ? {
+                    mask: waterGrid,
+                    size: edited.size,
+                    height: -WATER_DEPTH_MM / deferredPrint.widthMm,
+                  }
+                : null,
+            ],
           })
         : null,
     [
       edited,
       deferredPlate.shape,
       exaggeration,
-      bounds.sizeMeters,
+      bounds,
       deferredPrint.baseMm,
       deferredPrint.widthMm,
+      deferredPrint.hollow,
+      raiseRoute,
+      route,
+      waterGrid,
     ],
+  );
+  const markerSpots = useMemo(
+    () =>
+      deferredPlate.markers.map((marker) => {
+        const [u, v] = toPlateUv(bounds, [marker.lat, marker.lon]);
+        return { u, v, label: marker.label };
+      }),
+    [deferredPlate.markers, bounds],
   );
 
   const labelKey = useMemo(() => {
-    const label = grid ? plateLabel(deferredPlate, grid.max) : null;
+    const label = grid ? plateLabel(deferredPlate, grid.max, deferredPrint.widthMm) : null;
     return label ? JSON.stringify(label) : "";
-  }, [grid, deferredPlate]);
+  }, [grid, deferredPlate, deferredPrint.widthMm]);
 
   useEffect(() => {
     if (!geometry) return;
@@ -289,6 +362,7 @@ function StudioApp() {
         reliefMm: deferredPrint.reliefMm,
         // About 0.2 mm per cell, whatever the print size.
         cellsPerUnit: Math.min(1000, deferredPrint.widthMm / 0.2),
+        markers: markerSpots,
       }).then(
         (value) => !cancelled && setExtras(value),
         () => !cancelled && setExtras(null),
@@ -305,6 +379,7 @@ function StudioApp() {
     deferredPlate.pin,
     deferredPrint.widthMm,
     deferredPrint.reliefMm,
+    markerSpots,
   ]);
 
   // Extras follow the terrain by a moment; parts always pair the latest of each.
@@ -350,13 +425,21 @@ function StudioApp() {
       terrain: print.colors[0],
       label: print.colors[Math.min(1, print.bands - 1)] ?? print.colors[0],
       pin: print.colors[Math.max(0, print.bands - 1)],
+      markers: print.colors[Math.max(0, print.bands - 1)],
+      water: "#3b82c4",
     };
-    return printSoups(parts, widthMm, lift).map((part) => ({
+    // The water inlay fills the carved lakes and rivers, as its own part.
+    const inlay =
+      waterGrid && edited
+        ? buildWaterInlay(geometry, waterGrid, edited.size, WATER_DEPTH_MM / widthMm)
+        : null;
+    const all: ModelPart[] = inlay ? [...parts, { id: "water", soup: inlay }] : parts;
+    return printSoups(all, widthMm, lift).map((part) => ({
       ...part,
       name: t(`studio.part.${part.id}` as TranslationKey),
       color: colors[part.id],
     }));
-  }, [geometry, parts, widthMm, lift, print.colors, print.bands, t]);
+  }, [geometry, parts, widthMm, lift, print.colors, print.bands, t, waterGrid, edited]);
 
   useEffect(() => {
     if (!printParts.length) return;
@@ -391,13 +474,61 @@ function StudioApp() {
   const subtitle = [plate.region, plate.country].filter(Boolean).join(", ");
   const fileBase = `teetang-${slug(plate.name)}-${Math.round(widthMm)}mm`;
 
-  const exportFile = async (kind: "stl" | "3mf" | "png") => {
-    if (!printParts.length || busy) return;
+  const exportFile = async (kind: "stl" | "3mf" | "png" | "tiles" | "litho") => {
+    if (!printParts.length || busy || !edited) return;
     setBusy(kind);
+    // Let the spinner show before the heavy work blocks the page.
+    await new Promise((resolve) => setTimeout(resolve, 30));
     try {
+      if (kind === "tiles" || kind === "litho") {
+        const tools = await import("@/features/studio/tilesAndLitho");
+        const common = { exaggeration, sizeMeters: bounds.sizeMeters, widthMm: print.widthMm };
+        const blob =
+          kind === "tiles"
+            ? tools.buildTilesZip(edited, {
+                ...common,
+                count: print.tiles,
+                baseMm: print.baseMm,
+                hollow: print.hollow,
+                reliefs: [
+                  ...(raiseRoute && route.length > 1
+                    ? [
+                        {
+                          mask: routeMask(bounds, route, edited.size),
+                          size: edited.size,
+                          heightMm: 0.8,
+                        },
+                      ]
+                    : []),
+                  ...(waterGrid
+                    ? [{ mask: waterGrid, size: edited.size, heightMm: -WATER_DEPTH_MM }]
+                    : []),
+                ],
+              })
+            : new Blob(
+                [
+                  tools.buildLithophaneStl(edited, {
+                    ...common,
+                    thinMm: print.lithoThin,
+                    thickMm: print.lithoThick,
+                  }),
+                ],
+                { type: "model/stl" },
+              );
+        await triggerDownloadBlob(
+          blob,
+          kind === "tiles"
+            ? `${fileBase}-tiles-${print.tiles}x${print.tiles}.zip`
+            : `${fileBase}-lithophane.stl`,
+        );
+        notify(t("plate.downloaded"), { tone: "success" });
+        return;
+      }
       let blob: Blob | null;
       if (kind === "stl") {
-        blob = new Blob([writeStl(printParts, `teetang.art ${plate.name}`)], { type: "model/stl" });
+        // One-colour STL: the carved water stays open; the inlay is for the 3MF.
+        const solids = printParts.filter((part) => part.id !== "water");
+        blob = new Blob([writeStl(solids, `teetang.art ${plate.name}`)], { type: "model/stl" });
       } else if (kind === "3mf") {
         blob = await build3mf(printParts, title);
       } else {
@@ -954,6 +1085,91 @@ function StudioApp() {
               )}
             </p>
             {!fitsBed && <p className="plate-note studio-warn-text">{t("studio.tooBigHint")}</p>}
+          </Section>
+
+          <Section title={t("studio.ways")} open={false}>
+            <label className="plate-switch">
+              <input
+                type="checkbox"
+                checked={print.hollow}
+                onChange={(event) => updatePrint({ hollow: event.target.checked })}
+              />
+              <span>{t("studio.hollow")}</span>
+            </label>
+            <p className="plate-note">{t("studio.hollowHint")}</p>
+
+            <fieldset className="plate-field">
+              <legend className="plate-field__label">{t("studio.tiles")}</legend>
+              <div className="plate-segmented plate-segmented--wide">
+                {[1, 2, 3, 4].map((count) => (
+                  <button
+                    key={count}
+                    type="button"
+                    aria-pressed={print.tiles === count}
+                    onClick={() => updatePrint({ tiles: count })}
+                  >
+                    {count === 1 ? t("studio.tilesOne") : `${count} × ${count}`}
+                  </button>
+                ))}
+              </div>
+              {print.tiles > 1 && (
+                <>
+                  <p className="plate-note">
+                    {t("studio.tilesHint").replace(
+                      "{size}",
+                      (print.widthMm / print.tiles).toFixed(0),
+                    )}
+                  </p>
+                  <button
+                    type="button"
+                    className="plate-btn plate-btn--soft"
+                    disabled={!geometry || busy !== null}
+                    aria-busy={busy === "tiles"}
+                    onClick={() => exportFile("tiles")}
+                  >
+                    {busy === "tiles" ? (
+                      <span className="plate-spinner" aria-hidden="true" />
+                    ) : null}
+                    {t("studio.downloadTiles")}
+                  </button>
+                </>
+              )}
+            </fieldset>
+
+            <fieldset className="plate-field">
+              <legend className="plate-field__label">{t("studio.litho")}</legend>
+              <p className="plate-note">{t("studio.lithoHint")}</p>
+              <Slider
+                id="studio-litho-thin"
+                label={t("studio.lithoThin")}
+                value={print.lithoThin}
+                display={mm(print.lithoThin)}
+                min={0.4}
+                max={2}
+                step={0.1}
+                onChange={(lithoThin) => updatePrint({ lithoThin })}
+              />
+              <Slider
+                id="studio-litho-thick"
+                label={t("studio.lithoThick")}
+                value={print.lithoThick}
+                display={mm(print.lithoThick)}
+                min={1.6}
+                max={6}
+                step={0.1}
+                onChange={(lithoThick) => updatePrint({ lithoThick })}
+              />
+              <button
+                type="button"
+                className="plate-btn plate-btn--soft"
+                disabled={!geometry || busy !== null}
+                aria-busy={busy === "litho"}
+                onClick={() => exportFile("litho")}
+              >
+                {busy === "litho" ? <span className="plate-spinner" aria-hidden="true" /> : null}
+                {t("studio.downloadLitho")}
+              </button>
+            </fieldset>
           </Section>
 
           <div className="studio-export">

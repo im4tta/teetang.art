@@ -11,6 +11,7 @@ import {
   type LabelFont,
 } from "./extras";
 import { RELIEF_PALETTE_IDS, type ReliefPalette } from "./palettes";
+import { MAX_MARKERS, isEncodedRoute, type PlateMarker } from "./routes";
 
 export interface PlatePlace {
   name: string;
@@ -57,6 +58,19 @@ export interface PlateSettings extends PlatePlace {
   water: boolean;
   /** Rock layers on the sides of the box. */
   strata: boolean;
+  /** Snow from this share of the relief upwards; 0 means none. */
+  snow: number;
+  /** Water up to this many metres above the lowest point; 0 means none. */
+  flood: number;
+  /** Your own places on the plate. */
+  markers: PlateMarker[];
+  /** An imported track, as an encoded polyline; "" means none. */
+  route: string;
+  routeColor: string;
+  /** Raise the route into a ridge you can feel on the print. */
+  routeRaise: boolean;
+  /** Lakes and rivers from OpenStreetMap, painted and carved into the print. */
+  lakes: boolean;
 }
 
 export type LabelRelief = "raised" | "engraved";
@@ -76,6 +90,7 @@ export const PLATE_STYLES: PlateStyle[] = [
   "topo",
   "map",
   "satellite",
+  "vintage",
 ];
 export const SIZE_LIMITS = { min: 0.5, max: 100 };
 /** Maps the Move mode can show under the square. */
@@ -148,6 +163,13 @@ export const DEFAULT_PLATE: PlateSettings = {
   pin: false,
   water: true,
   strata: false,
+  snow: 0,
+  flood: 0,
+  markers: [],
+  route: "",
+  routeColor: "#e4572e",
+  routeRaise: true,
+  lakes: false,
   name: "Phnom Aural",
   region: "Kampong Speu",
   country: "Cambodia",
@@ -167,6 +189,8 @@ const BOOLEAN_FIELDS = [
   "pin",
   "water",
   "strata",
+  "routeRaise",
+  "lakes",
 ] as const satisfies (keyof PlateSettings)[];
 
 /** Short query names used by share links. */
@@ -197,6 +221,13 @@ const LINK = {
   pin: "pin",
   water: "water",
   strata: "strata",
+  snow: "snow",
+  flood: "flood",
+  markers: "mk",
+  route: "rt",
+  routeColor: "rc",
+  routeRaise: "rr",
+  lakes: "lakes",
   name: "name",
   region: "region",
   country: "country",
@@ -224,6 +255,10 @@ export function sanitizePlate(
         ? 0
         : clamp(exaggeration, EXAGGERATION_LIMITS.min, EXAGGERATION_LIMITS.max);
   }
+  const snow = num(input.snow);
+  if (Number.isFinite(snow)) out.snow = snow <= 0 ? 0 : clamp(snow, 0.3, 0.95);
+  const flood = num(input.flood);
+  if (Number.isFinite(flood)) out.flood = clamp(Math.round(flood), 0, 9000);
   const box = num(input.box);
   if (Number.isFinite(box)) out.box = clamp(box, BOX_LIMITS.min, BOX_LIMITS.max);
   if (PLATE_STYLES.includes(input.style as PlateStyle)) out.style = input.style as PlateStyle;
@@ -232,7 +267,23 @@ export function sanitizePlate(
     out.density = input.density as PlateDensity;
   }
   if (typeof input.theme === "string" && /^[\w-]{1,40}$/.test(input.theme)) out.theme = input.theme;
-  for (const key of ["ink", "paper", "side"] as const) {
+  const markers = Array.isArray(input.markers)
+    ? input.markers
+    : typeof input.markers === "string"
+      ? decodeMarkers(input.markers)
+      : null;
+  if (markers) {
+    out.markers = markers
+      .map((m: Partial<PlateMarker>) => ({
+        lat: Number(m?.lat),
+        lon: Number(m?.lon),
+        label: typeof m?.label === "string" ? m.label.replace(/[|]/g, " ").slice(0, 40) : "",
+      }))
+      .filter((m) => Number.isFinite(m.lat) && Number.isFinite(m.lon) && Math.abs(m.lat) <= 85)
+      .slice(0, MAX_MARKERS);
+  }
+  if (typeof input.route === "string" && isEncodedRoute(input.route)) out.route = input.route;
+  for (const key of ["ink", "paper", "side", "routeColor"] as const) {
     const value = input[key];
     if (typeof value === "string" && isHex(value)) out[key] = value;
   }
@@ -265,7 +316,8 @@ export function sanitizePlate(
 export function buildPlateLink(plate: PlateSettings): string {
   const params = new URLSearchParams();
   for (const [field, param] of Object.entries(LINK) as [keyof PlateSettings, string][]) {
-    let value = plate[field];
+    let value: unknown = plate[field];
+    if (field === "markers") value = encodeMarkers(plate.markers);
     if (field === "lat" || field === "lon") value = (value as number).toFixed(5);
     if (typeof value === "boolean") value = value ? "1" : "0";
     if (value !== "" && value !== DEFAULT_PLATE[field]) params.set(param, String(value));
@@ -287,6 +339,21 @@ export function parsePlateLink(search: string): Partial<PlateSettings> | null {
   if (plate.lat === undefined) return null;
   // A shared place without a name should not inherit the default's name.
   return { name: "", region: "", country: "", countryCode: "", ...plate };
+}
+
+/** "lat,lon,name|lat,lon,name" for share links. */
+function encodeMarkers(markers: PlateMarker[]): string {
+  return markers.map((m) => `${m.lat.toFixed(5)},${m.lon.toFixed(5)},${m.label}`).join("|");
+}
+
+function decodeMarkers(text: string): PlateMarker[] {
+  return text
+    .split("|")
+    .filter(Boolean)
+    .map((entry) => {
+      const [lat, lon, ...label] = entry.split(",");
+      return { lat: Number(lat), lon: Number(lon), label: label.join(",") };
+    });
 }
 
 const DRAFT_KEY = "teetangart.plate.v1";
@@ -318,6 +385,7 @@ export const flagEmoji = (countryCode: string) =>
 export function plateLabel(
   plate: PlateSettings,
   highestMetres: number | null,
+  widthMm = 100,
 ): LabelContent | null {
   if (!plate.label || !plate.name.trim()) return null;
   const detail = [
@@ -336,6 +404,6 @@ export function plateLabel(
     lines,
     font: plate.labelFont,
     compass: plate.labelCompass,
-    scale: plate.labelScale ? scaleBar(plate.sizeKm) : null,
+    scale: plate.labelScale ? scaleBar(plate.sizeKm, widthMm) : null,
   };
 }

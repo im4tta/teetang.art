@@ -13,9 +13,12 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Box,
   Camera,
+  Compass,
+  Glasses,
   Dices,
   Download,
   Move,
+  Route,
   Share2,
   SlidersHorizontal,
   MapPinned,
@@ -29,7 +32,15 @@ import { triggerDownloadBlob } from "@/services/export/fileDownloader";
 import { tapFeedback } from "@/utils/haptics";
 import { useWheelScrollsRows } from "@/hooks/useWheelScrollsRows";
 import type { SearchResult } from "@/services/location/types";
-import { plateBounds } from "@/features/plate/geo";
+import { plateBounds, plateToLonLat } from "@/features/plate/geo";
+import {
+  decodeRoute,
+  drawOverlay,
+  elevationProfile,
+  routeMask,
+  toPlateUv,
+  type LatLon,
+} from "@/features/plate/routes";
 import { loadHeightGrid } from "@/features/plate/elevation";
 import type { HeightGrid } from "@/features/plate/elevationCore";
 import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
@@ -51,10 +62,20 @@ import {
   type PlateSettings,
 } from "@/features/plate/plateSettings";
 import { pickSurprise } from "@/features/plate/surprisePlaces";
-import { loadMapDrape, loadTileDrape } from "@/features/plate/drape";
+import { loadMapDrape, loadTileDrape, loadWaterMask, maskToGrid } from "@/features/plate/drape";
 import { resolveBasemap, type Basemap } from "@/features/plate/basemaps";
 import { buildPlateExtras, type PlateExtras } from "@/features/plate/extras";
 import type { PhotoInput } from "@/features/plate/photo";
+import type { ArMode } from "@/features/plate/ar";
+import { videoType } from "@/features/plate/flyover";
+import {
+  cachePlateOffline,
+  explorePlate,
+  readSaved,
+  writeSaved,
+  type ExplorePlace,
+  type SavedPlate,
+} from "@/features/plate/explore";
 import PlateView, { type PlateViewHandle } from "@/features/plate/components/PlateView";
 import PlaceSearch from "@/features/plate/components/PlaceSearch";
 import type { AreaChange } from "@/features/plate/components/AreaPicker";
@@ -65,8 +86,12 @@ const AreaPicker = lazy(() => import("@/features/plate/components/AreaPicker"));
 const AdjustSheet = lazy(() => import("@/features/plate/components/AdjustSheet"));
 const DownloadSheet = lazy(() => import("@/features/plate/components/DownloadSheet"));
 const PhotoView = lazy(() => import("@/features/plate/components/PhotoView"));
+const RouteSheet = lazy(() => import("@/features/plate/components/RouteSheet"));
+const ExploreSheet = lazy(() => import("@/features/plate/components/ExploreSheet"));
 
 const LOW_END = (navigator.hardwareConcurrency ?? 8) <= 4;
+/** The quick first plate: few tiles to fetch, so it shows almost at once. */
+const PREVIEW_CELLS = 64;
 const GRID_CELLS = LOW_END ? 192 : 256;
 const DRAFT_DELAY_MS = 400;
 /** Nameplate grid cells per plate width: about 0.3 mm on a 10 cm print. */
@@ -120,12 +145,45 @@ const slug = (text: string) =>
     .replace(/\s+/g, "-")
     .toLowerCase() || "plate";
 
+const COMPASS = ["e", "ne", "n", "nw", "w", "sw", "s", "se"] as const;
+
+/** What a screen reader says about the plate: its highest and lowest points and where the summit is. */
+function describePlate(
+  t: (key: TranslationKey) => string,
+  title: string,
+  geometry: { max: number; min: number; peak: { u: number; v: number } },
+): string {
+  const dx = geometry.peak.u - 0.5;
+  const dy = 0.5 - geometry.peak.v;
+  const where =
+    Math.hypot(dx, dy) < 0.12
+      ? t("plate.dir.centre")
+      : t(
+          `plate.dir.${COMPASS[Math.round(Math.atan2(dy, dx) / (Math.PI / 4) + 8) % 8]}` as TranslationKey,
+        );
+  return t("plate.a11y.summary")
+    .replace("{title}", title)
+    .replace("{max}", formatMetres(geometry.max))
+    .replace("{where}", where)
+    .replace("{min}", formatMetres(geometry.min));
+}
+
+/** The page's text colour, for the fly-over's title. */
+function stageInk(): string {
+  const page = document.querySelector(".plate-page");
+  const value = page ? getComputedStyle(page).getPropertyValue("--plate-ink").trim() : "";
+  return /^#[0-9a-f]{6}$/i.test(value) ? value : "#1b1a17";
+}
+
 /** The page's background colour, so the photo's studio backdrop blends in. */
 function stageBackdrop(): string {
   const page = document.querySelector(".plate-page");
   const value = page ? getComputedStyle(page).getPropertyValue("--plate-bg").trim() : "";
   return /^#[0-9a-f]{6}$/i.test(value) ? value : "#f1efe9";
 }
+
+/** Steps of the classroom lesson on contour lines. */
+const LESSON_STEPS = 4;
 
 /** Rows that scroll sideways; the mouse wheel scrolls them too. */
 const SIDEWAYS_ROWS = ".plate-segmented, .plate-chips, .plate-theme-row";
@@ -138,13 +196,30 @@ function PlateApp() {
   const [mode, setMode] = useState<"plate" | "move">("plate");
   const [area, setArea] = useState<AreaChange | null>(null);
   const [picker, setPicker] = useState<PickerPrefs>(readPickerPrefs);
-  const [sheet, setSheet] = useState<"adjust" | "download" | null>(null);
+  const [sheet, setSheet] = useState<"adjust" | "download" | "route" | "explore" | null>(null);
+  const [saved, setSaved] = useState<SavedPlate[]>(readSaved);
+  /** A second place shown beside this one, at the same scale. */
+  const [comparePlace, setComparePlace] = useState<ExplorePlace | null>(null);
+  const [compareGrid, setCompareGrid] = useState<HeightGrid | null>(null);
+  /** Classroom lesson: which step is showing, and how raised the relief is. */
+  const [lesson, setLesson] = useState<number | null>(null);
+  const [reliefScale, setReliefScale] = useState(1);
+  /** Waiting for a tap on the plate: to drop a marker, or the two ends of a measuring line. */
+  const [picking, setPicking] = useState<
+    null | { kind: "marker" } | { kind: "line"; first: LatLon | null }
+  >(null);
+  const [measure, setMeasure] = useState<LatLon[] | null>(null);
   const [terrain, setTerrain] = useState<Load<HeightGrid>>({ status: "loading" });
   const [drape, setDrape] = useState<Load<HTMLCanvasElement> | null>(null);
   const [attempt, setAttempt] = useState(0);
   const [touched, setTouched] = useState(false);
   const [extras, setExtras] = useState<PlateExtras | null>(null);
+  const [fullDetail, setFullDetail] = useState(false);
   const [photo, setPhoto] = useState<PhotoInput | null>(null);
+  const [arMode, setArMode] = useState<ArMode | null>(null);
+  const [arSession, setArSession] = useState<(() => void) | null>(null);
+  const arOverlayRef = useRef<HTMLDivElement>(null);
+  const [recording, setRecording] = useState<{ progress: number; cancel: () => void } | null>(null);
   const viewRef = useRef<PlateViewHandle>(null);
   const navigate = useNavigate();
   const stylesRef = useRef<HTMLDivElement>(null);
@@ -170,12 +245,25 @@ function PlateApp() {
     [plate.lat, plate.lon, plate.sizeKm],
   );
 
-  // Terrain for the current square.
+  // Terrain for the current square: a quick low-detail plate first, then the full one.
   useEffect(() => {
     const controller = new AbortController();
-    queueMicrotask(() => setTerrain({ status: "loading" }));
+    let fullArrived = false;
+    queueMicrotask(() => {
+      setTerrain({ status: "loading" });
+      setFullDetail(false);
+    });
+    loadHeightGrid(bounds, PREVIEW_CELLS, controller.signal).then(
+      (value) =>
+        !fullArrived && !controller.signal.aborted && setTerrain({ status: "ready", value }),
+      () => undefined,
+    );
     loadHeightGrid(bounds, GRID_CELLS, controller.signal).then(
-      (value) => setTerrain({ status: "ready", value }),
+      (value) => {
+        fullArrived = true;
+        setTerrain({ status: "ready", value });
+        setFullDetail(true);
+      },
       () => !controller.signal.aborted && setTerrain({ status: "error" }),
     );
     return () => controller.abort();
@@ -211,6 +299,31 @@ function PlateApp() {
     () => (grid ? autoExaggeration(grid, bounds.sizeMeters) : 1),
     [grid, bounds.sizeMeters],
   );
+  // Lakes and rivers from OpenStreetMap, when asked for.
+  const [waterMask, setWaterMask] = useState<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    if (!plate.lakes) {
+      queueMicrotask(() => setWaterMask(null));
+      return;
+    }
+    const controller = new AbortController();
+    loadWaterMask(bounds, controller.signal).then(
+      (mask) => setWaterMask(mask),
+      () => {
+        if (controller.signal.aborted) return;
+        setWaterMask(null);
+        notify(t("plate.lakesError"), { tone: "error", id: "plate-lakes" });
+      },
+    );
+    return () => controller.abort();
+  }, [plate.lakes, bounds, t]);
+  const waterReady = deferred.lakes ? waterMask : null;
+
+  const route = useMemo(
+    () => (deferred.route ? decodeRoute(deferred.route) : []),
+    [deferred.route],
+  );
+  const raiseRoute = deferred.routeRaise && route.length > 1;
   const geometry = useMemo(
     () =>
       grid
@@ -219,9 +332,199 @@ function PlateApp() {
             exaggeration: deferred.exaggeration || autoHeight,
             sizeMeters: bounds.sizeMeters,
             boxDepth: deferred.box,
+            // Compared plates share one base level, so their heights compare truly.
+            baseMin: compareGrid ? Math.min(grid.min, compareGrid.min) : undefined,
+            // A ridge 0.8 mm high on a 10 cm print.
+            reliefs: [
+              raiseRoute
+                ? { mask: routeMask(bounds, route, grid.size), size: grid.size, height: 0.008 }
+                : null,
+              // Lakes and rivers sink 0.6 mm into the print.
+              waterReady
+                ? { mask: maskToGrid(waterReady, grid.size), size: grid.size, height: -0.006 }
+                : null,
+            ],
           })
         : null,
-    [grid, deferred.shape, deferred.exaggeration, deferred.box, autoHeight, bounds.sizeMeters],
+    [
+      grid,
+      deferred.shape,
+      deferred.exaggeration,
+      deferred.box,
+      autoHeight,
+      bounds,
+      raiseRoute,
+      route,
+      waterReady,
+      compareGrid,
+    ],
+  );
+
+  // The compared place: same square size and vertical scale as this plate.
+  useEffect(() => {
+    if (!comparePlace) {
+      queueMicrotask(() => setCompareGrid(null));
+      return;
+    }
+    const controller = new AbortController();
+    const otherBounds = plateBounds(comparePlace.lat, comparePlace.lon, plate.sizeKm);
+    loadHeightGrid(otherBounds, GRID_CELLS, controller.signal).then(setCompareGrid, () => {
+      if (!controller.signal.aborted) {
+        setComparePlace(null);
+        notify(t("plate.error"), { tone: "error" });
+      }
+    });
+    return () => controller.abort();
+  }, [comparePlace, plate.sizeKm, t]);
+  const compare = useMemo(() => {
+    if (!compareGrid || !grid || !comparePlace) return null;
+    return {
+      geometry: buildPlateGeometry(compareGrid, {
+        shape: deferred.shape,
+        exaggeration: deferred.exaggeration || autoHeight,
+        sizeMeters: bounds.sizeMeters,
+        boxDepth: deferred.box,
+        baseMin: Math.min(grid.min, compareGrid.min),
+      }),
+      names: [plate.name || t("plate.untitled"), comparePlace.name] as [string, string],
+    };
+  }, [
+    compareGrid,
+    grid,
+    comparePlace,
+    deferred.shape,
+    deferred.exaggeration,
+    deferred.box,
+    autoHeight,
+    bounds.sizeMeters,
+    plate.name,
+    t,
+  ]);
+
+  // Lesson step 2 lifts the contour map into its real shape.
+  useEffect(() => {
+    if (lesson === null) {
+      queueMicrotask(() => setReliefScale(1));
+      return;
+    }
+    if (lesson === 0) {
+      queueMicrotask(() => setReliefScale(0.02));
+      return;
+    }
+    if (lesson !== 1) return;
+    let frame = 0;
+    const start = performance.now();
+    const step = () => {
+      const t = Math.min(1, (performance.now() - start) / 2600);
+      setReliefScale(0.02 + (1 - 0.02) * (t * t * (3 - 2 * t)));
+      if (t < 1) frame = requestAnimationFrame(step);
+    };
+    frame = requestAnimationFrame(step);
+    return () => cancelAnimationFrame(frame);
+  }, [lesson]);
+
+  // Route, markers and measuring line, drawn on the surface.
+  const overlay = useMemo(
+    () =>
+      route.length > 1 || deferred.markers.length || measure
+        ? drawOverlay(bounds, {
+            route,
+            markers: deferred.markers,
+            color: deferred.routeColor,
+            ink: deferred.ink,
+            paper: deferred.paper,
+            line: measure ?? undefined,
+          })
+        : null,
+    [bounds, route, deferred.markers, deferred.routeColor, deferred.ink, deferred.paper, measure],
+  );
+
+  // Elevation profile: of the measuring line if there is one, else of the route.
+  const profileLine = measure ?? (route.length > 1 ? route : null);
+  const profile = useMemo(
+    () => (grid && profileLine ? elevationProfile(grid, bounds, profileLine) : null),
+    [grid, bounds, profileLine],
+  );
+
+  useEffect(() => {
+    let cancelled = false;
+    import("@/features/plate/ar").then(({ arSupport }) =>
+      arSupport().then((mode) => !cancelled && setArMode(mode)),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const viewInAr = async () => {
+    const input = viewRef.current?.exportScene(1024);
+    if (!input || !arMode) return;
+    try {
+      const ar = await import("@/features/plate/ar");
+      if (arMode === "quicklook") {
+        await ar.openQuickLook(input, `teetang-${slug(plate.name)}.usdz`);
+      } else {
+        const end = await ar.startWebXr(input, arOverlayRef.current!, () => setArSession(null));
+        setArSession(() => end);
+      }
+    } catch {
+      notify(t("plate.ar.failed"), { tone: "error" });
+    }
+  };
+
+  const recordVideo = async () => {
+    const scene = viewRef.current?.scene();
+    if (!scene || !geometry) return;
+    const controller = new AbortController();
+    setRecording({ progress: 0, cancel: () => controller.abort() });
+    try {
+      const { recordFlyover } = await import("@/features/plate/flyover");
+      const blob = await recordFlyover(scene, {
+        route: route.length > 1 ? route.map((point) => toPlateUv(bounds, point)) : null,
+        title,
+        subtitle: [subtitle, highest].filter(Boolean).join(" · "),
+        background: stageBackdrop(),
+        ink: stageInk(),
+        onProgress: (progress) =>
+          setRecording((current) => (current ? { ...current, progress } : current)),
+        signal: controller.signal,
+      });
+      const extension = blob.type.includes("mp4") ? "mp4" : "webm";
+      await triggerDownloadBlob(blob, `teetang-flyover-${slug(plate.name)}.${extension}`);
+      notify(t("plate.downloaded"), { tone: "success" });
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") {
+        notify(t("plate.downloadFailed"), { tone: "error" });
+      }
+    } finally {
+      setRecording(null);
+    }
+  };
+
+  const handlePick = useCallback(
+    ([u, v]: [number, number]) => {
+      const [lon, lat] = plateToLonLat(bounds, u, v);
+      if (picking?.kind === "marker") {
+        update({
+          markers: [
+            ...plate.markers,
+            { lat, lon, label: `${t("plate.markers.default")} ${plate.markers.length + 1}` },
+          ],
+        });
+        setPicking(null);
+        setSheet("route");
+      } else if (picking?.kind === "line") {
+        if (!picking.first) {
+          setPicking({ kind: "line", first: [lat, lon] });
+          setMeasure(null);
+        } else {
+          setMeasure([picking.first, [lat, lon]]);
+          setPicking(null);
+          setSheet("route");
+        }
+      }
+    },
+    [bounds, picking, plate.markers, update, t],
   );
 
   const drapeReady = drape?.status === "ready" ? drape.value : null;
@@ -237,6 +540,8 @@ function PlateApp() {
       palette: plate.palette,
       water: plate.water,
       strata: plate.strata,
+      snow: plate.snow,
+      flood: plate.flood,
     }),
     [
       needsDrape,
@@ -250,6 +555,8 @@ function PlateApp() {
       plate.palette,
       plate.water,
       plate.strata,
+      plate.snow,
+      plate.flood,
     ],
   );
 
@@ -259,6 +566,14 @@ function PlateApp() {
     [geometry, deferred],
   );
   const labelKey = label ? JSON.stringify(label) : "";
+  const markerSpots = useMemo(
+    () =>
+      deferred.markers.map((marker) => {
+        const [u, v] = toPlateUv(bounds, [marker.lat, marker.lon]);
+        return { u, v, label: marker.label };
+      }),
+    [deferred.markers, bounds],
+  );
   useEffect(() => {
     if (!geometry) return;
     let cancelled = false;
@@ -270,6 +585,7 @@ function PlateApp() {
         widthMm: 100,
         reliefMm: 0.8,
         cellsPerUnit: LABEL_CELLS,
+        markers: markerSpots,
       }).then(
         (value) => !cancelled && setExtras(value),
         () => !cancelled && setExtras(null),
@@ -279,7 +595,7 @@ function PlateApp() {
       cancelled = true;
       clearTimeout(timer);
     };
-  }, [geometry, labelKey, deferred.labelRelief, deferred.pin]);
+  }, [geometry, labelKey, deferred.labelRelief, deferred.pin, markerSpots]);
 
   useEffect(() => {
     try {
@@ -342,6 +658,30 @@ function PlateApp() {
     if (kind === "studio") {
       writePlateDraft(plate);
       navigate("/plate/studio");
+      return;
+    }
+    if (kind === "video") {
+      setSheet(null);
+      await recordVideo();
+      return;
+    }
+    if (kind === "card") {
+      const shot = viewRef.current?.snapshot(2048);
+      if (!geometry || !shot || !fullDetail) return;
+      try {
+        const { buildGiftCard } = await import("@/features/plate/giftCard");
+        const blob = await buildGiftCard(
+          shot,
+          plate,
+          buildPlateLink(plate),
+          { scan: t("plate.card.scan"), highest: t("plate.highest") },
+          geometry.max,
+        );
+        await triggerDownloadBlob(blob, `teetang-card-${slug(plate.name)}.png`);
+        notify(t("plate.downloaded"), { tone: "success" });
+      } catch {
+        notify(t("plate.downloadFailed"), { tone: "error" });
+      }
       return;
     }
     if (kind === "link") {
@@ -409,6 +749,15 @@ function PlateApp() {
         <span className="plate-header__title">{t("plate.title")}</span>
         <button
           type="button"
+          className="plate-icon-btn"
+          onClick={() => setSheet("explore")}
+          aria-label={t("plate.explore.title")}
+          title={t("plate.explore.title")}
+        >
+          <Compass size={22} />
+        </button>
+        <button
+          type="button"
           className="plate-icon-btn plate-lang"
           onClick={toggleLang}
           aria-label={lang === "en" ? "Switch to Khmer" : "ប្ដូរទៅអង់គ្លេស"}
@@ -437,9 +786,14 @@ function PlateApp() {
                 geometry={geometry}
                 look={look}
                 drape={drapeReady}
+                overlay={overlay}
+                reliefScale={reliefScale}
+                compare={compare}
+                waterMask={waterReady}
+                onPick={picking ? handlePick : null}
                 extras={extras}
                 peakText={geometry && plate.pin ? `▲ ${highest}` : ""}
-                label={`${title} ${subtitle}`}
+                label={geometry ? describePlate(t, title, geometry) : `${title} ${subtitle}`}
                 onInteract={() => setTouched(true)}
               />
               {terrain.status === "loading" && (
@@ -466,10 +820,90 @@ function PlateApp() {
                   {t("plate.loadingImagery")}
                 </div>
               )}
-              {!touched && geometry && !photo && (
+              {!touched && geometry && !photo && lesson === null && (
                 <p className="plate-stage__hint">{t("plate.dragHint")}</p>
               )}
-              {geometry && !photo && (
+              {lesson !== null && (
+                <div className="plate-lesson" role="dialog" aria-label={t("plate.lesson.start")}>
+                  <p className="plate-lesson__step">
+                    {lesson + 1} / {LESSON_STEPS}
+                  </p>
+                  <p>{t(`plate.lesson.${lesson + 1}` as TranslationKey)}</p>
+                  <div className="plate-lesson__actions">
+                    <button
+                      type="button"
+                      className="plate-btn plate-btn--soft"
+                      onClick={() => setLesson(null)}
+                    >
+                      {t("plate.close")}
+                    </button>
+                    {lesson > 0 && (
+                      <button
+                        type="button"
+                        className="plate-btn plate-btn--soft"
+                        onClick={() => setLesson(lesson - 1)}
+                      >
+                        {t("updates.back")}
+                      </button>
+                    )}
+                    <button
+                      type="button"
+                      className="plate-btn plate-btn--light"
+                      onClick={() => setLesson(lesson + 1 < LESSON_STEPS ? lesson + 1 : null)}
+                    >
+                      {lesson + 1 < LESSON_STEPS ? t("updates.next") : t("updates.finish")}
+                    </button>
+                  </div>
+                </div>
+              )}
+              {picking && (
+                <div className="plate-pick-banner" role="status">
+                  <span>
+                    {picking.kind === "marker"
+                      ? t("plate.pick.marker")
+                      : picking.first
+                        ? t("plate.pick.lineEnd")
+                        : t("plate.pick.lineStart")}
+                  </span>
+                  <button
+                    type="button"
+                    className="plate-btn plate-btn--light"
+                    onClick={() => {
+                      setPicking(null);
+                      setSheet("route");
+                    }}
+                  >
+                    {t("plate.pick.cancel")}
+                  </button>
+                </div>
+              )}
+              {geometry && !fullDetail && terrain.status === "ready" && (
+                <div className="plate-stage__pill" role="status">
+                  <span className="plate-spinner" aria-hidden="true" />
+                  {t("plate.addingDetail")}
+                </div>
+              )}
+              {recording && (
+                <div className="plate-pick-banner" role="status">
+                  <span>
+                    {t("plate.video.recording")} {Math.round(recording.progress * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    className="plate-btn plate-btn--light"
+                    onClick={recording.cancel}
+                  >
+                    {t("plate.pick.cancel")}
+                  </button>
+                </div>
+              )}
+              {geometry && fullDetail && !photo && !recording && arMode && (
+                <button type="button" className="plate-photo-btn plate-ar-btn" onClick={viewInAr}>
+                  <Glasses size={18} aria-hidden="true" />
+                  {t("plate.ar")}
+                </button>
+              )}
+              {geometry && fullDetail && !photo && !recording && (
                 <button
                   type="button"
                   className="plate-photo-btn"
@@ -497,7 +931,9 @@ function PlateApp() {
           <p className="plate-credit">
             Elevation: AWS Terrain Tiles
             {mode === "plate" && basemap ? ` · ${basemap.credit}` : ""}
-            {mode === "plate" && plate.style === "map" ? " · © OpenStreetMap contributors" : ""}
+            {mode === "plate" && (plate.style === "map" || plate.lakes)
+              ? " · © OpenStreetMap contributors"
+              : ""}
           </p>
         </section>
 
@@ -626,6 +1062,14 @@ function PlateApp() {
             <button
               type="button"
               className="plate-btn plate-btn--soft"
+              onClick={() => setSheet("route")}
+            >
+              <Route size={20} aria-hidden="true" />
+              {t("plate.route.button")}
+            </button>
+            <button
+              type="button"
+              className="plate-btn plate-btn--soft"
               onClick={() => download("studio")}
             >
               <Box size={20} aria-hidden="true" />
@@ -637,7 +1081,7 @@ function PlateApp() {
             <button
               type="button"
               className="plate-btn plate-btn--primary"
-              disabled={!geometry || mode === "move"}
+              disabled={!geometry || !fullDetail || mode === "move"}
               onClick={() => setSheet("download")}
             >
               <Download size={20} aria-hidden="true" />
@@ -665,7 +1109,80 @@ function PlateApp() {
           <AdjustSheet
             plate={plate}
             autoExaggeration={autoHeight}
+            relief={geometry ? geometry.max - geometry.min : 0}
             onChange={update}
+            onClose={() => setSheet(null)}
+          />
+        )}
+        {sheet === "explore" && (
+          <ExploreSheet
+            saved={saved}
+            comparing={comparePlace?.name ?? null}
+            onOpen={(place) => {
+              setSheet(null);
+              setComparePlace(null);
+              goTo(explorePlate(place) as PlateSettings);
+            }}
+            onCompare={(place) => {
+              setComparePlace(place);
+              if (place) setSheet(null);
+            }}
+            onLesson={() => {
+              setSheet(null);
+              setMode("plate");
+              setLesson(0);
+            }}
+            onSaveOffline={async () => {
+              try {
+                await cachePlateOffline(
+                  bounds,
+                  [PREVIEW_CELLS, GRID_CELLS],
+                  basemap,
+                  window.innerWidth >= 900 ? 2048 : 1024,
+                );
+                const entry: SavedPlate = {
+                  name: plate.name,
+                  lat: plate.lat,
+                  lon: plate.lon,
+                  sizeKm: plate.sizeKm,
+                  savedAt: Date.now(),
+                  plate,
+                };
+                const next = [
+                  entry,
+                  ...saved.filter((s) => s.name !== plate.name || s.lat !== plate.lat),
+                ];
+                setSaved(next);
+                writeSaved(next);
+                notify(t("plate.explore.savedDone"), { tone: "success" });
+              } catch {
+                notify(t("plate.downloadFailed"), { tone: "error" });
+              }
+            }}
+            onOpenSaved={(entry) => {
+              setSheet(null);
+              goTo({ ...entry.plate, lat: entry.lat, lon: entry.lon } as PlateSettings);
+            }}
+            onDeleteSaved={(entry) => {
+              const next = saved.filter((s) => s.savedAt !== entry.savedAt);
+              setSaved(next);
+              writeSaved(next);
+            }}
+            onClose={() => setSheet(null)}
+          />
+        )}
+        {sheet === "route" && (
+          <RouteSheet
+            plate={plate}
+            profile={profile}
+            profileTitle={
+              measure ? t("plate.profile.line") : `${title} · ${t("plate.profile.route")}`
+            }
+            onChange={update}
+            onPick={(kind) => {
+              setSheet(null);
+              setPicking(kind === "marker" ? { kind } : { kind, first: null });
+            }}
             onClose={() => setSheet(null)}
           />
         )}
@@ -674,9 +1191,17 @@ function PlateApp() {
             onDownload={download}
             onClose={() => setSheet(null)}
             satellite={basemap !== null}
+            video={videoType() !== null}
           />
         )}
       </Suspense>
+      {/* Shown over the camera view during WebXR AR. */}
+      <div ref={arOverlayRef} className="plate-ar-overlay" hidden={!arSession}>
+        <p>{t("plate.ar.hint")}</p>
+        <button type="button" className="plate-btn plate-btn--light" onClick={() => arSession?.()}>
+          {t("plate.close")}
+        </button>
+      </div>
       <Toaster />
     </div>
   );

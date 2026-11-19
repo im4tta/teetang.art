@@ -1,6 +1,11 @@
 const STATIC_CACHE_NAME = "teetangart-static-v8";
 const RUNTIME_CACHE_NAME = "teetangart-runtime-v1";
 const TILE_CACHE_NAME = "teetangart-tiles-v2";
+// Plates saved for offline use; never trimmed (see src/features/plate/explore.ts).
+const OFFLINE_CACHE_NAME = "teetangart-offline-v1";
+// Map hosts whose tiles a saved plate may hold.
+const OFFLINE_HOSTS =
+  /(^|\.)(arcgisonline\.com|opentopomap\.org|openstreetmap\.(org|fr)|eox\.at|earthdata\.nasa\.gov|nationalmap\.gov|geo\.admin\.ch|geopf\.fr|gsi\.go\.jp|kartverket\.no|geodatenzentrum\.de)$/;
 const CACHE_PREFIX = "teetangart-";
 const INDEX_FALLBACK = "/index.html";
 const TILE_MAX_ENTRIES = 300;
@@ -80,7 +85,25 @@ async function handleStaticAsset(request, event) {
   return response;
 }
 
+async function fromOfflineCache(request) {
+  try {
+    const cache = await caches.open(OFFLINE_CACHE_NAME);
+    return await cache.match(request.url);
+  } catch {
+    return undefined;
+  }
+}
+
+/** Map tiles of saved plates: offline copy first, then the network. */
+async function handleSavedTile(request) {
+  const saved = await fromOfflineCache(request);
+  if (saved) return saved;
+  return fetch(request);
+}
+
 async function handleTile(request, event) {
+  const saved = await fromOfflineCache(request);
+  if (saved) return saved;
   let cache;
   try {
     cache = await caches.open(TILE_CACHE_NAME);
@@ -138,7 +161,12 @@ self.addEventListener("activate", (event) => {
   event.waitUntil(
     (async () => {
       try {
-        const activeCaches = new Set([STATIC_CACHE_NAME, RUNTIME_CACHE_NAME, TILE_CACHE_NAME]);
+        const activeCaches = new Set([
+          STATIC_CACHE_NAME,
+          RUNTIME_CACHE_NAME,
+          TILE_CACHE_NAME,
+          OFFLINE_CACHE_NAME,
+        ]);
         const keys = await caches.keys();
         await Promise.all(
           keys
@@ -170,6 +198,7 @@ self.addEventListener("fetch", (event) => {
   }
 
   if (url.origin !== self.location.origin) {
+    if (OFFLINE_HOSTS.test(url.hostname)) event.respondWith(handleSavedTile(request));
     return;
   }
 

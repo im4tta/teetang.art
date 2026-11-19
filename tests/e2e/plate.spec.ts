@@ -345,6 +345,142 @@ test.describe("3D plate", () => {
   });
 });
 
+test.describe("3D plate extras", () => {
+  test("seasons, Vintage, keyboard control and a gift card", async ({ page }) => {
+    await openPlate(
+      page,
+      "/plate?lat=12.0333&lon=104.1667&name=Phnom%20Aural&style=vintage&snow=0.7&flood=250",
+    );
+    await expect(page.getByRole("button", { name: "Vintage" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    const canvas = page.locator(".plate-canvas");
+    // Screen readers hear where the summit is.
+    await expect(canvas).toHaveAttribute("aria-label", /Highest point 1,\d{3} m, near the centre/);
+    await canvas.focus();
+    await page.keyboard.press("ArrowLeft");
+    await page.keyboard.press("+");
+
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await expect(page.getByRole("checkbox", { name: "Snow on the peaks" })).toBeChecked();
+    await expect(page.locator("#plate-flood")).toHaveValue("250");
+    await page.locator(".plate-sheet__header button").click();
+
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.locator(".plate-download[data-kind=card]").click(),
+    ]);
+    expect(download.suggestedFilename()).toBe("teetang-card-phnom-aural.png");
+    const chunks: Buffer[] = [];
+    for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer);
+    const png = Buffer.concat(chunks);
+    // 6 × 4 inches at 300 dpi.
+    expect([png.readUInt32BE(16), png.readUInt32BE(20)]).toEqual([1800, 1200]);
+  });
+});
+
+test.describe("fly-over video", () => {
+  test("records a square video circling the plate", async ({ page }) => {
+    test.setTimeout(60_000);
+    await openPlate(page);
+    await expect(page.getByRole("button", { name: "Download", exact: true })).toBeEnabled({
+      timeout: 20_000,
+    });
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    const [download] = await Promise.all([
+      page.waitForEvent("download", { timeout: 45_000 }),
+      page.locator(".plate-download[data-kind=video]").click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^teetang-flyover-phnom-aural\.(mp4|webm)$/);
+    const chunks: Buffer[] = [];
+    for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer);
+    expect(Buffer.concat(chunks).length).toBeGreaterThan(10_000);
+    // The camera is handed back afterwards.
+    await expect(page.getByRole("button", { name: "Photo" })).toBeVisible();
+  });
+});
+
+test.describe("explore, classroom and offline", () => {
+  test("open a curated place, compare, take the lesson and save offline", async ({ page }) => {
+    await openPlate(page);
+    await page.getByRole("button", { name: "Explore" }).click();
+    await page.getByRole("button", { name: /^Phnom Kulen/ }).click();
+    await expect(page.locator(".plate-place__name")).toHaveText("Phnom Kulen");
+    await expect(page.locator(".plate-canvas")).toHaveAttribute("data-ready", "true", {
+      timeout: 20_000,
+    });
+
+    await page.getByRole("button", { name: "Explore" }).click();
+    await page.getByRole("button", { name: "Compare side by side with Mount Fuji" }).click();
+    await page.getByRole("button", { name: "Explore" }).click();
+    await expect(page.locator(".plate-explore-comparing")).toContainText("Mount Fuji");
+    await page.getByRole("button", { name: "Stop comparing" }).click();
+
+    await page.getByRole("button", { name: "Classroom: how contour lines work" }).click();
+    const lesson = page.getByRole("dialog", { name: "Classroom: how contour lines work" });
+    await expect(lesson).toContainText("1 / 4");
+    for (const step of ["2 / 4", "3 / 4", "4 / 4"]) {
+      await lesson.getByRole("button", { name: "Next" }).click();
+      await expect(lesson).toContainText(step);
+    }
+    await lesson.getByRole("button", { name: "Finish" }).click();
+    await expect(lesson).toHaveCount(0);
+
+    await expect(page.getByRole("button", { name: "Download", exact: true })).toBeEnabled({
+      timeout: 20_000,
+    });
+    await page.getByRole("button", { name: "Explore" }).click();
+    await page.getByRole("button", { name: "Save this plate for offline use" }).click();
+    await expect(page.locator(".app-toast--success")).toContainText("opens offline");
+    await expect(page.locator(".plate-explore-saved")).toContainText("Phnom Kulen");
+    // The tiles are in the offline cache that the service worker reads.
+    const cached = await page.evaluate(
+      async () => (await (await caches.open("teetangart-offline-v1")).keys()).length,
+    );
+    expect(cached).toBeGreaterThan(0);
+  });
+});
+
+test.describe("STL Studio print options", () => {
+  test("hollow base, tiles and a lithophane", async ({ page }) => {
+    await openPlate(page);
+    await page.getByRole("button", { name: "STL Studio" }).click();
+    await expect(page.locator(".studio-canvas")).toHaveAttribute("data-ready", "true", {
+      timeout: 20_000,
+    });
+    await page.getByText("More ways to print").click();
+    await page.getByRole("checkbox", { name: "Hollow base with a hanging lip" }).check();
+    // Still one closed solid, and lighter than before.
+    await expect(page.locator(".studio-check")).toHaveAttribute("data-ok", "true", {
+      timeout: 30_000,
+    });
+
+    const save = async (name: string) => {
+      const [download] = await Promise.all([
+        page.waitForEvent("download"),
+        page.getByRole("button", { name }).click(),
+      ]);
+      const chunks: Buffer[] = [];
+      for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer);
+      return { name: download.suggestedFilename(), file: Buffer.concat(chunks) };
+    };
+    await page.getByRole("button", { name: "2 × 2" }).click();
+    const tiles = await save("Download tiles (ZIP)");
+    expect(tiles.name).toBe("teetang-phnom-aural-100mm-tiles-2x2.zip");
+    expect(tiles.file.subarray(0, 2).toString()).toBe("PK");
+    for (const tile of ["tile-r1-c1.stl", "tile-r2-c2.stl", "README.txt"]) {
+      expect(tiles.file.includes(Buffer.from(tile))).toBe(true);
+    }
+
+    const litho = await save("Download lithophane (STL)");
+    const triangles = litho.file.readUInt32LE(80);
+    expect(triangles).toBeGreaterThan(100_000);
+    expect(litho.file.length).toBe(84 + triangles * 50);
+  });
+});
+
 test.describe("3D plate on a computer", () => {
   test.use({ viewport: { width: 1300, height: 820 }, isMobile: false, hasTouch: false });
 
@@ -364,5 +500,40 @@ test.describe("3D plate on a computer", () => {
     await expect.poll(async () => (await scroll())[0]).toBe(0);
     await page.getByRole("button", { name: "Satellite" }).click({ force: true });
     await expect(page.getByRole("button", { name: "Satellite" })).toBeInViewport({ ratio: 0.9 });
+  });
+
+  test("a GPX track, a pin and a measured profile", async ({ page }) => {
+    const points = Array.from({ length: 60 }, (_, k) => {
+      const t = k / 59;
+      return `<trkpt lat="${(12.005 + t * 0.028).toFixed(6)}" lon="${(104.14 + t * 0.026).toFixed(6)}"/>`;
+    });
+    const gpx = `<?xml version="1.0"?><gpx version="1.1"><trk><name>Summit trail</name><trkseg>${points.join("")}</trkseg></trk></gpx>`;
+    await openPlate(page);
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await page.locator(".plate-sheet input[type=file]").setInputFiles({
+      name: "trail.gpx",
+      mimeType: "application/gpx+xml",
+      buffer: Buffer.from(gpx),
+    });
+    await expect(page.locator(".app-toast--success")).toContainText("Track added");
+    // The plate moved to fit the track, and the track's profile is ready.
+    await expect(page.locator(".plate-profile svg")).toContainText("km");
+
+    await page.getByRole("button", { name: "Add a pin: tap the plate" }).click();
+    const box = (await page.locator(".plate-canvas").boundingBox())!;
+    await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.55);
+    await expect(page.locator(".plate-marker-row input")).toHaveValue("Pin 1");
+
+    await page.getByRole("button", { name: "Draw a line: tap two points" }).click();
+    await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.5);
+    await page.mouse.click(box.x + box.width * 0.62, box.y + box.height * 0.45);
+    await expect(page.locator(".plate-profile svg")).toContainText("Measured line");
+
+    // Pins and the track travel in share links.
+    const draft = await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("teetangart.plate.v1")!),
+    );
+    expect(draft.markers).toHaveLength(1);
+    expect(draft.route.length).toBeGreaterThan(20);
   });
 });

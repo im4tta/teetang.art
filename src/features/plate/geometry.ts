@@ -27,6 +27,8 @@ export interface PlateGeometry {
   shell: Float32Array;
   /** Outline of the plate's top edge in x, z pairs, for the shadow and SVG. */
   outline: Float32Array;
+  /** The top edge of the walls, x, y, z per point, closed back to the start. */
+  rim: Float32Array;
   min: number;
   max: number;
   peak: { u: number; v: number; metres: number };
@@ -61,9 +63,28 @@ export function autoExaggeration(grid: HeightGrid, sizeMeters: number): number {
 
 export function buildPlateGeometry(
   grid: HeightGrid,
-  options: { shape: PlateShape; exaggeration: number; sizeMeters: number; boxDepth: number },
+  options: {
+    shape: PlateShape;
+    exaggeration: number;
+    sizeMeters: number;
+    boxDepth: number;
+    /**
+     * Raises (positive height) or carves (negative) the surface where a 0..1
+     * mask over the plate's square is set: a route ridge, or lakes and rivers.
+     * Heights are in plate units.
+     */
+    reliefs?: ({ mask: Float32Array; size: number; height: number } | null)[];
+    /**
+     * A hollow base, in plate units: walls this thick, a roof this thick under
+     * the lowest terrain, and a lip around the opening that a nail can hook
+     * behind for hanging. Ignored when the base is too thin to hollow.
+     */
+    hollow?: { wall: number; roof: number; lip: number; lipHeight: number } | null;
+    /** The elevation that sits on top of the base; tiles of one plate share it. Defaults to the lowest point. */
+    baseMin?: number;
+  },
 ): PlateGeometry {
-  const { shape, exaggeration, sizeMeters, boxDepth } = options;
+  const { shape, exaggeration, sizeMeters, boxDepth, reliefs = [], hollow, baseMin } = options;
   const size = grid.size;
   const count = size * size;
   const surface = new Float32Array(count * 3);
@@ -93,8 +114,18 @@ export function buildPlateGeometry(
     }
   }
 
+  if (baseMin !== undefined) min = Math.min(min, baseMin);
   const verticalScale = exaggeration / sizeMeters;
   for (let k = 0; k < count; k++) surface[k * 3 + 1] = (elevations[k] - min) * verticalScale;
+  for (const relief of reliefs) {
+    if (!relief || !relief.height) continue;
+    const maskGrid = { size: relief.size, heights: relief.mask, min: 0, max: 1 };
+    for (let k = 0; k < count; k++) {
+      const amount = sampleGrid(maskGrid, uvs[k * 2], uvs[k * 2 + 1]);
+      // Carving stops at the bottom of the terrain so the base stays solid.
+      surface[k * 3 + 1] = Math.max(0, surface[k * 3 + 1] + amount * relief.height);
+    }
+  }
 
   const cells = size - 1;
   const surfaceIndex = new Uint32Array(cells * cells * 6);
@@ -124,8 +155,7 @@ export function buildPlateGeometry(
   });
 
   const bottom = -boxDepth;
-  const shell = new Float32Array(ring.length * 3 * 9);
-  let s = 0;
+  const shellPoints: number[] = [];
   const pushTriangle = (p: number[], q: number[], r: number[], outward: number[]) => {
     // Keep every face pointing out of the solid so the STL is valid.
     const ux = q[0] - p[0],
@@ -138,8 +168,18 @@ export function buildPlateGeometry(
     const ny = uz * vx - ux * vz;
     const nz = ux * vy - uy * vx;
     const flip = nx * outward[0] + ny * outward[1] + nz * outward[2] < 0;
-    shell.set(flip ? [...p, ...r, ...q] : [...p, ...q, ...r], s);
-    s += 9;
+    shellPoints.push(...p, ...(flip ? r : q), ...(flip ? q : r));
+  };
+
+  // A hollow base needs room for the lip and a roof under the lowest terrain.
+  const lipTop = hollow ? bottom + hollow.lipHeight : bottom;
+  const ceiling = hollow ? -hollow.roof : 0;
+  const hollowed = Boolean(hollow && ceiling - lipTop > 0.002);
+  // Moves a rim point towards the centre by `inset`, along its ray (every shape is star-shaped).
+  const inset = (point: number[], by: number, y: number) => {
+    const radius = Math.hypot(point[0], point[2]) || 1;
+    const scale = Math.max(0.15, 1 - by / radius);
+    return [point[0] * scale, y, point[2] * scale];
   };
 
   for (let index = 0; index < ring.length; index++) {
@@ -150,9 +190,38 @@ export function buildPlateGeometry(
     const lowA = [topA[0], bottom, topA[2]];
     const lowB = [topB[0], bottom, topB[2]];
     const outward = [(topA[0] + topB[0]) / 2, 0, (topA[2] + topB[2]) / 2];
+    const inward = [-outward[0], 0, -outward[2]];
     pushTriangle(topA, lowA, topB, outward);
     pushTriangle(topB, lowA, lowB, outward);
-    pushTriangle([0, bottom, 0], lowA, lowB, [0, -1, 0]);
+    if (!hollowed || !hollow) {
+      pushTriangle([0, bottom, 0], lowA, lowB, [0, -1, 0]);
+      continue;
+    }
+    // Opening (narrowed by the lip), lip, cavity walls and the cavity's roof.
+    const openA = inset(lowA, hollow.wall + hollow.lip, bottom);
+    const openB = inset(lowB, hollow.wall + hollow.lip, bottom);
+    const lipA = [openA[0], lipTop, openA[2]];
+    const lipB = [openB[0], lipTop, openB[2]];
+    const wallA = inset(lowA, hollow.wall, lipTop);
+    const wallB = inset(lowB, hollow.wall, lipTop);
+    const roofA = [wallA[0], ceiling, wallA[2]];
+    const roofB = [wallB[0], ceiling, wallB[2]];
+    pushTriangle(lowA, lowB, openB, [0, -1, 0]);
+    pushTriangle(lowA, openB, openA, [0, -1, 0]);
+    pushTriangle(openA, openB, lipB, inward);
+    pushTriangle(openA, lipB, lipA, inward);
+    // The lip is solid below this step and the cavity is above it, so it faces up.
+    pushTriangle(lipA, lipB, wallB, [0, 1, 0]);
+    pushTriangle(lipA, wallB, wallA, [0, 1, 0]);
+    pushTriangle(wallA, wallB, roofB, inward);
+    pushTriangle(wallA, roofB, roofA, inward);
+    pushTriangle([0, ceiling, 0], roofA, roofB, [0, -1, 0]);
+  }
+  const shell = new Float32Array(shellPoints);
+  const rim = new Float32Array((ring.length + 1) * 3);
+  for (let k = 0; k <= ring.length; k++) {
+    const v = ring[k % ring.length] * 3;
+    rim.set([surface[v], surface[v + 1], surface[v + 2]], k * 3);
   }
 
   return {
@@ -164,6 +233,7 @@ export function buildPlateGeometry(
     surfaceIndex,
     shell,
     outline,
+    rim,
     min,
     max,
     peak,

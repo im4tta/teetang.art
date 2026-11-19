@@ -9,6 +9,7 @@ export const STYLE_CODE = {
   print: 1,
   elevation: 4,
   topo: 5,
+  vintage: 6,
   map: 2,
   satellite: 3,
 } as const;
@@ -48,6 +49,16 @@ export const surfaceFragment = /* glsl */ `
   uniform float uAo;
   uniform bool uBake;
   uniform bool uWater;
+  /** Snow from this share of the relief upwards; above 1 means no snow. */
+  uniform float uSnow;
+  /** Water up to this elevation in metres (a flood or a season's lake level). */
+  uniform float uFlood;
+  /** Lakes and rivers (red channel), laid over the plate's square. */
+  uniform sampler2D uWaterMask;
+  uniform bool uHasWaterMask;
+  /** Routes and markers drawn on top, with alpha. */
+  uniform sampler2D uOverlay;
+  uniform bool uHasOverlay;
   varying float vElevation;
   varying float vAo;
   varying vec3 vNormal;
@@ -69,8 +80,12 @@ export const surfaceFragment = /* glsl */ `
     vec3 n = normalize(vNormal);
     // A baked texture carries colour only; the renderer that uses it adds the light.
     float light = uBake ? 0.82 : clamp(dot(n, uLight), 0.0, 1.0);
-    // Sea level: elevation data flattens the sea floor to 0 m.
+    float h = clamp((vElevation - uMin) / (uMax - uMin), 0.0, 1.0);
+    // Sea level (elevation data flattens the sea floor to 0 m), a flood, or a mapped lake or river.
     bool sea = uWater && vElevation < 0.5;
+    bool flooded = vElevation < uFlood;
+    bool lake = uHasWaterMask && texture2D(uWaterMask, vUv).r > 0.5;
+    bool wet = sea || flooded || lake;
     float steep = clamp((1.0 - n.y) * 4.0, 0.0, 1.0);
     vec3 color;
 
@@ -84,27 +99,54 @@ export const surfaceFragment = /* glsl */ `
       color = mix(color, uInk, contour(0.18));
     } else if (uStyle == 4) {
       // Hypsometric tint from the chosen palette, lowest point on the left.
-      float h = clamp((vElevation - uMin) / (uMax - uMin), 0.0, 1.0);
       vec3 tint = texture2D(uRamp, vec2(0.002 + h * 0.996, 0.5)).rgb;
       color = tint * (0.7 + 0.42 * light);
       color = mix(color, uInk, contour(0.2));
-      if (sea) color = vec3(0.5, 0.7, 0.84) * (0.86 + 0.14 * light);
+    } else if (uStyle == 6) {
+      // Vintage survey map: aged paper, sepia ink, shading as if by hand.
+      vec3 paper = vec3(0.91, 0.85, 0.72);
+      vec3 sepia = vec3(0.36, 0.24, 0.14);
+      float edge = smoothstep(0.32, 0.72, length(vUv - 0.5));
+      paper *= 1.0 - edge * 0.16;
+      color = mix(sepia, paper, 0.45 + 0.55 * smoothstep(0.0, 1.0, light));
+      color = mix(color, sepia, contour(0.55) * mix(0.5, 1.0, steep));
     } else {
       vec3 base = uHasDrape ? texture2D(uDrape, vUv).rgb : uPaper;
       float shade = uStyle == 2 ? 0.72 + 0.4 * light : 0.82 + 0.3 * light;
       color = base * shade;
       if (uStyle == 2) color = mix(color, uInk, contour(0.12));
     }
-    if (sea && (uStyle == 0 || uStyle == 1)) {
-      // Old-map water: the paper tinted blue, with horizontal hatching.
-      vec3 water = mix(uPaper, vec3(0.55, 0.72, 0.86), 0.32);
-      float rows = vUv.y * 90.0;
-      float hatch = abs(fract(rows) - 0.5);
-      float width = fwidth(rows);
-      float line = 1.0 - smoothstep(0.0, width * 1.5, hatch - 0.36);
-      // Far away the lines would crowd into a grey smear: fade them out instead.
-      line *= 1.0 - smoothstep(0.12, 0.3, width);
-      color = mix(water, uInk, line * 0.35);
+
+    // Snow above the snow line, thinning out on steep rock.
+    if (h > uSnow) {
+      float cover = smoothstep(uSnow, uSnow + 0.04, h) * (1.0 - smoothstep(0.45, 0.85, steep));
+      color = mix(color, vec3(0.97, 0.98, 1.0) * (0.84 + 0.18 * light), cover);
+    }
+
+    // Satellite and map imagery already show the sea; floods and lakes are painted on.
+    bool imagery = uStyle == 2 || uStyle == 3 || uStyle == 5;
+    if (wet && !(imagery && sea && !flooded && !lake)) {
+      if (uStyle == 0 || uStyle == 1 || uStyle == 6) {
+        // Old-map water: the paper tinted blue, with horizontal hatching.
+        vec3 paper = uStyle == 6 ? vec3(0.91, 0.85, 0.72) : uPaper;
+        vec3 ink = uStyle == 6 ? vec3(0.36, 0.24, 0.14) : uInk;
+        vec3 water = uStyle == 6 ? vec3(0.68, 0.8, 0.83) : mix(paper, vec3(0.55, 0.72, 0.86), 0.32);
+        float rows = vUv.y * 90.0;
+        float hatch = abs(fract(rows) - 0.5);
+        float width = fwidth(rows);
+        float line = 1.0 - smoothstep(0.0, width * 1.5, hatch - 0.36);
+        // Far away the lines would crowd into a grey smear: fade them out instead.
+        line *= 1.0 - smoothstep(0.12, 0.3, width);
+        color = mix(water, ink, line * 0.35);
+      } else {
+        vec3 water = vec3(0.42, 0.64, 0.8) * (0.86 + 0.14 * light);
+        color = imagery ? mix(color, water, 0.72) : water;
+      }
+    }
+
+    if (uHasOverlay) {
+      vec4 overlay = texture2D(uOverlay, vUv);
+      color = mix(color, overlay.rgb, overlay.a);
     }
     if (!uBake) color *= mix(1.0, smoothstep(0.35, 1.0, vAo), uAo);
     gl_FragColor = vec4(color, 1.0);
