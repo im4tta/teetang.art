@@ -9,10 +9,11 @@ export const config = { runtime: "edge" };
 
 const escapeHtml = (text: string) => text.replace(/[<>&"']/g, (c) => `&#${c.charCodeAt(0)};`);
 
-/** Keeps a query value short and printable. */
+/** Keeps a query value short and printable: control characters become spaces. */
 const clean = (value: string | null, max = 80) =>
-  (value ?? "")
-    .replace(/[\u0000-\u001f\u007f]/g, " ")
+  [...(value ?? "")]
+    .map((c) => (c.charCodeAt(0) < 32 || c.charCodeAt(0) === 127 ? " " : c))
+    .join("")
     .trim()
     .slice(0, max);
 
