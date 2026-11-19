@@ -189,6 +189,17 @@ function CarouselFeatured() {
   );
 }
 
+/**
+ * On desktop the page scrolls inside <body> (the editor's full-height layout
+ * gives html and body a fixed height), not the window, so scroll whichever
+ * one has actually moved.
+ */
+function scrollToTop() {
+  for (const element of [document.scrollingElement, document.body]) {
+    if (element && element.scrollTop > 0) element.scrollTo({ top: 0, behavior: "smooth" });
+  }
+}
+
 export default function HomePage() {
   const [isDark, setIsDark] = useState(readPrefersDark);
   const [draftTitle] = useState(readDraftTitle);
@@ -688,12 +699,7 @@ export default function HomePage() {
         </div>
       </footer>
 
-      <button
-        type="button"
-        className="home-gotop"
-        onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
-        aria-label="Go to top"
-      >
+      <button type="button" className="home-gotop" onClick={scrollToTop} aria-label="Go to top">
         <svg
           xmlns="http://www.w3.org/2000/svg"
           width="20"
