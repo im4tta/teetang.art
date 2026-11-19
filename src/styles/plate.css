@@ -1335,3 +1335,32 @@
   height: auto;
   border-radius: 12px;
 }
+
+/* ── AR ── */
+
+.plate-ar-btn {
+  left: auto;
+  right: 12px;
+}
+
+.plate-ar-overlay {
+  position: fixed;
+  inset: auto 16px calc(env(safe-area-inset-bottom) + 24px);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 18px;
+  border-radius: 999px;
+  background: rgb(20 19 17 / 80%);
+  color: #fbfaf7;
+  font-size: 15px;
+}
+
+.plate-ar-overlay[hidden] {
+  display: none;
+}
+
+.plate-ar-overlay p {
+  flex: 1;
+  margin: 0;
+}

@@ -555,4 +555,10 @@ export const en = {
   "studio.lithoThin": "Thinnest (brightest)",
   "studio.lithoThick": "Thickest (darkest)",
   "studio.downloadLitho": "Download lithophane (STL)",
+  "plate.ar": "View in AR",
+  "plate.ar.hint": "Point at a table, then tap to place the plate. Tap again to move it.",
+  "plate.ar.failed": "AR couldn't start on this device.",
+  "plate.dl.video": "Fly-over video",
+  "plate.dl.videoHint": "A square clip circling the plate, or following your track",
+  "plate.video.recording": "Recording fly-over…",
 } satisfies Record<string, string>;

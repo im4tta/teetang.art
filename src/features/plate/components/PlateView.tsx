@@ -8,6 +8,8 @@ export interface PlateViewHandle {
   snapshot: (size: number) => HTMLCanvasElement | null;
   /** The plate with standard materials, for the photo render and GLB export. */
   exportScene: (textureSize?: number) => ReturnType<PlateScene["exportScene"]> | null;
+  /** The live scene, for recording a fly-over. */
+  scene: () => PlateScene | null;
 }
 
 interface PlateViewProps {
@@ -97,6 +99,7 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
     () => ({
       snapshot: (size) => scene?.snapshot(size) ?? null,
       exportScene: (textureSize) => scene?.exportScene(textureSize) ?? null,
+      scene: () => scene,
     }),
     [scene],
   );

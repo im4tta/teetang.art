@@ -552,4 +552,10 @@ export const km: TranslationDict = {
   "studio.lithoThin": "ស្ដើងបំផុត (ភ្លឺបំផុត)",
   "studio.lithoThick": "ក្រាស់បំផុត (ងងឹតបំផុត)",
   "studio.downloadLitho": "ទាញយក Lithophane (STL)",
+  "plate.ar": "មើលក្នុង AR",
+  "plate.ar.hint": "តម្រង់ទៅតុ រួចចុចដើម្បីដាក់ផ្ទាំង។ ចុចម្ដងទៀតដើម្បីផ្លាស់ទី។",
+  "plate.ar.failed": "មិនអាចចាប់ផ្ដើម AR លើឧបករណ៍នេះបានទេ។",
+  "plate.dl.video": "វីដេអូហោះពីលើ",
+  "plate.dl.videoHint": "ឃ្លីបការ៉េ ហោះជុំវិញផ្ទាំង ឬតាមផ្លូវរបស់អ្នក",
+  "plate.video.recording": "កំពុងថតវីដេអូហោះពីលើ…",
 };

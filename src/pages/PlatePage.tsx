@@ -13,6 +13,7 @@ import { Link, useNavigate } from "react-router-dom";
 import {
   Box,
   Camera,
+  Glasses,
   Dices,
   Download,
   Move,
@@ -64,6 +65,8 @@ import { loadMapDrape, loadTileDrape, loadWaterMask, maskToGrid } from "@/featur
 import { resolveBasemap, type Basemap } from "@/features/plate/basemaps";
 import { buildPlateExtras, type PlateExtras } from "@/features/plate/extras";
 import type { PhotoInput } from "@/features/plate/photo";
+import type { ArMode } from "@/features/plate/ar";
+import { videoType } from "@/features/plate/flyover";
 import PlateView, { type PlateViewHandle } from "@/features/plate/components/PlateView";
 import PlaceSearch from "@/features/plate/components/PlaceSearch";
 import type { AreaChange } from "@/features/plate/components/AreaPicker";
@@ -155,6 +158,13 @@ function describePlate(
     .replace("{min}", formatMetres(geometry.min));
 }
 
+/** The page's text colour, for the fly-over's title. */
+function stageInk(): string {
+  const page = document.querySelector(".plate-page");
+  const value = page ? getComputedStyle(page).getPropertyValue("--plate-ink").trim() : "";
+  return /^#[0-9a-f]{6}$/i.test(value) ? value : "#1b1a17";
+}
+
 /** The page's background colour, so the photo's studio backdrop blends in. */
 function stageBackdrop(): string {
   const page = document.querySelector(".plate-page");
@@ -186,6 +196,10 @@ function PlateApp() {
   const [extras, setExtras] = useState<PlateExtras | null>(null);
   const [fullDetail, setFullDetail] = useState(false);
   const [photo, setPhoto] = useState<PhotoInput | null>(null);
+  const [arMode, setArMode] = useState<ArMode | null>(null);
+  const [arSession, setArSession] = useState<(() => void) | null>(null);
+  const arOverlayRef = useRef<HTMLDivElement>(null);
+  const [recording, setRecording] = useState<{ progress: number; cancel: () => void } | null>(null);
   const viewRef = useRef<PlateViewHandle>(null);
   const navigate = useNavigate();
   const stylesRef = useRef<HTMLDivElement>(null);
@@ -346,6 +360,61 @@ function PlateApp() {
     [grid, bounds, profileLine],
   );
 
+  useEffect(() => {
+    let cancelled = false;
+    import("@/features/plate/ar").then(({ arSupport }) =>
+      arSupport().then((mode) => !cancelled && setArMode(mode)),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const viewInAr = async () => {
+    const input = viewRef.current?.exportScene(1024);
+    if (!input || !arMode) return;
+    try {
+      const ar = await import("@/features/plate/ar");
+      if (arMode === "quicklook") {
+        await ar.openQuickLook(input, `teetang-${slug(plate.name)}.usdz`);
+      } else {
+        const end = await ar.startWebXr(input, arOverlayRef.current!, () => setArSession(null));
+        setArSession(() => end);
+      }
+    } catch {
+      notify(t("plate.ar.failed"), { tone: "error" });
+    }
+  };
+
+  const recordVideo = async () => {
+    const scene = viewRef.current?.scene();
+    if (!scene || !geometry) return;
+    const controller = new AbortController();
+    setRecording({ progress: 0, cancel: () => controller.abort() });
+    try {
+      const { recordFlyover } = await import("@/features/plate/flyover");
+      const blob = await recordFlyover(scene, {
+        route: route.length > 1 ? route.map((point) => toPlateUv(bounds, point)) : null,
+        title,
+        subtitle: [subtitle, highest].filter(Boolean).join(" · "),
+        background: stageBackdrop(),
+        ink: stageInk(),
+        onProgress: (progress) =>
+          setRecording((current) => (current ? { ...current, progress } : current)),
+        signal: controller.signal,
+      });
+      const extension = blob.type.includes("mp4") ? "mp4" : "webm";
+      await triggerDownloadBlob(blob, `teetang-flyover-${slug(plate.name)}.${extension}`);
+      notify(t("plate.downloaded"), { tone: "success" });
+    } catch (error) {
+      if ((error as Error).name !== "AbortError") {
+        notify(t("plate.downloadFailed"), { tone: "error" });
+      }
+    } finally {
+      setRecording(null);
+    }
+  };
+
   const handlePick = useCallback(
     ([u, v]: [number, number]) => {
       const [lon, lat] = plateToLonLat(bounds, u, v);
@@ -503,6 +572,11 @@ function PlateApp() {
     if (kind === "studio") {
       writePlateDraft(plate);
       navigate("/plate/studio");
+      return;
+    }
+    if (kind === "video") {
+      setSheet(null);
+      await recordVideo();
       return;
     }
     if (kind === "card") {
@@ -679,7 +753,27 @@ function PlateApp() {
                   {t("plate.addingDetail")}
                 </div>
               )}
-              {geometry && fullDetail && !photo && (
+              {recording && (
+                <div className="plate-pick-banner" role="status">
+                  <span>
+                    {t("plate.video.recording")} {Math.round(recording.progress * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    className="plate-btn plate-btn--light"
+                    onClick={recording.cancel}
+                  >
+                    {t("plate.pick.cancel")}
+                  </button>
+                </div>
+              )}
+              {geometry && fullDetail && !photo && !recording && arMode && (
+                <button type="button" className="plate-photo-btn plate-ar-btn" onClick={viewInAr}>
+                  <Glasses size={18} aria-hidden="true" />
+                  {t("plate.ar")}
+                </button>
+              )}
+              {geometry && fullDetail && !photo && !recording && (
                 <button
                   type="button"
                   className="plate-photo-btn"
@@ -910,9 +1004,17 @@ function PlateApp() {
             onDownload={download}
             onClose={() => setSheet(null)}
             satellite={basemap !== null}
+            video={videoType() !== null}
           />
         )}
       </Suspense>
+      {/* Shown over the camera view during WebXR AR. */}
+      <div ref={arOverlayRef} className="plate-ar-overlay" hidden={!arSession}>
+        <p>{t("plate.ar.hint")}</p>
+        <button type="button" className="plate-btn plate-btn--light" onClick={() => arSession?.()}>
+          {t("plate.close")}
+        </button>
+      </div>
       <Toaster />
     </div>
   );

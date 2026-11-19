@@ -381,6 +381,27 @@ test.describe("3D plate extras", () => {
   });
 });
 
+test.describe("fly-over video", () => {
+  test("records a square video circling the plate", async ({ page }) => {
+    test.setTimeout(60_000);
+    await openPlate(page);
+    await expect(page.getByRole("button", { name: "Download", exact: true })).toBeEnabled({
+      timeout: 20_000,
+    });
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    const [download] = await Promise.all([
+      page.waitForEvent("download", { timeout: 45_000 }),
+      page.locator(".plate-download[data-kind=video]").click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^teetang-flyover-phnom-aural\.(mp4|webm)$/);
+    const chunks: Buffer[] = [];
+    for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer);
+    expect(Buffer.concat(chunks).length).toBeGreaterThan(10_000);
+    // The camera is handed back afterwards.
+    await expect(page.getByRole("button", { name: "Photo" })).toBeVisible();
+  });
+});
+
 test.describe("STL Studio print options", () => {
   test("hollow base, tiles and a lithophane", async ({ page }) => {
     await openPlate(page);

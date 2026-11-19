@@ -1,14 +1,25 @@
 import { useState } from "react";
-import { Box, Gift, Image, Link2, Package, PenTool, Wrench, type LucideIcon } from "lucide-react";
+import {
+  Box,
+  Clapperboard,
+  Gift,
+  Image,
+  Link2,
+  Package,
+  PenTool,
+  Wrench,
+  type LucideIcon,
+} from "lucide-react";
 import { useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
 import PlateSheet from "./PlateSheet";
 
-export type PlateDownload = "png" | "card" | "svg" | "stl" | "glb" | "studio" | "link";
+export type PlateDownload = "png" | "card" | "video" | "svg" | "stl" | "glb" | "studio" | "link";
 
 const OPTIONS: { id: PlateDownload; icon: LucideIcon }[] = [
   { id: "png", icon: Image },
   { id: "card", icon: Gift },
+  { id: "video", icon: Clapperboard },
   { id: "svg", icon: PenTool },
   { id: "stl", icon: Box },
   { id: "glb", icon: Package },
@@ -20,9 +31,16 @@ interface DownloadSheetProps {
   onDownload: (kind: PlateDownload) => Promise<void>;
   onClose: () => void;
   satellite: boolean;
+  /** Whether this browser can record a fly-over video. */
+  video: boolean;
 }
 
-export default function DownloadSheet({ onDownload, onClose, satellite }: DownloadSheetProps) {
+export default function DownloadSheet({
+  onDownload,
+  onClose,
+  satellite,
+  video,
+}: DownloadSheetProps) {
   const { t } = useI18n();
   const [busy, setBusy] = useState<PlateDownload | null>(null);
 
@@ -38,7 +56,7 @@ export default function DownloadSheet({ onDownload, onClose, satellite }: Downlo
   return (
     <PlateSheet title={t("plate.dl.title")} onClose={onClose}>
       <div className="plate-downloads">
-        {OPTIONS.map(({ id, icon: Icon }) => (
+        {OPTIONS.filter(({ id }) => video || id !== "video").map(({ id, icon: Icon }) => (
           <button
             key={id}
             type="button"

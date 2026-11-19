@@ -659,6 +659,58 @@ export class PlateScene {
     return hit?.uv ? [hit.uv.x, hit.uv.y] : null;
   }
 
+  /**
+   * Hands the camera to a script (a fly-over): the opening spin and user
+   * controls stop until the returned function puts everything back.
+   */
+  direct(): {
+    /** The view when directing began: distance, angles and target. */
+    start: { radius: number; theta: number; phi: number; target: Vector3 };
+    /** Places the camera and draws a frame at once. */
+    shoot: (position: Vector3, target: Vector3) => void;
+    /** Height of the surface at a plate texture point (from above), or null off the plate. */
+    groundAt: (u: number, v: number) => number | null;
+    release: () => void;
+  } {
+    const saved = { position: this.camera.position.clone(), target: this.controls.target.clone() };
+    const spherical = new Spherical().setFromVector3(saved.position.clone().sub(saved.target));
+    this.controls.autoRotate = false;
+    this.controls.enabled = false;
+    const down = new Raycaster();
+    const downward = new Vector3(0, -1, 0);
+    return {
+      start: {
+        radius: spherical.radius,
+        theta: spherical.theta,
+        phi: spherical.phi,
+        target: saved.target.clone(),
+      },
+      shoot: (position, target) => {
+        this.camera.position.copy(position);
+        // Keep the controls in step, so a stray frame of the idle loop agrees with this one.
+        this.controls.target.copy(target);
+        this.camera.lookAt(target);
+        this.renderer.render(this.scene, this.camera);
+      },
+      groundAt: (u, v) => {
+        down.set(new Vector3(u - 0.5, 50, v - 0.5), downward);
+        return down.intersectObject(this.surface, false)[0]?.point.y ?? null;
+      },
+      release: () => {
+        this.camera.position.copy(saved.position);
+        this.controls.target.copy(saved.target);
+        this.camera.lookAt(saved.target);
+        this.controls.enabled = true;
+        this.wake(0);
+      },
+    };
+  }
+
+  /** The canvas the plate is drawn on, for recording. */
+  get domElement(): HTMLCanvasElement {
+    return this.canvas;
+  }
+
   /** Turns and zooms the view from the keyboard: angles in degrees, zoom as a factor. */
   nudge(turnDegrees: number, tiltDegrees: number, zoom = 1) {
     const offset = this.camera.position.clone().sub(this.controls.target);
