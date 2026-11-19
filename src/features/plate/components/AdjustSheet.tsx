@@ -350,6 +350,17 @@ export default function AdjustSheet({
         />
       </div>
 
+      {(["water", "strata"] as const).map((key) => (
+        <label key={key} className="plate-switch">
+          <input
+            type="checkbox"
+            checked={plate[key]}
+            onChange={(event) => onChange({ [key]: event.target.checked })}
+          />
+          <span>{t(`plate.adj.${key}` as TranslationKey)}</span>
+        </label>
+      ))}
+
       <label className="plate-switch">
         <input
           type="checkbox"

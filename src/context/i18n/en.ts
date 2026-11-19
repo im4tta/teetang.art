@@ -479,4 +479,15 @@ export const en = {
   "studio.part.terrain": "Terrain",
   "studio.part.label": "Nameplate",
   "studio.part.pin": "Summit pin",
+  "plate.photo": "Photo",
+  "plate.photo.preparing": "Setting up the light…",
+  "plate.photo.rendering": "Rendering",
+  "plate.photo.done": "Done: ready to save",
+  "plate.photo.save": "Save photo",
+  "plate.photo.failed":
+    "This browser can't make a photo render. Try a computer with a newer browser.",
+  "plate.dl.glb": "3D model (GLB)",
+  "plate.dl.glbHint": "With its colours, for Blender, Sketchfab and AR",
+  "plate.adj.water": "Sea as water",
+  "plate.adj.strata": "Rock layers on the sides",
 } satisfies Record<string, string>;

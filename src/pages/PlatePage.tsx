@@ -10,7 +10,16 @@ import {
   useState,
 } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Box, Dices, Download, Move, Share2, SlidersHorizontal, MapPinned } from "lucide-react";
+import {
+  Box,
+  Camera,
+  Dices,
+  Download,
+  Move,
+  Share2,
+  SlidersHorizontal,
+  MapPinned,
+} from "lucide-react";
 import { I18nProvider, useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
 import Toaster from "@/components/ui/Toaster";
@@ -44,6 +53,7 @@ import { pickSurprise } from "@/features/plate/surprisePlaces";
 import { loadMapDrape, loadTileDrape } from "@/features/plate/drape";
 import { resolveBasemap, type Basemap } from "@/features/plate/basemaps";
 import { buildPlateExtras, type PlateExtras } from "@/features/plate/extras";
+import type { PhotoInput } from "@/features/plate/photo";
 import PlateView, { type PlateViewHandle } from "@/features/plate/components/PlateView";
 import PlaceSearch from "@/features/plate/components/PlaceSearch";
 import type { AreaChange } from "@/features/plate/components/AreaPicker";
@@ -53,6 +63,7 @@ import "@/styles/plate.css";
 const AreaPicker = lazy(() => import("@/features/plate/components/AreaPicker"));
 const AdjustSheet = lazy(() => import("@/features/plate/components/AdjustSheet"));
 const DownloadSheet = lazy(() => import("@/features/plate/components/DownloadSheet"));
+const PhotoView = lazy(() => import("@/features/plate/components/PhotoView"));
 
 const LOW_END = (navigator.hardwareConcurrency ?? 8) <= 4;
 const GRID_CELLS = LOW_END ? 192 : 256;
@@ -108,6 +119,13 @@ const slug = (text: string) =>
     .replace(/\s+/g, "-")
     .toLowerCase() || "plate";
 
+/** The page's background colour, so the photo's studio backdrop blends in. */
+function stageBackdrop(): string {
+  const page = document.querySelector(".plate-page");
+  const value = page ? getComputedStyle(page).getPropertyValue("--plate-bg").trim() : "";
+  return /^#[0-9a-f]{6}$/i.test(value) ? value : "#f1efe9";
+}
+
 const formatMetres = (metres: number) => `${Math.round(metres).toLocaleString("en-US")} m`;
 
 function PlateApp() {
@@ -122,6 +140,7 @@ function PlateApp() {
   const [attempt, setAttempt] = useState(0);
   const [touched, setTouched] = useState(false);
   const [extras, setExtras] = useState<PlateExtras | null>(null);
+  const [photo, setPhoto] = useState<PhotoInput | null>(null);
   const viewRef = useRef<PlateViewHandle>(null);
   const navigate = useNavigate();
 
@@ -199,6 +218,8 @@ function PlateApp() {
       shadow: plate.shadow,
       lines: DENSITY_LINES[plate.density],
       palette: plate.palette,
+      water: plate.water,
+      strata: plate.strata,
     }),
     [
       needsDrape,
@@ -210,6 +231,8 @@ function PlateApp() {
       plate.shadow,
       plate.density,
       plate.palette,
+      plate.water,
+      plate.strata,
     ],
   );
 
@@ -323,6 +346,11 @@ function PlateApp() {
         const shot = viewRef.current?.snapshot(window.innerWidth >= 900 ? 3072 : 2048);
         if (!shot) throw new Error("No image");
         blob = await composePoster(shot, plate, caption, basemap?.credit ?? "");
+      } else if (kind === "glb") {
+        const input = viewRef.current?.exportScene(2048);
+        if (!input) throw new Error("No scene");
+        const { buildGlb } = await import("@/features/plate/glb");
+        blob = await buildGlb(input);
       } else if (kind === "svg") {
         const files = await import("@/features/plate/plateFiles");
         blob = new Blob(
@@ -421,7 +449,32 @@ function PlateApp() {
                   {t("plate.loadingImagery")}
                 </div>
               )}
-              {!touched && geometry && <p className="plate-stage__hint">{t("plate.dragHint")}</p>}
+              {!touched && geometry && !photo && (
+                <p className="plate-stage__hint">{t("plate.dragHint")}</p>
+              )}
+              {geometry && !photo && (
+                <button
+                  type="button"
+                  className="plate-photo-btn"
+                  onClick={() => {
+                    tapFeedback();
+                    setPhoto(viewRef.current?.exportScene(2048) ?? null);
+                  }}
+                >
+                  <Camera size={18} aria-hidden="true" />
+                  {t("plate.photo")}
+                </button>
+              )}
+              {photo && (
+                <Suspense fallback={null}>
+                  <PhotoView
+                    input={photo}
+                    backdrop={stageBackdrop()}
+                    fileName={`teetang-photo-${slug(plate.name)}.png`}
+                    onClose={() => setPhoto(null)}
+                  />
+                </Suspense>
+              )}
             </>
           )}
           <p className="plate-credit">

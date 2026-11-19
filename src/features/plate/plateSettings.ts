@@ -53,6 +53,10 @@ export interface PlateSettings extends PlatePlace {
   note: string;
   /** A pin on the highest point. */
   pin: boolean;
+  /** The sea (0 m) drawn as water. */
+  water: boolean;
+  /** Rock layers on the sides of the box. */
+  strata: boolean;
 }
 
 export type LabelRelief = "raised" | "engraved";
@@ -142,6 +146,8 @@ export const DEFAULT_PLATE: PlateSettings = {
   labelScale: false,
   note: "",
   pin: false,
+  water: true,
+  strata: false,
   name: "Phnom Aural",
   region: "Kampong Speu",
   country: "Cambodia",
@@ -159,6 +165,8 @@ const BOOLEAN_FIELDS = [
   "labelCompass",
   "labelScale",
   "pin",
+  "water",
+  "strata",
 ] as const satisfies (keyof PlateSettings)[];
 
 /** Short query names used by share links. */
@@ -187,6 +195,8 @@ const LINK = {
   labelScale: "scale",
   note: "note",
   pin: "pin",
+  water: "water",
+  strata: "strata",
   name: "name",
   region: "region",
   country: "country",
