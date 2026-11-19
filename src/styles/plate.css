@@ -1046,3 +1046,29 @@
 .plate-shape[aria-pressed="true"] svg {
   fill: currentColor;
 }
+
+/* Google's required credit: its name plus the copyright of what is on screen. */
+.area-picker__credit {
+  position: absolute;
+  left: 8px;
+  bottom: 6px;
+  max-width: calc(100% - 80px);
+  margin: 0;
+  padding: 2px 8px;
+  border-radius: 6px;
+  background: rgb(255 255 255 / 85%);
+  color: #3c4043;
+  font:
+    12px/1.4 Roboto,
+    Arial,
+    sans-serif;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  pointer-events: none;
+}
+
+.area-picker__credit strong {
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}

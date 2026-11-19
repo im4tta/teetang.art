@@ -164,6 +164,33 @@ test.describe("3D plate", () => {
     await expect(page.locator(".plate-place__name")).not.toHaveText("Phnom Aural");
   });
 
+  test("Move uses Google tiles for Map and Satellite when the site has a key", async ({ page }) => {
+    const tiles: string[] = [];
+    await page.route(/\/api\/google\?/, (route) => {
+      const url = new URL(route.request().url());
+      if (url.searchParams.has("status")) return route.fulfill({ json: { enabled: true } });
+      if (url.searchParams.has("viewport")) {
+        return route.fulfill({ json: { copyright: "Map data ©2026 Google" } });
+      }
+      tiles.push(url.search);
+      return route.fulfill({ status: 404 });
+    });
+    await openPlate(page);
+    await page.locator(".plate-move").click();
+
+    await expect.poll(() => tiles.some((q) => q.includes("t=roadmap&l=en"))).toBe(true);
+    await expect(page.locator(".area-picker__credit")).toContainText("Google");
+    await expect(page.locator(".area-picker__credit")).toContainText("Map data ©2026 Google");
+
+    const bases = page.locator(".area-picker__bases");
+    await bases.getByRole("button", { name: "Satellite" }).click();
+    await expect.poll(() => tiles.some((q) => q.includes("t=satellite"))).toBe(true);
+
+    // Terrain stays on OpenTopoMap, without the Google credit.
+    await bases.getByRole("button", { name: "Terrain" }).click();
+    await expect(page.locator(".area-picker__credit")).toHaveCount(0);
+  });
+
   test("every shape builds a plate and survives a share link", async ({ page, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await openPlate(page);
