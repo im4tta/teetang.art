@@ -1,0 +1,337 @@
+/* STL Studio: the model on a printer bed, with print settings beside it. */
+
+.studio-page {
+  --studio-stage: #e9e6de;
+}
+
+@media (prefers-color-scheme: dark) {
+  .studio-page {
+    --studio-stage: #23221f;
+  }
+}
+
+.studio-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.studio-stage {
+  position: relative;
+  flex: none;
+  height: clamp(300px, 52dvh, 640px);
+  overflow: hidden;
+  margin: 0 12px;
+  border-radius: var(--plate-radius);
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      color-mix(in srgb, var(--plate-raised) 70%, transparent),
+      transparent 70%
+    ),
+    var(--studio-stage);
+}
+
+.studio-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+  touch-action: none;
+  cursor: grab;
+}
+
+.studio-canvas:active {
+  cursor: grabbing;
+}
+
+.studio-toolbar {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  right: 10px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  pointer-events: none;
+}
+
+.studio-tool {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 12px;
+  border: 1px solid var(--plate-line);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--plate-raised) 90%, transparent);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  pointer-events: auto;
+}
+
+.studio-tool[aria-pressed="true"] {
+  background: var(--plate-accent);
+  border-color: var(--plate-accent);
+  color: var(--plate-on-accent) !important;
+}
+
+.studio-tool:disabled {
+  opacity: 0.5;
+}
+
+.studio-dims {
+  position: absolute;
+  left: 12px;
+  bottom: 62px;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 4px 10px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--plate-raised) 88%, transparent);
+  font-family: var(--plate-mono);
+  font-size: 13px;
+  pointer-events: none;
+}
+
+.studio-warn,
+.studio-warn-text {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: #b4441c !important;
+  font-family: inherit;
+}
+
+.studio-cut {
+  position: absolute;
+  left: 10px;
+  right: 10px;
+  bottom: 8px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--plate-raised) 90%, transparent);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.studio-cut > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.studio-cut output {
+  min-width: 64px;
+  text-align: right;
+  font-family: var(--plate-mono);
+  font-weight: 400;
+  color: var(--plate-muted);
+}
+
+.studio-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 16px 16px calc(env(safe-area-inset-bottom) + 24px);
+}
+
+.studio-section {
+  border: 1px solid var(--plate-line);
+  border-radius: var(--plate-radius);
+  background: color-mix(in srgb, var(--plate-raised) 60%, transparent);
+}
+
+.studio-section > summary {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 52px;
+  padding: 0 16px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  list-style: none;
+}
+
+.studio-section > summary::-webkit-details-marker {
+  display: none;
+}
+
+.studio-section > summary::after {
+  content: "";
+  width: 8px;
+  height: 8px;
+  margin-left: auto;
+  border-right: 2px solid currentColor;
+  border-bottom: 2px solid currentColor;
+  transform: rotate(45deg);
+  transition: transform 0.15s;
+}
+
+.studio-section[open] > summary::after {
+  transform: rotate(-135deg);
+}
+
+.studio-section__body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding: 0 16px 16px;
+}
+
+.studio-sets {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(96px, 1fr));
+  gap: 8px;
+}
+
+.studio-set {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 8px;
+  border: 0;
+  border-radius: 14px;
+  background: var(--plate-surface);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.studio-set > span {
+  display: flex;
+  width: 100%;
+  height: 20px;
+  overflow: hidden;
+  border-radius: 6px;
+}
+
+.studio-set i {
+  flex: 1;
+}
+
+.studio-bands {
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.studio-band {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 10px;
+  border-radius: 14px;
+  background: var(--plate-surface);
+}
+
+.studio-band__cut {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.studio-band__text {
+  font-size: 14px;
+}
+
+.studio-band__text strong {
+  font-family: var(--plate-mono);
+}
+
+.studio-band__text small {
+  font-size: 12px;
+  color: var(--plate-muted);
+}
+
+.studio-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin: 0;
+}
+
+.studio-stats div {
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--plate-surface);
+}
+
+.studio-stats dt {
+  font-size: 12px;
+  color: var(--plate-muted);
+}
+
+.studio-stats dd {
+  margin: 2px 0 0;
+  font-family: var(--plate-mono);
+  font-size: 14px;
+}
+
+.studio-check {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: var(--plate-surface);
+  font-size: 14px;
+}
+
+.studio-check[data-ok="true"] {
+  background: color-mix(in srgb, #2f9e44 16%, var(--plate-surface));
+}
+
+.studio-check[data-ok="false"] {
+  background: color-mix(in srgb, #e8590c 18%, var(--plate-surface));
+}
+
+.studio-export {
+  position: sticky;
+  bottom: 0;
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 10px;
+  padding: 10px 0 calc(env(safe-area-inset-bottom) + 4px);
+  background: linear-gradient(transparent, var(--plate-bg) 30%);
+}
+
+.studio-export .plate-btn--primary {
+  min-height: 52px;
+  font-size: 16px;
+}
+
+@media (min-width: 900px) {
+  .studio-main {
+    flex-direction: row;
+  }
+
+  .studio-stage {
+    flex: 1;
+    height: auto;
+    margin: 0 0 16px 16px;
+  }
+
+  .studio-panel {
+    width: 420px;
+    flex: none;
+    overflow-y: auto;
+    padding: 4px 24px 0;
+  }
+}

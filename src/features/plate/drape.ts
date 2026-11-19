@@ -1,16 +1,11 @@
 /**
- * Images laid over the terrain: one of our poster themes, or satellite imagery.
- * Both cover exactly the plate's square, so texture coordinates line up.
+ * Images laid over the terrain: one of our poster themes, or a raster map
+ * (imagery, topographic or relief). Both cover exactly the plate's square, so
+ * texture coordinates line up.
  */
+import { tileUrlFor, type Basemap } from "./basemaps";
 import { coveringTiles, tileZoomFor, wrapTileX, type PlateBounds } from "./geo";
 
-/** Sentinel-2 cloudless by EOX — CC BY-NC-SA 4.0, non-commercial use only. */
-const SATELLITE_URL =
-  "https://tiles.maps.eox.at/wmts/1.0.0/s2cloudless-2020_3857/default/g/{z}/{y}/{x}.jpg";
-export const SATELLITE_CREDIT =
-  "Sentinel-2 cloudless (s2maps.eu) by EOX IT Services GmbH · modified Copernicus Sentinel data 2020";
-// Sentinel-2 pixels are 10 m; zoom 14 already matches them, so higher zooms only add downloads.
-const SATELLITE_MAX_ZOOM = 14;
 const TILE = 256;
 
 const drapeSize = () => (window.innerWidth >= 900 ? 2048 : 1024);
@@ -29,25 +24,19 @@ async function loadTile(url: string, signal?: AbortSignal): Promise<ImageBitmap 
   }
 }
 
-export async function loadSatelliteDrape(
+export async function loadTileDrape(
   bounds: PlateBounds,
+  map: Basemap,
   signal?: AbortSignal,
 ): Promise<HTMLCanvasElement> {
   const size = drapeSize();
-  const zoom = tileZoomFor(bounds, size, SATELLITE_MAX_ZOOM);
+  const zoom = tileZoomFor(bounds, size, map.maxZoom);
   const tiles = coveringTiles(bounds, zoom);
   const images = await Promise.all(
-    tiles.map(([x, y]) =>
-      loadTile(
-        SATELLITE_URL.replace("{z}", String(zoom))
-          .replace("{x}", String(wrapTileX(x, zoom)))
-          .replace("{y}", String(y)),
-        signal,
-      ),
-    ),
+    tiles.map(([x, y]) => loadTile(tileUrlFor(map, zoom, wrapTileX(x, zoom), y), signal)),
   );
   if (images.every((image) => image === null)) {
-    throw new Error("Satellite imagery is not available right now.");
+    throw new Error(`${map.name} is not available right now.`);
   }
   const canvas = squareCanvas(size);
   const ctx = canvas.getContext("2d")!;

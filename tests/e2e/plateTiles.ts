@@ -72,6 +72,13 @@ function elevationTile(z: number, x: number, y: number): Buffer {
   });
 }
 
+/** A map tile that is red north of the summit's latitude and blue south of it. */
+export function splitTile(z: number, y: number): Buffer {
+  return png((_, py) =>
+    (y * 256 + py + 0.5) / (2 ** z * 256) < summitY ? [220, 30, 30] : [30, 30, 220],
+  );
+}
+
 const satelliteTile = png((x, y) => [40 + (x >> 2), 120, 60 + (y >> 2)]);
 
 /** Serves elevation (and optionally satellite) tiles; everything else stays blocked. */

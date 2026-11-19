@@ -2,6 +2,15 @@
 import { SITE_URL } from "@/services/share/shareSheet";
 import { PLATE_SHAPES, type PlateShape } from "./shapes";
 import type { PlateStyle } from "./PlateScene";
+import { BASEMAPS } from "./basemaps";
+import {
+  LABEL_FONTS,
+  formatCoordinates,
+  scaleBar,
+  type LabelContent,
+  type LabelFont,
+} from "./extras";
+import { RELIEF_PALETTE_IDS, type ReliefPalette } from "./palettes";
 
 export interface PlatePlace {
   name: string;
@@ -28,7 +37,27 @@ export interface PlateSettings extends PlatePlace {
   shadow: boolean;
   /** How many contour lines to draw. */
   density: PlateDensity;
+  /** Raster map for the Topo and Satellite styles (see basemaps.ts). */
+  basemap: string;
+  /** Colour ramp for the Elevation style. */
+  palette: ReliefPalette;
+  /** A nameplate in front of the plate, with the title raised or engraved. */
+  label: boolean;
+  labelFont: LabelFont;
+  labelRelief: LabelRelief;
+  labelCoords: boolean;
+  labelElevation: boolean;
+  labelCompass: boolean;
+  labelScale: boolean;
+  /** A line of your own on the nameplate: a date, a trail, a dedication. */
+  note: string;
+  /** A pin on the highest point. */
+  pin: boolean;
 }
+
+export type LabelRelief = "raised" | "engraved";
+export const LABEL_RELIEFS: LabelRelief[] = ["raised", "engraved"];
+export { LABEL_FONTS, RELIEF_PALETTE_IDS };
 
 export type PlateDensity = "fewer" | "normal" | "more";
 export const PLATE_DENSITIES: PlateDensity[] = ["fewer", "normal", "more"];
@@ -36,7 +65,14 @@ export const PLATE_DENSITIES: PlateDensity[] = ["fewer", "normal", "more"];
 export const DENSITY_LINES: Record<PlateDensity, number> = { fewer: 16, normal: 30, more: 54 };
 
 export { PLATE_SHAPES };
-export const PLATE_STYLES: PlateStyle[] = ["drawing", "print", "elevation", "map", "satellite"];
+export const PLATE_STYLES: PlateStyle[] = [
+  "drawing",
+  "print",
+  "elevation",
+  "topo",
+  "map",
+  "satellite",
+];
 export const SIZE_LIMITS = { min: 0.5, max: 100 };
 /** Maps the Move mode can show under the square. */
 export type PickerBase = "map" | "satellite" | "terrain";
@@ -95,6 +131,17 @@ export const DEFAULT_PLATE: PlateSettings = {
   box: 0.06,
   shadow: true,
   density: "normal",
+  basemap: "",
+  palette: "classic",
+  label: true,
+  labelFont: "grotesk",
+  labelRelief: "raised",
+  labelCoords: true,
+  labelElevation: true,
+  labelCompass: true,
+  labelScale: false,
+  note: "",
+  pin: false,
   name: "Phnom Aural",
   region: "Kampong Speu",
   country: "Cambodia",
@@ -103,6 +150,16 @@ export const DEFAULT_PLATE: PlateSettings = {
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, value));
 const isHex = (value: string | null): value is string => !!value && /^#[0-9a-f]{6}$/i.test(value);
+
+const BOOLEAN_FIELDS = [
+  "shadow",
+  "label",
+  "labelCoords",
+  "labelElevation",
+  "labelCompass",
+  "labelScale",
+  "pin",
+] as const satisfies (keyof PlateSettings)[];
 
 /** Short query names used by share links. */
 const LINK = {
@@ -119,6 +176,17 @@ const LINK = {
   box: "box",
   shadow: "shadow",
   density: "lines",
+  basemap: "bm",
+  palette: "pal",
+  label: "label",
+  labelFont: "font",
+  labelRelief: "relief",
+  labelCoords: "coords",
+  labelElevation: "elev",
+  labelCompass: "compass",
+  labelScale: "scale",
+  note: "note",
+  pin: "pin",
   name: "name",
   region: "region",
   country: "country",
@@ -158,12 +226,26 @@ export function sanitizePlate(
     const value = input[key];
     if (typeof value === "string" && isHex(value)) out[key] = value;
   }
-  if (input.shadow === false || input.shadow === "0") out.shadow = false;
-  if (input.shadow === true || input.shadow === "1") out.shadow = true;
+  for (const key of BOOLEAN_FIELDS) {
+    if (input[key] === false || input[key] === "0") out[key] = false;
+    if (input[key] === true || input[key] === "1") out[key] = true;
+  }
+  if (typeof input.basemap === "string" && BASEMAPS.some((map) => map.id === input.basemap)) {
+    out.basemap = input.basemap;
+  }
+  if (RELIEF_PALETTE_IDS.includes(input.palette as ReliefPalette)) {
+    out.palette = input.palette as ReliefPalette;
+  }
+  if (LABEL_FONTS.includes(input.labelFont as LabelFont))
+    out.labelFont = input.labelFont as LabelFont;
+  if (LABEL_RELIEFS.includes(input.labelRelief as LabelRelief)) {
+    out.labelRelief = input.labelRelief as LabelRelief;
+  }
   for (const key of ["name", "region", "country"] as const) {
     const value = input[key];
     if (typeof value === "string") out[key] = value.slice(0, 80);
   }
+  if (typeof input.note === "string") out.note = input.note.slice(0, 60);
   if (typeof input.countryCode === "string" && /^[a-z]{2}$/i.test(input.countryCode)) {
     out.countryCode = input.countryCode.toUpperCase();
   }
@@ -221,3 +303,29 @@ export const flagEmoji = (countryCode: string) =>
   /^[A-Z]{2}$/.test(countryCode)
     ? String.fromCodePoint(...[...countryCode].map((c) => 0x1f1a5 + c.charCodeAt(0)))
     : "";
+
+/** What the nameplate says, from the plate's settings; null when it is off or has no title. */
+export function plateLabel(
+  plate: PlateSettings,
+  highestMetres: number | null,
+): LabelContent | null {
+  if (!plate.label || !plate.name.trim()) return null;
+  const detail = [
+    plate.labelCoords ? formatCoordinates(plate.lat, plate.lon) : "",
+    plate.labelElevation && highestMetres !== null
+      ? `▲ ${Math.round(highestMetres).toLocaleString("en-US")} m`
+      : "",
+  ].filter(Boolean);
+  const lines = [
+    [plate.region, plate.country].filter(Boolean).join(", "),
+    plate.note.trim(),
+    detail.join("   "),
+  ].filter(Boolean);
+  return {
+    title: plate.name.trim(),
+    lines,
+    font: plate.labelFont,
+    compass: plate.labelCompass,
+    scale: plate.labelScale ? scaleBar(plate.sizeKm) : null,
+  };
+}
