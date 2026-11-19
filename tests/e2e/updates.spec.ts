@@ -4,7 +4,7 @@ test.describe("what's new", () => {
   test("a returning user sees the release notes once, in their language", async ({ page }) => {
     await page.addInitScript(() => {
       if (!sessionStorage.getItem("seeded")) {
-        localStorage.setItem("last_seen_version", "2.0.0");
+        localStorage.setItem("last_seen_version", "2.1.0");
         localStorage.setItem("teetangart.lang", "km");
         sessionStorage.setItem("seeded", "1");
       }

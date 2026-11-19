@@ -219,17 +219,112 @@
   inset: 0;
 }
 
+/* An outline only, so the place stays readable; everything outside is
+   shaded by the viewer's chosen amount (--dim). */
 .area-picker__square {
   position: absolute;
   top: 50%;
   left: 50%;
-  width: min(62%, 62vh);
+  width: min(68%, 62vh);
   aspect-ratio: 1;
   transform: translate(-50%, -50%);
-  border: 3px solid var(--plate-ink);
-  background: color-mix(in srgb, #2f7dd1 30%, transparent);
-  box-shadow: 0 0 0 100vmax color-mix(in srgb, var(--plate-bg) 45%, transparent);
+  border: 2px solid #fff;
+  outline: 2px solid rgb(0 0 0 / 70%);
+  box-shadow: 0 0 0 100vmax rgb(0 0 0 / var(--dim, 0.25));
   pointer-events: none;
+}
+
+.area-picker__size {
+  position: absolute;
+  left: 50%;
+  bottom: -14px;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: #1b1a17;
+  color: #fff;
+  font-family: var(--plate-mono);
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+.area-picker-frame {
+  position: absolute;
+  inset: 0;
+}
+
+.area-picker__bases {
+  position: absolute;
+  top: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  gap: 2px;
+  padding: 3px;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 92%);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 20%);
+}
+
+.area-picker__bases button {
+  min-height: 44px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 999px;
+  background: none;
+  color: #4b4840 !important;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.area-picker__bases button[aria-pressed="true"] {
+  background: #1b1a17;
+  color: #fff !important;
+}
+
+.area-picker__locate {
+  position: absolute;
+  right: 12px;
+  bottom: 40px;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border: 0;
+  border-radius: 50%;
+  background: #fff;
+  color: #1b1a17 !important;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 25%);
+  cursor: pointer;
+}
+
+.plate-chips {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.plate-chips .plate-chip {
+  flex: none;
+}
+
+.plate-dim {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.plate-dim span {
+  flex: none;
+}
+
+.plate-dim output {
+  min-width: 40px;
+  text-align: right;
+  font-family: var(--plate-mono);
 }
 
 .plate-stage[data-mode="move"] .plate-stage__hint {
@@ -297,17 +392,24 @@
   display: flex;
   gap: 2px;
   min-width: 0;
+  /* Five styles do not fit a small phone: the row scrolls sideways. */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.plate-segmented::-webkit-scrollbar {
+  display: none;
 }
 
 .plate-segmented button {
-  flex: 1;
+  flex: 1 0 auto;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   gap: 6px;
   min-width: 0;
   min-height: 44px;
-  padding: 0 6px;
+  padding: 0 12px;
   border: 0;
   border-radius: 999px;
   background: none;
@@ -664,7 +766,7 @@
 
 .plate-presets {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 8px;
 }
 
@@ -896,4 +998,39 @@
   .plate-sheet[data-compact] .plate-sheet__panel {
     max-height: calc(100dvh - 48px);
   }
+}
+
+.plate-shapes {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
+}
+
+.plate-shape {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-height: 64px;
+  padding: 8px 4px;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  background: var(--plate-surface);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.plate-shape svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.8;
+  stroke-linejoin: round;
+}
+
+.plate-shape[aria-pressed="true"] {
+  border-color: var(--plate-ink);
+}
+
+.plate-shape[aria-pressed="true"] svg {
+  fill: currentColor;
 }

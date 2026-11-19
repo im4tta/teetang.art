@@ -1,6 +1,6 @@
 /** Everything that describes a plate, plus its share link and saved draft. */
 import { SITE_URL } from "@/services/share/shareSheet";
-import type { PlateShape } from "./geometry";
+import { PLATE_SHAPES, type PlateShape } from "./shapes";
 import type { PlateStyle } from "./PlateScene";
 
 export interface PlatePlace {
@@ -26,11 +26,38 @@ export interface PlateSettings extends PlatePlace {
   /** Depth of the box under the terrain, as a share of the plate's width. */
   box: number;
   shadow: boolean;
+  /** How many contour lines to draw. */
+  density: PlateDensity;
 }
 
-export const PLATE_STYLES: PlateStyle[] = ["drawing", "print", "map", "satellite"];
-export const PLATE_SHAPES: PlateShape[] = ["square", "circle", "hexagon"];
-export const SIZE_LIMITS = { min: 1, max: 50 };
+export type PlateDensity = "fewer" | "normal" | "more";
+export const PLATE_DENSITIES: PlateDensity[] = ["fewer", "normal", "more"];
+/** About how many lines run from the lowest point to the highest. */
+export const DENSITY_LINES: Record<PlateDensity, number> = { fewer: 16, normal: 30, more: 54 };
+
+export { PLATE_SHAPES };
+export const PLATE_STYLES: PlateStyle[] = ["drawing", "print", "elevation", "map", "satellite"];
+export const SIZE_LIMITS = { min: 0.5, max: 100 };
+/** Maps the Move mode can show under the square. */
+export type PickerBase = "map" | "satellite" | "terrain";
+export const PICKER_BASES: PickerBase[] = ["map", "satellite", "terrain"];
+
+/** One-tap sizes in Move mode, in km. */
+export const SIZE_PRESETS = [1, 3, 5, 10, 25, 50, 100];
+
+/** Sizes read better rounded: 0.1 km steps under 2 km, 0.5 under 10, then whole km. */
+export function roundSize(km: number): number {
+  const clamped = Math.min(SIZE_LIMITS.max, Math.max(SIZE_LIMITS.min, km));
+  const step = clamped < 2 ? 0.1 : clamped < 10 ? 0.5 : 1;
+  return Math.round(Math.round(clamped / step) * step * 10) / 10;
+}
+
+// The size slider is logarithmic, so 1 km and 100 km are both easy to reach.
+const SIZE_LOG = [Math.log(SIZE_LIMITS.min), Math.log(SIZE_LIMITS.max)] as const;
+export const sizeToSlider = (km: number) =>
+  ((Math.log(km) - SIZE_LOG[0]) / (SIZE_LOG[1] - SIZE_LOG[0])) * 100;
+export const sliderToSize = (position: number) =>
+  roundSize(Math.exp(SIZE_LOG[0] + (position / 100) * (SIZE_LOG[1] - SIZE_LOG[0])));
 export const EXAGGERATION_LIMITS = { min: 0.5, max: 30 };
 export const BOX_LIMITS = { min: 0.02, max: 0.2 };
 
@@ -48,6 +75,12 @@ export const INK_PRESETS: InkPreset[] = [
   { id: "terracotta", ink: "#7a2e12", paper: "#f4e7d7", side: "#7a2e12" },
   { id: "forest", ink: "#1f3a2b", paper: "#eef0e4", side: "#1f3a2b" },
   { id: "gold", ink: "#8a6a1f", paper: "#fbf6e6", side: "#2a2418" },
+  { id: "ocean", ink: "#dff3f7", paper: "#0f4c5c", side: "#0a313b" },
+  { id: "rose", ink: "#7d2645", paper: "#fbe9ee", side: "#7d2645" },
+  { id: "slate", ink: "#e2e8f0", paper: "#334155", side: "#1e293b" },
+  { id: "sand", ink: "#5b4a2f", paper: "#efe4cc", side: "#3f3320" },
+  { id: "sunset", ink: "#7c2d12", paper: "#fed7aa", side: "#9a3412" },
+  { id: "mint", ink: "#14532d", paper: "#dcfce7", side: "#166534" },
 ];
 
 export const DEFAULT_PLATE: PlateSettings = {
@@ -61,6 +94,7 @@ export const DEFAULT_PLATE: PlateSettings = {
   ...INK_PRESETS[0],
   box: 0.06,
   shadow: true,
+  density: "normal",
   name: "Phnom Aural",
   region: "Kampong Speu",
   country: "Cambodia",
@@ -84,6 +118,7 @@ const LINK = {
   side: "side",
   box: "box",
   shadow: "shadow",
+  density: "lines",
   name: "name",
   region: "region",
   country: "country",
@@ -115,6 +150,9 @@ export function sanitizePlate(
   if (Number.isFinite(box)) out.box = clamp(box, BOX_LIMITS.min, BOX_LIMITS.max);
   if (PLATE_STYLES.includes(input.style as PlateStyle)) out.style = input.style as PlateStyle;
   if (PLATE_SHAPES.includes(input.shape as PlateShape)) out.shape = input.shape as PlateShape;
+  if (PLATE_DENSITIES.includes(input.density as PlateDensity)) {
+    out.density = input.density as PlateDensity;
+  }
   if (typeof input.theme === "string" && /^[\w-]{1,40}$/.test(input.theme)) out.theme = input.theme;
   for (const key of ["ink", "paper", "side"] as const) {
     const value = input[key];
