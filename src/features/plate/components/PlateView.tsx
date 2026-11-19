@@ -6,6 +6,8 @@ import { useI18n } from "@/context/i18n/context";
 
 export interface PlateViewHandle {
   snapshot: (size: number) => HTMLCanvasElement | null;
+  /** The plate with standard materials, for the photo render and GLB export. */
+  exportScene: (textureSize?: number) => ReturnType<PlateScene["exportScene"]> | null;
 }
 
 interface PlateViewProps {
@@ -62,7 +64,14 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
     scene?.setExtras(extras, peakText);
   }, [scene, extras, peakText]);
 
-  useImperativeHandle(ref, () => ({ snapshot: (size) => scene?.snapshot(size) ?? null }), [scene]);
+  useImperativeHandle(
+    ref,
+    () => ({
+      snapshot: (size) => scene?.snapshot(size) ?? null,
+      exportScene: (textureSize) => scene?.exportScene(textureSize) ?? null,
+    }),
+    [scene],
+  );
 
   return (
     <>

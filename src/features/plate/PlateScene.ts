@@ -13,12 +13,15 @@ import {
   LinearSRGBColorSpace,
   Line,
   LineBasicMaterial,
+  Group,
   Mesh,
+  MeshStandardMaterial,
   NoColorSpace,
   PerspectiveCamera,
   RGBAFormat,
   Scene,
   ShaderMaterial,
+  SRGBColorSpace,
   Sprite,
   SpriteMaterial,
   Vector3,
@@ -55,6 +58,10 @@ export interface PlateLook {
   /** About how many contour lines run from the lowest to the highest point. */
   lines: number;
   palette: ReliefPalette;
+  /** Draw the sea (0 m) as water. */
+  water: boolean;
+  /** Rock layers on the sides of the box. */
+  strata: boolean;
 }
 
 const LIGHT = new Vector3(-0.55, 0.75, -0.35).normalize();
@@ -88,6 +95,8 @@ export class PlateScene {
   private readonly ramp = new DataTexture(new Uint8Array(256 * 4), 256, 1, RGBAFormat);
   private palette: ReliefPalette | null = null;
   private reach = 0.5;
+  private extras: PlateExtras | null = null;
+  private look: PlateLook | null = null;
   private drape: CanvasTexture | null = null;
   private frame = 0;
   private activeUntil = 0;
@@ -122,6 +131,9 @@ export class PlateScene {
         uDrape: { value: null },
         uHasDrape: { value: false },
         uRamp: { value: this.ramp },
+        uAo: { value: 0.55 },
+        uBake: { value: false },
+        uWater: { value: true },
       },
     });
     this.ramp.colorSpace = NoColorSpace;
@@ -138,7 +150,11 @@ export class PlateScene {
     this.shellMaterial = new ShaderMaterial({
       vertexShader: shellVertex,
       fragmentShader: shellFragment,
-      uniforms: { uSide: { value: new Color() }, uLight: { value: LIGHT } },
+      uniforms: {
+        uSide: { value: new Color() },
+        uLight: { value: LIGHT },
+        uStrata: { value: false },
+      },
     });
     this.shadowMaterial = new ShaderMaterial({
       vertexShader: shadowVertex,
@@ -153,6 +169,7 @@ export class PlateScene {
     });
     this.pinMaterial = this.shellMaterial.clone();
     this.pinMaterial.uniforms.uSide.value = new Color();
+    this.pinMaterial.uniforms.uStrata = { value: false };
     this.surface.material = this.surfaceMaterial;
     this.shell.material = this.shellMaterial;
     this.labelTop.material = this.labelMaterial;
@@ -270,6 +287,7 @@ export class PlateScene {
     surface.setAttribute("position", new BufferAttribute(geometry.surface, 3));
     surface.setAttribute("uv", new BufferAttribute(geometry.uvs, 2));
     surface.setAttribute("elevation", new BufferAttribute(geometry.elevations, 1));
+    surface.setAttribute("ao", new BufferAttribute(geometry.ao, 1));
     surface.setIndex(new BufferAttribute(geometry.surfaceIndex, 1));
     surface.computeVertexNormals();
     this.surface.geometry.dispose();
@@ -323,6 +341,7 @@ export class PlateScene {
   }
 
   setLook(look: PlateLook) {
+    this.look = look;
     const u = this.surfaceMaterial.uniforms;
     u.uStyle.value = STYLE_CODE[look.style];
     u.uInk.value.set(look.ink);
@@ -334,7 +353,9 @@ export class PlateScene {
       (this.ramp.image.data as Uint8Array).set(paletteRamp(look.palette));
       this.ramp.needsUpdate = true;
     }
+    u.uWater.value = look.water;
     this.shellMaterial.uniforms.uSide.value.set(look.side);
+    this.shellMaterial.uniforms.uStrata.value = look.strata;
     this.labelMaterial.uniforms.uBase.value.set(look.side);
     this.labelMaterial.uniforms.uText.value.set(look.paper);
     this.pinMaterial.uniforms.uSide.value.set(look.ink);
@@ -346,6 +367,7 @@ export class PlateScene {
 
   /** The nameplate and summit pin; null removes them. `peakText` labels the pin. */
   setExtras(extras: PlateExtras | null, peakText = "") {
+    this.extras = extras;
     const label = extras?.label;
     this.labelTexture?.dispose();
     this.labelTexture = null;
@@ -397,6 +419,141 @@ export class PlateScene {
     this.reach = extras?.reach ?? 0.5;
     this.fitCamera();
     this.wake(IDLE_SPIN_MS);
+  }
+
+  /**
+   * The surface's current look (style, contours, colours, map, water) drawn
+   * flat into a square texture without lighting, north at the top. Used to
+   * colour the realistic photo render and the GLB model.
+   */
+  bakeSurface(size = 2048): HTMLCanvasElement {
+    const edge = Math.min(size, this.renderer.capabilities.maxTextureSize, 4096);
+    const target = new WebGLRenderTarget(edge, edge);
+    const u = this.surfaceMaterial.uniforms;
+    const previous = { lineScale: u.uLineScale.value, side: this.surfaceMaterial.side };
+    u.uBake.value = true;
+    // Lines are measured in texels here; keep them about as bold as on screen.
+    u.uLineScale.value = Math.max(1, edge / 900);
+    // In texture space the triangles wind the other way round.
+    this.surfaceMaterial.side = DoubleSide;
+    const mesh = new Mesh(this.surface.geometry, this.surfaceMaterial);
+    mesh.frustumCulled = false;
+    const bakeScene = new Scene();
+    bakeScene.add(mesh);
+    this.renderer.setRenderTarget(target);
+    this.renderer.setClearColor(u.uPaper.value, 1);
+    this.renderer.clear();
+    this.renderer.render(bakeScene, this.camera);
+    const pixels = new Uint8Array(edge * edge * 4);
+    this.renderer.readRenderTargetPixels(target, 0, 0, edge, edge, pixels);
+    this.renderer.setRenderTarget(null);
+    this.renderer.setClearColor(0x000000, 0);
+    target.dispose();
+    u.uBake.value = false;
+    u.uLineScale.value = previous.lineScale;
+    this.surfaceMaterial.side = previous.side;
+    this.wake(0);
+
+    // Pixel row 0 is v = 0, the north edge, which is also the image's top row.
+    const canvas = Object.assign(document.createElement("canvas"), { width: edge, height: edge });
+    const ctx = canvas.getContext("2d")!;
+    const image = ctx.createImageData(edge, edge);
+    image.data.set(pixels);
+    ctx.putImageData(image, 0, 0);
+    return canvas;
+  }
+
+  /**
+   * The plate rebuilt with standard materials: terrain coloured by the baked
+   * surface, box, nameplate and pin. Plate units, y up, base at -baseDepth.
+   * The photo render and the GLB export both start from this.
+   */
+  exportScene(textureSize = 2048): {
+    group: Group;
+    camera: PerspectiveCamera;
+    target: Vector3;
+    baseDepth: number;
+  } {
+    const look = this.look;
+    const linear = (hex: string) => new Color(hex).convertSRGBToLinear();
+    const texture = (canvas: HTMLCanvasElement) => {
+      const map = new CanvasTexture(canvas);
+      map.flipY = false;
+      map.colorSpace = SRGBColorSpace;
+      map.anisotropy = 8;
+      return map;
+    };
+    const solid = (geometry: BufferGeometry, material: MeshStandardMaterial, name: string) => {
+      const copy = geometry.clone();
+      // Shader-only data; a GLB would carry it as unknown attributes.
+      copy.deleteAttribute("elevation");
+      copy.deleteAttribute("ao");
+      const mesh = new Mesh(copy, material);
+      mesh.name = name;
+      return mesh;
+    };
+    const side = linear(look?.side ?? "#1b1a17");
+    const sideMaterial = new MeshStandardMaterial({ color: side, roughness: 0.82, name: "Box" });
+
+    const group = new Group();
+    group.name = "teetang.art plate";
+    group.add(
+      solid(
+        this.surface.geometry,
+        new MeshStandardMaterial({
+          map: texture(this.bakeSurface(textureSize)),
+          roughness: 0.9,
+          name: "Terrain",
+        }),
+        "Terrain",
+      ),
+      solid(this.shell.geometry, sideMaterial, "Box"),
+    );
+    const label = this.extras?.label;
+    if (label && look) {
+      // Box-coloured plaque with the letters in the surface colour.
+      const mask = label.texture;
+      const letters = Object.assign(document.createElement("canvas"), {
+        width: mask.width,
+        height: mask.height,
+      });
+      const lettersCtx = letters.getContext("2d")!;
+      lettersCtx.drawImage(mask, 0, 0);
+      lettersCtx.globalCompositeOperation = "source-in";
+      lettersCtx.fillStyle = look.paper;
+      lettersCtx.fillRect(0, 0, letters.width, letters.height);
+      const plaque = Object.assign(document.createElement("canvas"), {
+        width: mask.width,
+        height: mask.height,
+      });
+      const plaqueCtx = plaque.getContext("2d")!;
+      plaqueCtx.fillStyle = look.side;
+      plaqueCtx.fillRect(0, 0, plaque.width, plaque.height);
+      plaqueCtx.drawImage(letters, 0, 0);
+      group.add(
+        solid(
+          this.labelTop.geometry,
+          new MeshStandardMaterial({ map: texture(plaque), roughness: 0.75, name: "Nameplate" }),
+          "Nameplate",
+        ),
+        solid(this.labelShell.geometry, sideMaterial, "Nameplate sides"),
+      );
+    }
+    if (this.extras?.pin) {
+      group.add(
+        solid(
+          this.pin.geometry,
+          new MeshStandardMaterial({
+            color: linear(look?.ink ?? "#1b1a17"),
+            roughness: 0.45,
+            name: "Summit pin",
+          }),
+          "Summit pin",
+        ),
+      );
+    }
+    const camera = this.camera.clone();
+    return { group, camera, target: this.controls.target.clone(), baseDepth: this.baseDepth };
   }
 
   /** Map or satellite image laid over the terrain; null clears it. */

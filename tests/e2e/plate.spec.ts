@@ -103,6 +103,10 @@ test.describe("3D plate", () => {
     expect(svg).toContain('<g id="index-contours"');
     expect(svg.match(/<path /g)!.length).toBeGreaterThan(10);
 
+    const glb = await save("glb");
+    expect(glb.subarray(0, 4).toString()).toBe("glTF");
+    expect(glb.includes(Buffer.from('"name":"Terrain"'))).toBe(true);
+
     const stl = await save("stl");
     const triangles = stl.readUInt32LE(80);
     expect(triangles).toBeGreaterThan(1000);
@@ -322,5 +326,21 @@ test.describe("3D plate", () => {
     expect(threeMf.name).toBe("teetang-phnom-aural-150mm.3mf");
     expect(threeMf.file.subarray(0, 2).toString()).toBe("PK");
     expect(threeMf.file.includes(Buffer.from("3D/3dmodel.model"))).toBe(true);
+  });
+
+  test("Photo builds the ray-traced scene and starts rendering", async ({ page }) => {
+    await openPlate(page);
+    await page.getByRole("button", { name: "Photo" }).click();
+    // "Rendering" means the scene, its ray-tracing structure and shaders all built.
+    // Nothing after that is checked: CI has no GPU, and tracing on the CPU blocks
+    // the page for seconds at a time, starving Playwright's polling and clicks.
+    // So poll with plain pauses, and stop once rendering has started.
+    const status = page.locator(".plate-photo__status");
+    let text = "";
+    for (let k = 0; k < 15 && !text.includes("Rendering"); k++) {
+      await page.waitForTimeout(2000);
+      text = await status.innerText();
+    }
+    expect(text).toContain("Rendering");
   });
 });

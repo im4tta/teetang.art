@@ -20,6 +20,8 @@ export interface PlateGeometry {
   uvs: Float32Array;
   /** Real elevation of each surface vertex, in metres. */
   elevations: Float32Array;
+  /** How open each surface vertex is to the sky: 1 on peaks and plains, lower in valleys. */
+  ao: Float32Array;
   surfaceIndex: Uint32Array;
   /** Walls and base as a plain triangle list (x, y, z per corner). */
   shell: Float32Array;
@@ -158,6 +160,7 @@ export function buildPlateGeometry(
     surface,
     uvs,
     elevations,
+    ao: ambientOcclusion(surface, size),
     surfaceIndex,
     shell,
     outline,
@@ -175,4 +178,43 @@ export function contourInterval(min: number, max: number, lines = 36): number {
   const power = 10 ** Math.floor(Math.log10(raw));
   const step = [1, 2, 2.5, 5, 10].find((m) => m * power >= raw) ?? 10;
   return step * power;
+}
+
+const AO_DIRECTIONS = 8;
+const AO_STEPS = [1, 2, 4, 7, 11, 16, 24];
+
+/**
+ * Horizon-based ambient occlusion over the surface grid: for each vertex, how
+ * high the terrain rises around it in eight directions. Valleys and the foot
+ * of cliffs get darker, as they do under an overcast sky. Runs once per plate
+ * (about 2 million samples for a 256-cell grid).
+ */
+export function ambientOcclusion(surface: Float32Array, size: number): Float32Array {
+  const ao = new Float32Array(size * size);
+  const directions = Array.from({ length: AO_DIRECTIONS }, (_, k) => {
+    const angle = (k / AO_DIRECTIONS) * Math.PI * 2;
+    return [Math.cos(angle), Math.sin(angle)];
+  });
+  const cell = 1 / (size - 1);
+  for (let j = 0; j < size; j++) {
+    for (let i = 0; i < size; i++) {
+      const k = j * size + i;
+      const height = surface[k * 3 + 1];
+      let open = 0;
+      for (const [dx, dy] of directions) {
+        let horizon = 0;
+        for (const step of AO_STEPS) {
+          const x = Math.round(i + dx * step);
+          const y = Math.round(j + dy * step);
+          if (x < 0 || y < 0 || x >= size || y >= size) break;
+          const rise = surface[(y * size + x) * 3 + 1] - height;
+          if (rise > 0) horizon = Math.max(horizon, rise / Math.hypot(rise, step * cell));
+        }
+        // horizon is the sine of the angle to the skyline in this direction.
+        open += 1 - horizon;
+      }
+      ao[k] = open / AO_DIRECTIONS;
+    }
+  }
+  return ao;
 }
