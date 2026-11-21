@@ -3,10 +3,12 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
 import HomePage from "@/pages/HomePage";
 import { loadEditorPage } from "@/pages/editorLoader";
+import { loadPlatePage } from "@/pages/plateLoader";
 
 const EditorPage = lazy(loadEditorPage);
-const PlatePage = lazy(() => import("@/pages/PlatePage"));
+const PlatePage = lazy(loadPlatePage);
 const StudioPage = lazy(() => import("@/pages/StudioPage"));
+const TranslationsPage = lazy(() => import("@/pages/TranslationsPage"));
 
 function RouteLoadingFallback({ label = "Opening the editor…" }: { label?: string }) {
   return (
@@ -43,6 +45,14 @@ export default function App() {
           element={
             <Suspense fallback={<RouteLoadingFallback label="Opening the STL Studio…" />}>
               <StudioPage />
+            </Suspense>
+          }
+        />
+        <Route
+          path="/translations"
+          element={
+            <Suspense fallback={<RouteLoadingFallback label="Opening…" />}>
+              <TranslationsPage />
             </Suspense>
           }
         />

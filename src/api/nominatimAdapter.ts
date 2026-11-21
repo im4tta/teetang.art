@@ -44,7 +44,7 @@ export function createNominatimAdapter(http: IHttp, cache: ICache): IGeocodePort
 
     const url =
       "https://nominatim.openstreetmap.org/search?" +
-      `format=jsonv2&addressdetails=1&limit=${normalizedLimit}&q=${encodeURIComponent(lookup)}`;
+      `format=jsonv2&addressdetails=1&namedetails=1&limit=${normalizedLimit}&q=${encodeURIComponent(lookup)}`;
 
     const promise = http
       .get(url, { headers, signal }, 16_000)
@@ -107,7 +107,7 @@ export function createNominatimAdapter(http: IHttp, cache: ICache): IGeocodePort
 
     const url =
       "https://nominatim.openstreetmap.org/reverse?" +
-      `format=jsonv2&addressdetails=1&zoom=10&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lon))}`;
+      `format=jsonv2&addressdetails=1&namedetails=1&zoom=10&lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lon))}`;
 
     const promise = http
       .get(url, { headers }, 16_000)

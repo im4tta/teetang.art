@@ -71,6 +71,8 @@ export interface PlateSettings extends PlatePlace {
   routeRaise: boolean;
   /** Lakes and rivers from OpenStreetMap, painted and carved into the print. */
   lakes: boolean;
+  /** The place's Khmer name, printed on the nameplate under the title. */
+  nameKm: string;
 }
 
 export type LabelRelief = "raised" | "engraved";
@@ -170,6 +172,7 @@ export const DEFAULT_PLATE: PlateSettings = {
   routeColor: "#e4572e",
   routeRaise: true,
   lakes: false,
+  nameKm: "ភ្នំឱរ៉ាល់",
   name: "Phnom Aural",
   region: "Kampong Speu",
   country: "Cambodia",
@@ -228,6 +231,7 @@ const LINK = {
   routeColor: "rc",
   routeRaise: "rr",
   lakes: "lakes",
+  nameKm: "nk",
   name: "name",
   region: "region",
   country: "country",
@@ -307,6 +311,7 @@ export function sanitizePlate(
     if (typeof value === "string") out[key] = value.slice(0, 80);
   }
   if (typeof input.note === "string") out.note = input.note.slice(0, 60);
+  if (typeof input.nameKm === "string") out.nameKm = input.nameKm.slice(0, 80);
   if (typeof input.countryCode === "string" && /^[a-z]{2}$/i.test(input.countryCode)) {
     out.countryCode = input.countryCode.toUpperCase();
   }
@@ -338,7 +343,7 @@ export function parsePlateLink(search: string): Partial<PlateSettings> | null {
   const plate = sanitizePlate(raw);
   if (plate.lat === undefined) return null;
   // A shared place without a name should not inherit the default's name.
-  return { name: "", region: "", country: "", countryCode: "", ...plate };
+  return { name: "", region: "", country: "", countryCode: "", nameKm: "", ...plate };
 }
 
 /** "lat,lon,name|lat,lon,name" for share links. */
@@ -394,7 +399,9 @@ export function plateLabel(
       ? `▲ ${Math.round(highestMetres).toLocaleString("en-US")} m`
       : "",
   ].filter(Boolean);
+  const khmer = plate.nameKm.trim();
   const lines = [
+    khmer && khmer !== plate.name.trim() ? khmer : "",
     [plate.region, plate.country].filter(Boolean).join(", "),
     plate.note.trim(),
     detail.join("   "),

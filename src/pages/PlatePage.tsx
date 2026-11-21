@@ -80,6 +80,8 @@ import PlateView, { type PlateViewHandle } from "@/features/plate/components/Pla
 import PlaceSearch from "@/features/plate/components/PlaceSearch";
 import type { AreaChange } from "@/features/plate/components/AreaPicker";
 import type { PlateDownload } from "@/features/plate/components/DownloadSheet";
+import { onSlowConnection } from "@/pages/plateLoader";
+import { reportProblem } from "@/utils/reportProblem";
 import "@/styles/plate.css";
 
 const AreaPicker = lazy(() => import("@/features/plate/components/AreaPicker"));
@@ -89,7 +91,8 @@ const PhotoView = lazy(() => import("@/features/plate/components/PhotoView"));
 const RouteSheet = lazy(() => import("@/features/plate/components/RouteSheet"));
 const ExploreSheet = lazy(() => import("@/features/plate/components/ExploreSheet"));
 
-const LOW_END = (navigator.hardwareConcurrency ?? 8) <= 4;
+// Low-end phones and slow or data-saver connections get a lighter terrain grid.
+const LOW_END = (navigator.hardwareConcurrency ?? 8) <= 4 || onSlowConnection();
 /** The quick first plate: few tiles to fetch, so it shows almost at once. */
 const PREVIEW_CELLS = 64;
 const GRID_CELLS = LOW_END ? 192 : 256;
@@ -264,7 +267,11 @@ function PlateApp() {
         setTerrain({ status: "ready", value });
         setFullDetail(true);
       },
-      () => !controller.signal.aborted && setTerrain({ status: "error" }),
+      () => {
+        if (controller.signal.aborted) return;
+        setTerrain({ status: "error" });
+        reportProblem("terrain");
+      },
     );
     return () => controller.abort();
   }, [bounds, attempt]);
@@ -287,6 +294,7 @@ function PlateApp() {
       () => {
         if (controller.signal.aborted) return;
         setDrape({ status: "error" });
+        reportProblem("imagery");
         notify(t("plate.drapeError"), { tone: "error", id: "plate-drape" });
       },
     );
@@ -312,6 +320,7 @@ function PlateApp() {
       () => {
         if (controller.signal.aborted) return;
         setWaterMask(null);
+        reportProblem("lakes");
         notify(t("plate.lakesError"), { tone: "error", id: "plate-lakes" });
       },
     );
@@ -469,6 +478,7 @@ function PlateApp() {
       }
     } catch {
       notify(t("plate.ar.failed"), { tone: "error" });
+      reportProblem("ar");
     }
   };
 
@@ -495,6 +505,7 @@ function PlateApp() {
     } catch (error) {
       if ((error as Error).name !== "AbortError") {
         notify(t("plate.downloadFailed"), { tone: "error" });
+        reportProblem("video");
       }
     } finally {
       setRecording(null);
@@ -627,6 +638,7 @@ function PlateApp() {
       region: result.city && result.city !== result.shortLabel ? result.city : "",
       country: result.country,
       countryCode: result.countryCode ?? "",
+      nameKm: result.nameKm ?? "",
     });
 
   const showPlate = async () => {
@@ -644,9 +656,10 @@ function PlateApp() {
         region: place.city && place.city !== place.shortLabel ? place.city : "",
         country: place.country,
         countryCode: place.countryCode ?? "",
+        nameKm: place.nameKm ?? "",
       });
     } catch {
-      update({ name: "", region: "", country: "", countryCode: "" });
+      update({ name: "", region: "", country: "", countryCode: "", nameKm: "" });
     }
   };
 
@@ -681,6 +694,7 @@ function PlateApp() {
         notify(t("plate.downloaded"), { tone: "success" });
       } catch {
         notify(t("plate.downloadFailed"), { tone: "error" });
+        reportProblem("download");
       }
       return;
     }
@@ -724,6 +738,7 @@ function PlateApp() {
       notify(t("plate.downloaded"), { tone: "success" });
     } catch {
       notify(t("plate.downloadFailed"), { tone: "error" });
+      reportProblem("download");
     }
   };
 
@@ -945,6 +960,11 @@ function PlateApp() {
             >
               {title}
             </h1>
+            {plate.nameKm && plate.nameKm !== title && (
+              <p className="plate-place__khmer" lang="km">
+                {plate.nameKm}
+              </p>
+            )}
             <p className="plate-place__meta">
               {plate.countryCode && <span aria-hidden="true">{flagEmoji(plate.countryCode)} </span>}
               {subtitle}
@@ -1157,6 +1177,7 @@ function PlateApp() {
                 notify(t("plate.explore.savedDone"), { tone: "success" });
               } catch {
                 notify(t("plate.downloadFailed"), { tone: "error" });
+                reportProblem("offline");
               }
             }}
             onOpenSaved={(entry) => {

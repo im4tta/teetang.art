@@ -7,6 +7,8 @@ import type { PlateSettings } from "./plateSettings";
 export interface ExplorePlace {
   id: string;
   name: string;
+  /** Khmer name, for Cambodian places. */
+  nameKm?: string;
   region: string;
   country: string;
   countryCode: string;
@@ -23,6 +25,7 @@ const KH = { country: "Cambodia", countryCode: "KH" };
 export const EXPLORE_CAMBODIA: ExplorePlace[] = [
   {
     id: "aural",
+    nameKm: "ភ្នំឱរ៉ាល់",
     name: "Phnom Aural",
     region: "Kampong Speu",
     ...KH,
@@ -37,6 +40,7 @@ export const EXPLORE_CAMBODIA: ExplorePlace[] = [
   },
   {
     id: "kulen",
+    nameKm: "ភ្នំគូលែន",
     name: "Phnom Kulen",
     region: "Siem Reap",
     ...KH,
@@ -51,6 +55,7 @@ export const EXPLORE_CAMBODIA: ExplorePlace[] = [
   },
   {
     id: "bokor",
+    nameKm: "ភ្នំបូកគោ",
     name: "Bokor Mountain",
     region: "Kampot",
     ...KH,
@@ -65,6 +70,7 @@ export const EXPLORE_CAMBODIA: ExplorePlace[] = [
   },
   {
     id: "angkor",
+    nameKm: "អង្គរវត្ត",
     name: "Angkor Wat",
     region: "Siem Reap",
     ...KH,
@@ -79,6 +85,7 @@ export const EXPLORE_CAMBODIA: ExplorePlace[] = [
   },
   {
     id: "preah-vihear",
+    nameKm: "ប្រាសាទព្រះវិហារ",
     name: "Preah Vihear Temple",
     region: "Preah Vihear",
     ...KH,
@@ -93,6 +100,7 @@ export const EXPLORE_CAMBODIA: ExplorePlace[] = [
   },
   {
     id: "tonle-sap",
+    nameKm: "ទន្លេសាប",
     name: "Tonlé Sap",
     region: "Siem Reap",
     ...KH,
@@ -107,6 +115,7 @@ export const EXPLORE_CAMBODIA: ExplorePlace[] = [
   },
   {
     id: "yeak-laom",
+    nameKm: "បឹងយក្សឡោម",
     name: "Yeak Laom Lake",
     region: "Ratanakiri",
     ...KH,
@@ -121,6 +130,7 @@ export const EXPLORE_CAMBODIA: ExplorePlace[] = [
   },
   {
     id: "kep",
+    nameKm: "កែប",
     name: "Kep",
     region: "Kep",
     ...KH,
@@ -202,6 +212,7 @@ export const EXPLORE_WORLD: ExplorePlace[] = [
 export function explorePlate(place: ExplorePlace): Partial<PlateSettings> {
   return {
     name: place.name,
+    nameKm: place.nameKm ?? "",
     region: place.region,
     country: place.country,
     countryCode: place.countryCode,

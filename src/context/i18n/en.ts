@@ -577,4 +577,5 @@ export const en = {
   "plate.lesson.2": "Now each line is lifted to its real height. Watch the flat drawing become the mountain.",
   "plate.lesson.3": "Where the lines bunch up, the ground is steep; where they spread out, it is gentle. The smallest closed ring is the top.",
   "plate.lesson.4": "Your turn: drag to turn the plate, then find the steepest slope and the summit using only the lines.",
+  "plate.adj.nameKm": "Khmer name (on the nameplate)",
 } satisfies Record<string, string>;

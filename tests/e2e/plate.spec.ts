@@ -443,6 +443,34 @@ test.describe("explore, classroom and offline", () => {
   });
 });
 
+test.describe("Khmer names and the review page", () => {
+  test("a Cambodian place shows and prints its Khmer name", async ({ page }) => {
+    await openPlate(page);
+    await page.getByRole("button", { name: "Explore" }).click();
+    await page.getByRole("button", { name: /^Phnom Kulen/ }).click();
+    await expect(page.locator(".plate-place__khmer")).toHaveText("ភ្នំគូលែន");
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await expect(page.getByLabel("Khmer name (on the nameplate)")).toHaveValue("ភ្នំគូលែន");
+  });
+
+  test("the translation review page lists texts and exports corrections", async ({ page }) => {
+    await page.goto("/translations");
+    const rows = page.locator(".translations-table tbody tr");
+    await expect(rows.first()).toBeVisible();
+    expect(await rows.count()).toBeGreaterThan(100);
+    await page.getByLabel("Correction for plate.title").fill("ផ្ទាំងដីបីវិមាត្រ");
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: /Download 1 correction/ }).click(),
+    ]);
+    const chunks: Buffer[] = [];
+    for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer);
+    const csv = Buffer.concat(chunks).toString("utf8");
+    expect(csv).toContain('"plate.title","3D Plate"');
+    expect(csv).toContain("ផ្ទាំងដីបីវិមាត្រ");
+  });
+});
+
 test.describe("STL Studio print options", () => {
   test("hollow base, tiles and a lithophane", async ({ page }) => {
     await openPlate(page);

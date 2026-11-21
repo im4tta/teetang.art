@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import { Crosshair, Download, MapPin, Ruler, Trash2, Upload } from "lucide-react";
 import { useI18n } from "@/context/i18n/context";
 import { notify } from "@/services/notify";
+import { reportProblem } from "@/utils/reportProblem";
 import { triggerDownloadBlob } from "@/services/export/fileDownloader";
 import {
   MAX_MARKERS,
@@ -53,6 +54,7 @@ export default function RouteSheet({
       notify(t("plate.route.imported"), { tone: "success" });
     } catch {
       notify(t("plate.route.importFailed"), { tone: "error" });
+      reportProblem("track-import");
     } finally {
       setBusy(false);
     }

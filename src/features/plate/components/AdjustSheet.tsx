@@ -74,6 +74,18 @@ export default function AdjustSheet({
           onChange={(event) => onChange({ name: event.target.value })}
         />
       </label>
+      <label className="plate-field">
+        <span className="plate-field__label">{t("plate.adj.nameKm")}</span>
+        <input
+          type="text"
+          className="plate-input"
+          lang="km"
+          value={plate.nameKm}
+          maxLength={80}
+          placeholder="ឈ្មោះជាភាសាខ្មែរ"
+          onChange={(event) => onChange({ nameKm: event.target.value })}
+        />
+      </label>
 
       {mapKind && (
         <fieldset className="plate-field">
