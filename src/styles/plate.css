@@ -1454,3 +1454,170 @@
   justify-content: flex-end;
   gap: 8px;
 }
+
+.plate-place__khmer {
+  margin: 2px 0 0;
+  font-family: "Kantumruy Pro", "Noto Sans Khmer", sans-serif;
+  font-size: 18px;
+  font-weight: 500;
+}
+
+/* ── Translation review ── */
+
+.translations-page {
+  height: auto !important;
+  overflow: visible !important;
+}
+
+.translations-main {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  max-width: 1100px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 8px 16px 40px;
+}
+
+.translations-tools {
+  display: grid;
+  gap: 10px;
+}
+
+.translations-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 15px;
+}
+
+.translations-table th,
+.translations-table td {
+  padding: 10px 8px;
+  border-bottom: 1px solid var(--plate-line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.translations-table td:nth-child(2) {
+  font-family: "Kantumruy Pro", "Noto Sans Khmer", sans-serif;
+  font-size: 16px;
+}
+
+.translations-table small {
+  display: block;
+  margin-top: 4px;
+  font-family: var(--plate-mono);
+  font-size: 12px;
+  color: var(--plate-muted);
+}
+
+.translations-table textarea {
+  width: 100%;
+  min-height: 48px;
+  padding: 8px;
+  border: 1px solid var(--plate-line);
+  border-radius: 10px;
+  background: var(--plate-raised);
+  font:
+    16px "Kantumruy Pro",
+    "Noto Sans Khmer",
+    sans-serif;
+  color: inherit;
+}
+
+@media (max-width: 700px) {
+  .translations-table thead {
+    display: none;
+  }
+
+  .translations-table tr,
+  .translations-table td {
+    display: block;
+  }
+
+  .translations-table td {
+    border-bottom: 0;
+    padding: 4px 0;
+  }
+
+  .translations-table tr {
+    padding: 10px 0;
+    border-bottom: 1px solid var(--plate-line);
+  }
+}
+
+.plate-switch__note {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--plate-muted);
+}
+
+.plate-days {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plate-days li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.plate-days li i {
+  width: 22px;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.plate-days li span {
+  flex: 1;
+}
+
+.plate-marker-photo {
+  cursor: pointer;
+}
+
+.plate-marker-photo[data-has-photo] {
+  background: var(--plate-accent);
+  color: var(--plate-on-accent) !important;
+}
+
+/* ── Embedded on another site: the plate alone ── */
+
+.plate-page[data-embed] {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.plate-page[data-embed] .plate-main,
+.plate-page[data-embed] .plate-stage {
+  flex: 1;
+  height: 100%;
+}
+
+.plate-embed-open {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--plate-raised) 90%, transparent);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.plate-search__khmer {
+  font-family: "Kantumruy Pro", "Noto Sans Khmer", sans-serif;
+  font-weight: 500;
+}

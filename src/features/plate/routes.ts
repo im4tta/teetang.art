@@ -12,6 +12,8 @@ export interface PlateMarker {
   lat: number;
   lon: number;
   label: string;
+  /** A photo kept on this device (see photos.ts); not part of share links. */
+  photo?: string;
 }
 
 export const MAX_MARKERS = 12;
@@ -175,7 +177,28 @@ export function decodeRoute(encoded: string): LatLon[] {
   return points.filter(isLatLon);
 }
 
-export const isEncodedRoute = (value: string) => /^[\x3f-\x7e]{0,8000}$/.test(value);
+/** One or more tracks (days of a trip), encoded polylines separated by spaces. */
+export const isEncodedRoute = (value: string) => /^[\x3f-\x7e ]{0,8000}$/.test(value);
+
+export function decodeTracks(encoded: string): LatLon[][] {
+  return encoded
+    .split(" ")
+    .filter(Boolean)
+    .map(decodeRoute)
+    .filter((track) => track.length > 1);
+}
+
+export function encodeTracks(tracks: LatLon[][]): string {
+  return tracks.map(encodeRoute).join(" ");
+}
+
+/** Tracks after the first take these colours in turn, so each day stands apart. */
+const DAY_COLORS = ["#1971c2", "#2f9e44", "#f08c00", "#d6336c", "#7048e8"];
+export const trackColor = (index: number, first: string) =>
+  index === 0 ? first : DAY_COLORS[(index - 1) % DAY_COLORS.length];
+
+/** Points kept per track when a trip has several days, so the link stays short. */
+export const pointsPerTrack = (days: number) => Math.max(80, Math.floor(MAX_ROUTE_POINTS / days));
 
 // ── Placing on the plate ──
 
@@ -209,7 +232,8 @@ export function onPlate(bounds: PlateBounds, point: LatLon): boolean {
 }
 
 export interface OverlayOptions {
-  route: LatLon[];
+  /** Each day of a trip; the first takes `color`, the rest their own colours. */
+  tracks: LatLon[][];
   markers: PlateMarker[];
   color: string;
   /** Marker dots and their labels. */
@@ -217,6 +241,8 @@ export interface OverlayOptions {
   paper: string;
   /** A measuring line, drawn dashed. */
   line?: LatLon[];
+  /** Roads: white on black over the plate's square, drawn first in the ink colour. */
+  roads?: HTMLCanvasElement | null;
   size?: number;
 }
 
@@ -225,28 +251,32 @@ export function drawOverlay(bounds: PlateBounds, options: OverlayOptions): HTMLC
   const size = options.size ?? 2048;
   const canvas = Object.assign(document.createElement("canvas"), { width: size, height: size });
   const ctx = canvas.getContext("2d")!;
+  if (options.roads) {
+    ctx.globalAlpha = 0.7;
+    ctx.drawImage(tintMask(options.roads, options.ink), 0, 0, size, size);
+    ctx.globalAlpha = 1;
+  }
   const at = (point: LatLon) =>
     toPlateUv(bounds, point).map((value) => value * size) as [number, number];
-  if (options.route.length > 1) {
+  options.tracks.forEach((track, index) => {
+    if (track.length < 2) return;
     ctx.lineJoin = "round";
     ctx.lineCap = "round";
     // A pale casing keeps the line readable on dark imagery.
     for (const [color, width] of [
       [options.paper, size * 0.009],
-      [options.color, size * 0.0055],
+      [trackColor(index, options.color), size * 0.0055],
     ] as const) {
       ctx.strokeStyle = color;
       ctx.lineWidth = width;
       ctx.beginPath();
-      options.route.forEach((point, k) =>
-        k ? ctx.lineTo(...at(point)) : ctx.moveTo(...at(point)),
-      );
+      track.forEach((point, k) => (k ? ctx.lineTo(...at(point)) : ctx.moveTo(...at(point))));
       ctx.stroke();
     }
     // Start and finish.
     const ends: [LatLon, string][] = [
-      [options.route[0], "#2f9e44"],
-      [options.route[options.route.length - 1], "#c92a2a"],
+      [track[0], "#2f9e44"],
+      [track[track.length - 1], "#c92a2a"],
     ];
     for (const [point, color] of ends) {
       const [x, y] = at(point);
@@ -259,7 +289,7 @@ export function drawOverlay(bounds: PlateBounds, options: OverlayOptions): HTMLC
       ctx.arc(x, y, size * 0.006, 0, Math.PI * 2);
       ctx.fill();
     }
-  }
+  });
   if (options.line && options.line.length > 1) {
     ctx.setLineDash([size * 0.012, size * 0.008]);
     ctx.lineCap = "round";
@@ -293,9 +323,9 @@ export function drawOverlay(bounds: PlateBounds, options: OverlayOptions): HTMLC
  * How much each grid vertex sits on the route (0..1), for raising it into a
  * ridge the printer can feel. Anti-aliased, so the ridge has sloped sides.
  */
-export function routeMask(bounds: PlateBounds, route: LatLon[], gridSize: number): Float32Array {
+export function routeMask(bounds: PlateBounds, tracks: LatLon[][], gridSize: number): Float32Array {
   const mask = new Float32Array(gridSize * gridSize);
-  if (route.length < 2) return mask;
+  if (!tracks.some((track) => track.length > 1)) return mask;
   const canvas = Object.assign(document.createElement("canvas"), {
     width: gridSize,
     height: gridSize,
@@ -307,16 +337,18 @@ export function routeMask(bounds: PlateBounds, route: LatLon[], gridSize: number
   ctx.lineCap = "round";
   // About 1.2% of the plate's width: 1.2 mm on a 10 cm print.
   ctx.lineWidth = Math.max(1.5, gridSize * 0.012);
-  ctx.beginPath();
-  route.forEach((point, k) => {
-    const [u, v] = toPlateUv(bounds, point);
-    // Pixel centres sit on grid vertices.
-    const x = u * scale + 0.5;
-    const y = v * scale + 0.5;
-    if (k) ctx.lineTo(x, y);
-    else ctx.moveTo(x, y);
-  });
-  ctx.stroke();
+  for (const track of tracks) {
+    ctx.beginPath();
+    track.forEach((point, k) => {
+      const [u, v] = toPlateUv(bounds, point);
+      // Pixel centres sit on grid vertices.
+      const x = u * scale + 0.5;
+      const y = v * scale + 0.5;
+      if (k) ctx.lineTo(x, y);
+      else ctx.moveTo(x, y);
+    });
+    ctx.stroke();
+  }
   const { data } = ctx.getImageData(0, 0, gridSize, gridSize);
   for (let k = 0; k < mask.length; k++) mask[k] = data[k * 4 + 3] / 255;
   return mask;
@@ -450,3 +482,25 @@ export function profileSvg(
 
 /** Bounds of a plate from its settings; re-exported for callers that only import this module. */
 export { plateBounds };
+
+/** A white-on-black mask turned into `color` with the mask as transparency. */
+function tintMask(mask: HTMLCanvasElement, color: string): HTMLCanvasElement {
+  const canvas = Object.assign(document.createElement("canvas"), {
+    width: mask.width,
+    height: mask.height,
+  });
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+  ctx.drawImage(mask, 0, 0);
+  const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const [r, g, b] = [1, 3, 5].map((k) => parseInt(color.slice(k, k + 2), 16));
+  const data = image.data;
+  for (let k = 0; k < data.length; k += 4) {
+    const alpha = data[k];
+    data[k] = r;
+    data[k + 1] = g;
+    data[k + 2] = b;
+    data[k + 3] = alpha;
+  }
+  ctx.putImageData(image, 0, 0);
+  return canvas;
+}

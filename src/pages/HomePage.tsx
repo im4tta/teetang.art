@@ -2,6 +2,14 @@ import { useState, useEffect, useRef, type CSSProperties } from "react";
 import { Link } from "react-router-dom";
 import { REPO_URL } from "@/services/config";
 import { preloadEditorPage, preloadEditorWhenIdle } from "@/pages/editorLoader";
+import { preloadPlatePage } from "@/pages/plateLoader";
+
+/** Starts loading the page a link leads to as soon as someone points at or focuses it. */
+function preloadFor(target: EventTarget) {
+  if (!(target instanceof Element)) return;
+  if (target.closest('a[href^="/create"]')) preloadEditorPage();
+  if (target.closest('a[href^="/plate"]')) preloadPlatePage();
+}
 import { readDraftTitle } from "@/context/posterDraft";
 import WhatsNew from "@/components/home/WhatsNew";
 import "@/styles/home-page.css";
@@ -277,16 +285,8 @@ export default function HomePage() {
   return (
     <div
       className={`home-page${isDark ? "" : " light-theme"}`}
-      onPointerOver={(event) => {
-        if (event.target instanceof Element && event.target.closest('a[href^="/create"]')) {
-          preloadEditorPage();
-        }
-      }}
-      onFocusCapture={(event) => {
-        if (event.target instanceof Element && event.target.closest('a[href^="/create"]')) {
-          preloadEditorPage();
-        }
-      }}
+      onPointerOver={(event) => preloadFor(event.target)}
+      onFocusCapture={(event) => preloadFor(event.target)}
     >
       {/* Toast */}
       {toast && (

@@ -7,6 +7,8 @@ export interface Location {
   countryCode?: string;
   continent?: string;
   placeType?: string;
+  /** The place's Khmer name, when OpenStreetMap has one. */
+  nameKm?: string;
   lat: number;
   lon: number;
 }

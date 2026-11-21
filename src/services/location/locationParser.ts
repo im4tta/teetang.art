@@ -10,6 +10,8 @@ export interface NominatimEntry {
   country?: string;
   type?: string;
   address?: Record<string, string>;
+  /** Every name OpenStreetMap holds for the place, e.g. "name:km" (with namedetails=1). */
+  namedetails?: Record<string, string>;
 }
 
 const ADMIN_KEYWORDS = [
@@ -131,6 +133,7 @@ export function normalizeLocationResult(
     countryCode,
     continent,
     placeType: resultType || undefined,
+    ...(entry.namedetails?.["name:km"] ? { nameKm: entry.namedetails["name:km"] } : {}),
     lat,
     lon,
   };

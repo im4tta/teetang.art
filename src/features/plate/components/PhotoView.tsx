@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Download, X } from "lucide-react";
 import { useI18n } from "@/context/i18n/context";
 import { notify } from "@/services/notify";
+import { reportProblem } from "@/utils/reportProblem";
 import { triggerDownloadBlob } from "@/services/export/fileDownloader";
 import type { PhotoInput, PhotoSession } from "../photo";
 
@@ -44,6 +45,7 @@ export default function PhotoView({ input, backdrop, fileName, onClose }: PhotoV
         },
         (error) => {
           console.error("Photo render failed", error);
+          reportProblem("photo");
           if (!cancelled) setStatus("failed");
         },
       );

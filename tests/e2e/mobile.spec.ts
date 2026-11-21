@@ -204,7 +204,12 @@ test.describe("desktop", () => {
         Math.max(document.scrollingElement?.scrollTop ?? 0, document.body.scrollTop),
       );
     await page.mouse.move(700, 400);
-    for (let k = 0; k < 4; k++) await page.mouse.wheel(0, 800);
+    // A busy browser can drop wheel events sent back to back, so keep turning
+    // the wheel, as a person would, until the page is well down.
+    for (let k = 0; k < 12 && (await scrolled()) < 1500; k++) {
+      await page.mouse.wheel(0, 800);
+      await page.waitForTimeout(150);
+    }
     // Wheel scrolling is animated: wait until it has come to rest before
     // pressing the button, or the two scrolls race on a busy machine.
     await expect

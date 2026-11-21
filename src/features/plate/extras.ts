@@ -77,6 +77,7 @@ export interface PinSolid {
 
 export interface MarkerSolid extends PinSolid {
   label: string;
+  photo?: string;
 }
 
 export interface PlateExtras {
@@ -99,7 +100,7 @@ export interface ExtrasOptions {
   /** Grid cells per plate unit for the nameplate's top. */
   cellsPerUnit: number;
   /** Markers in plate texture coordinates (0..1, north at v = 0). */
-  markers?: { u: number; v: number; label: string }[];
+  markers?: { u: number; v: number; label: string; photo?: string }[];
 }
 
 const LABEL_WIDTH = 0.84;
@@ -432,11 +433,11 @@ export async function buildPlateExtras(
   const pin = options.pin ? buildPin(geometry, options.widthMm) : null;
   const markers = (options.markers ?? [])
     .filter(({ u, v }) => u >= 0 && u <= 1 && v >= 0 && v <= 1)
-    .map(({ u, v, label }) => {
+    .map(({ u, v, label, photo }) => {
       const { y, metres } = surfaceHeightAt(geometry, u, v);
       // A little smaller than the summit pin: 4 mm tall on a 10 cm plate.
       const solid = cone(u - 0.5, v - 0.5, y, 0.04, Math.max(0.01, 0.7 / options.widthMm), metres);
-      return { ...solid, label };
+      return { ...solid, label, photo };
     });
   const reach = label ? label.rect.z0 + label.rect.depth : 0.5;
   return { label, pin, markers, reach };

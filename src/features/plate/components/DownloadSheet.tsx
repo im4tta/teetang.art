@@ -2,6 +2,7 @@ import { useState } from "react";
 import {
   Box,
   Clapperboard,
+  Code,
   Gift,
   Image,
   Link2,
@@ -14,7 +15,8 @@ import { useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
 import PlateSheet from "./PlateSheet";
 
-export type PlateDownload = "png" | "card" | "video" | "svg" | "stl" | "glb" | "studio" | "link";
+export type PlateDownload =
+  "png" | "card" | "video" | "svg" | "stl" | "glb" | "studio" | "embed" | "link";
 
 const OPTIONS: { id: PlateDownload; icon: LucideIcon }[] = [
   { id: "png", icon: Image },
@@ -24,6 +26,7 @@ const OPTIONS: { id: PlateDownload; icon: LucideIcon }[] = [
   { id: "stl", icon: Box },
   { id: "glb", icon: Package },
   { id: "studio", icon: Wrench },
+  { id: "embed", icon: Code },
   { id: "link", icon: Link2 },
 ];
 

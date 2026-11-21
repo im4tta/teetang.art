@@ -26,8 +26,13 @@ import { triggerDownloadBlob } from "@/services/export/fileDownloader";
 import { tapFeedback } from "@/utils/haptics";
 import { useWheelScrollsRows } from "@/hooks/useWheelScrollsRows";
 import { plateBounds } from "@/features/plate/geo";
-import { decodeRoute, routeMask, toPlateUv } from "@/features/plate/routes";
-import { loadWaterMask, maskToGrid } from "@/features/plate/drape";
+import { decodeTracks, routeMask, toPlateUv } from "@/features/plate/routes";
+import {
+  BUILDING_MAX_METRES,
+  loadBuildingHeights,
+  loadWaterMask,
+  maskToGrid,
+} from "@/features/plate/drape";
 import { loadHeightGrid } from "@/features/plate/elevation";
 import type { HeightGrid } from "@/features/plate/elevationCore";
 import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
@@ -51,6 +56,7 @@ import {
   parsePlateLink,
   plateLabel,
   readPlateDraft,
+  shortPlateLink,
   writePlateDraft,
   type PlateSettings,
 } from "@/features/plate/plateSettings";
@@ -72,6 +78,7 @@ import {
   RESOLUTIONS,
   WIDTH_LIMITS,
   changeHeights,
+  colourChangeGuide,
   estimateFilament,
   readPrintSettings,
   writePrintSettings,
@@ -276,13 +283,31 @@ function StudioApp() {
     });
     return () => controller.abort();
   }, [plate.lakes, bounds]);
+  // Buildings, as on the plate page: plates of 6 km or less, twice their true height.
+  const [buildingMap, setBuildingMap] = useState<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    if (!plate.buildings || plate.sizeKm > 6) {
+      queueMicrotask(() => setBuildingMap(null));
+      return;
+    }
+    const controller = new AbortController();
+    loadBuildingHeights(bounds, controller.signal).then(setBuildingMap, () => {
+      if (!controller.signal.aborted) setBuildingMap(null);
+    });
+    return () => controller.abort();
+  }, [plate.buildings, plate.sizeKm, bounds]);
+  const buildingGrid = useMemo(
+    () => (buildingMap && edited ? maskToGrid(buildingMap, edited.size) : null),
+    [buildingMap, edited],
+  );
+
   const waterGrid = useMemo(
     () => (waterMask && edited && deferredPlate.lakes ? maskToGrid(waterMask, edited.size) : null),
     [waterMask, edited, deferredPlate.lakes],
   );
 
-  const route = useMemo(
-    () => (deferredPlate.route ? decodeRoute(deferredPlate.route) : []),
+  const tracks = useMemo(
+    () => (deferredPlate.route ? decodeTracks(deferredPlate.route) : []),
     [deferredPlate.route],
   );
   const raiseRoute = deferredPlate.routeRaise;
@@ -305,11 +330,18 @@ function StudioApp() {
               : null,
             reliefs: [
               // The same 0.8 mm ridge as on the plate page, whatever the print width.
-              raiseRoute && route.length > 1
+              raiseRoute && tracks.length > 0
                 ? {
-                    mask: routeMask(bounds, route, edited.size),
+                    mask: routeMask(bounds, tracks, edited.size),
                     size: edited.size,
                     height: 0.8 / deferredPrint.widthMm,
+                  }
+                : null,
+              buildingGrid
+                ? {
+                    mask: buildingGrid,
+                    size: edited.size,
+                    height: (BUILDING_MAX_METRES * 2) / bounds.sizeMeters,
                   }
                 : null,
               // Lakes and rivers carved 0.6 mm deep.
@@ -332,8 +364,9 @@ function StudioApp() {
       deferredPrint.widthMm,
       deferredPrint.hollow,
       raiseRoute,
-      route,
+      tracks,
       waterGrid,
+      buildingGrid,
     ],
   );
   const markerSpots = useMemo(
@@ -474,6 +507,35 @@ function StudioApp() {
   const subtitle = [plate.region, plate.country].filter(Boolean).join(", ");
   const fileBase = `teetang-${slug(plate.name)}-${Math.round(widthMm)}mm`;
 
+  /** Engraves the message and QR code in the terrain's underside (solid bases only). */
+  const withUnderside = async (parts: PrintPart[]): Promise<PrintPart[]> => {
+    const message = print.underside.trim();
+    if (print.hollow || (!message && !print.qr)) return parts;
+    const { subtract, undersideCutters } = await import("@/features/studio/cutouts");
+    const cutters = await undersideCutters({
+      widthMm,
+      message,
+      link: print.qr ? shortPlateLink(plate) : null,
+    });
+    return parts.map((part) =>
+      part.id === "terrain" ? { ...part, soup: subtract(part.soup, cutters) } : part,
+    );
+  };
+
+  const downloadGuide = async () => {
+    const guide = colourChangeGuide(
+      changes,
+      print.colors.slice(0, print.bands),
+      print.layerMm,
+      title,
+    );
+    await triggerDownloadBlob(
+      new Blob([guide], { type: "text/plain;charset=utf-8" }),
+      `${fileBase}-colour-changes.txt`,
+    );
+    notify(t("plate.downloaded"), { tone: "success" });
+  };
+
   const exportFile = async (kind: "stl" | "3mf" | "png" | "tiles" | "litho") => {
     if (!printParts.length || busy || !edited) return;
     setBusy(kind);
@@ -485,16 +547,17 @@ function StudioApp() {
         const common = { exaggeration, sizeMeters: bounds.sizeMeters, widthMm: print.widthMm };
         const blob =
           kind === "tiles"
-            ? tools.buildTilesZip(edited, {
+            ? await tools.buildTilesZip(edited, {
                 ...common,
                 count: print.tiles,
                 baseMm: print.baseMm,
                 hollow: print.hollow,
+                pins: print.pins,
                 reliefs: [
-                  ...(raiseRoute && route.length > 1
+                  ...(raiseRoute && tracks.length > 0
                     ? [
                         {
-                          mask: routeMask(bounds, route, edited.size),
+                          mask: routeMask(bounds, tracks, edited.size),
                           size: edited.size,
                           heightMm: 0.8,
                         },
@@ -525,12 +588,15 @@ function StudioApp() {
         return;
       }
       let blob: Blob | null;
-      if (kind === "stl") {
-        // One-colour STL: the carved water stays open; the inlay is for the 3MF.
-        const solids = printParts.filter((part) => part.id !== "water");
-        blob = new Blob([writeStl(solids, `teetang.art ${plate.name}`)], { type: "model/stl" });
-      } else if (kind === "3mf") {
-        blob = await build3mf(printParts, title);
+      if (kind === "stl" || kind === "3mf") {
+        const parts = await withUnderside(printParts);
+        if (kind === "stl") {
+          // One-colour STL: the carved water stays open; the inlay is for the 3MF.
+          const solids = parts.filter((part) => part.id !== "water");
+          blob = new Blob([writeStl(solids, `teetang.art ${plate.name}`)], { type: "model/stl" });
+        } else {
+          blob = await build3mf(parts, title);
+        }
       } else {
         blob = (await scene?.snapshot()) ?? null;
       }
@@ -1010,6 +1076,11 @@ function StudioApp() {
                 ))}
               </div>
             </fieldset>
+            {print.bands > 1 && (
+              <button type="button" className="plate-btn plate-btn--soft" onClick={downloadGuide}>
+                {t("studio.guide")}
+              </button>
+            )}
           </Section>
 
           <Section title={t("studio.check")} icon={<Package size={18} aria-hidden="true" />}>
@@ -1087,6 +1158,31 @@ function StudioApp() {
             {!fitsBed && <p className="plate-note studio-warn-text">{t("studio.tooBigHint")}</p>}
           </Section>
 
+          <Section title={t("studio.underside")} open={false}>
+            <label className="plate-field">
+              <span className="plate-field__label">{t("studio.message")}</span>
+              <textarea
+                className="plate-input studio-textarea"
+                rows={3}
+                maxLength={120}
+                value={print.underside}
+                placeholder={t("studio.messagePlaceholder")}
+                onChange={(event) => updatePrint({ underside: event.target.value })}
+              />
+            </label>
+            <label className="plate-switch">
+              <input
+                type="checkbox"
+                checked={print.qr}
+                onChange={(event) => updatePrint({ qr: event.target.checked })}
+              />
+              <span>{t("studio.qr")}</span>
+            </label>
+            <p className="plate-note">
+              {print.hollow ? t("studio.undersideHollow") : t("studio.undersideHint")}
+            </p>
+          </Section>
+
           <Section title={t("studio.ways")} open={false}>
             <label className="plate-switch">
               <input
@@ -1114,6 +1210,19 @@ function StudioApp() {
               </div>
               {print.tiles > 1 && (
                 <>
+                  <label className="plate-switch">
+                    <input
+                      type="checkbox"
+                      checked={print.pins}
+                      onChange={(event) => updatePrint({ pins: event.target.checked })}
+                    />
+                    <span>
+                      {t("studio.pins")}
+                      {print.pins && print.baseMm < 4.6 && (
+                        <small className="plate-switch__note">{t("studio.pinsThin")}</small>
+                      )}
+                    </span>
+                  </label>
                   <p className="plate-note">
                     {t("studio.tilesHint").replace(
                       "{size}",

@@ -34,6 +34,12 @@ export interface PrintSettings {
   /** Lithophane thickness where the relief is brightest and darkest. */
   lithoThin: number;
   lithoThick: number;
+  /** Dowel holes and pins for tiles. */
+  pins: boolean;
+  /** Engraved under the base, up to three lines. */
+  underside: string;
+  /** A QR code to the plate engraved under the base. */
+  qr: boolean;
 }
 
 export const WIDTH_LIMITS = { min: 40, max: 300 };
@@ -80,6 +86,9 @@ export const DEFAULT_PRINT: PrintSettings = {
   tiles: 1,
   lithoThin: 0.8,
   lithoThick: 3.2,
+  pins: true,
+  underside: "",
+  qr: false,
 };
 
 const KEY = "teetangart.studio.v1";
@@ -125,6 +134,9 @@ export function readPrintSettings(): PrintSettings {
     tiles: Math.round(clamp(saved.tiles, 1, 4, d.tiles)),
     lithoThin: clamp(saved.lithoThin, 0.4, 2, d.lithoThin),
     lithoThick: clamp(saved.lithoThick, 1.6, 6, d.lithoThick),
+    pins: saved.pins !== false,
+    underside: typeof saved.underside === "string" ? saved.underside.slice(0, 120) : "",
+    qr: saved.qr === true,
   };
 }
 
@@ -162,4 +174,48 @@ export function estimateFilament(volumeCm3: number, areaCm2: number, settings: P
   // 1.75 mm filament: π × 0.0875² cm² per cm.
   const metres = used / (Math.PI * 0.0875 ** 2) / 100;
   return { grams, metres };
+}
+
+/**
+ * Step-by-step colour changes for the common slicers, with the exact
+ * heights and layer numbers, as a text file to keep beside the print.
+ */
+export function colourChangeGuide(
+  heights: number[],
+  colors: string[],
+  layerMm: number,
+  title: string,
+): string {
+  const layers = heights.map((mm) => Math.round(mm / layerMm) + 1);
+  const rows = heights.map(
+    (mm, k) =>
+      `  ${k + 2}. At ${mm.toFixed(2)} mm (layer ${layers[k]}): change to colour ${k + 2} (${colors[k + 1]})`,
+  );
+  const prusaIf = heights
+    .map((mm, k) => `${k ? "{elsif" : "{if"} layer_z==${mm.toFixed(2)}}M600`)
+    .join("\n");
+  return [
+    `${title}: filament colour changes`,
+    `Layer height: ${layerMm} mm. Slice with exactly this layer height and a first layer of ${layerMm} mm.`,
+    "",
+    `  1. Start with colour 1 (${colors[0]}).`,
+    ...rows,
+    "",
+    "Bambu Studio / OrcaSlicer",
+    "  Slice, open the Preview, drag the layer slider to each layer above,",
+    '  right-click the + next to it and choose "Add color change" (or "Add pause").',
+    "",
+    "PrusaSlicer",
+    "  In the Preview, move the vertical slider to each height above and click the orange +",
+    "  to add a colour change. Or paste this into Printer Settings > Custom G-code > After layer change:",
+    "",
+    ...prusaIf.split("\n").map((line) => `    ${line}`),
+    "    {endif}",
+    "",
+    "Cura",
+    "  Extensions > Post Processing > Modify G-Code > Add a script > Filament Change,",
+    `  once per change, at layers: ${layers.join(", ")}.`,
+    "",
+    "Made with teetang.art",
+  ].join("\n");
 }

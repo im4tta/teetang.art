@@ -4,7 +4,7 @@ import type { TranslationKey } from "@/context/i18n/types";
 import type { ThemeOption } from "@/services/theme/types";
 import { tapFeedback } from "@/utils/haptics";
 import { shapeIconPath } from "../shapes";
-import { BASEMAPS, covers, resolveBasemap } from "../basemaps";
+import { BASEMAPS, covers, recentDay, resolveBasemap } from "../basemaps";
 import { paletteGradient } from "../palettes";
 import {
   BOX_LIMITS,
@@ -27,6 +27,16 @@ interface AdjustSheetProps {
   onChange: (patch: Partial<PlateSettings>) => void;
   onClose: () => void;
 }
+
+/** Dry and rainy season in mainland Southeast Asia, from last year. */
+const SEASONS = [
+  { id: "dry", month: "02", day: "15" },
+  { id: "rainy", month: "10", day: "10" },
+] as const;
+
+/** 6.5 → "06:30". */
+const clock = (hour: number) =>
+  `${String(Math.floor(hour)).padStart(2, "0")}:${String(Math.round((hour % 1) * 60)).padStart(2, "0")}`;
 
 // The height slider is logarithmic: small steps near 1×, big ones near 30×.
 const LOG_MIN = Math.log(EXAGGERATION_LIMITS.min);
@@ -74,6 +84,18 @@ export default function AdjustSheet({
           onChange={(event) => onChange({ name: event.target.value })}
         />
       </label>
+      <label className="plate-field">
+        <span className="plate-field__label">{t("plate.adj.nameKm")}</span>
+        <input
+          type="text"
+          className="plate-input"
+          lang="km"
+          value={plate.nameKm}
+          maxLength={80}
+          placeholder="ឈ្មោះជាភាសាខ្មែរ"
+          onChange={(event) => onChange({ nameKm: event.target.value })}
+        />
+      </label>
 
       {mapKind && (
         <fieldset className="plate-field">
@@ -105,6 +127,69 @@ export default function AdjustSheet({
           </div>
         </fieldset>
       )}
+
+      {activeMap?.daily && (
+        <div className="plate-field">
+          <label className="plate-field__label" htmlFor="plate-day">
+            {t("plate.adj.day")}
+          </label>
+          <input
+            id="plate-day"
+            type="date"
+            className="plate-input"
+            min="2000-03-01"
+            max={recentDay()}
+            value={plate.imageryDate || recentDay()}
+            onChange={(event) => onChange({ imageryDate: event.target.value })}
+          />
+          <div className="plate-chips">
+            {SEASONS.map(({ id, month, day }) => {
+              const date = `${new Date().getUTCFullYear() - 1}-${month}-${day}`;
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  className="plate-chip"
+                  aria-pressed={plate.imageryDate === date}
+                  onClick={() => onChange({ imageryDate: date })}
+                >
+                  {t(`plate.adj.season.${id}` as TranslationKey)}
+                </button>
+              );
+            })}
+          </div>
+          <p className="plate-note">{t("plate.adj.dayHint")}</p>
+        </div>
+      )}
+
+      <div className="plate-field">
+        <div className="plate-field__row">
+          <label className="plate-field__label" htmlFor="plate-sun">
+            {t("plate.adj.sun")}
+          </label>
+          <output className="plate-field__value">
+            {plate.sunHour ? clock(plate.sunHour) : t("plate.adj.studioLight")}
+          </output>
+          <button
+            type="button"
+            className="plate-chip"
+            aria-pressed={plate.sunHour === 0}
+            onClick={() => onChange({ sunHour: 0 })}
+          >
+            {t("plate.adj.studioLight")}
+          </button>
+        </div>
+        <input
+          id="plate-sun"
+          type="range"
+          className="plate-range"
+          min={6}
+          max={18}
+          step={0.25}
+          value={plate.sunHour || 12}
+          onChange={(event) => onChange({ sunHour: Number(event.target.value) })}
+        />
+      </div>
 
       {plate.style === "elevation" && (
         <fieldset className="plate-field">
@@ -355,6 +440,27 @@ export default function AdjustSheet({
 
       <fieldset className="plate-field plate-group">
         <legend className="plate-field__label">{t("plate.adj.season")}</legend>
+        <label className="plate-switch">
+          <input
+            type="checkbox"
+            checked={plate.buildings}
+            onChange={(event) => onChange({ buildings: event.target.checked })}
+          />
+          <span>
+            {t("plate.adj.buildings")}
+            {plate.buildings && plate.sizeKm > 6 && (
+              <small className="plate-switch__note">{t("plate.adj.buildingsSmall")}</small>
+            )}
+          </span>
+        </label>
+        <label className="plate-switch">
+          <input
+            type="checkbox"
+            checked={plate.roads}
+            onChange={(event) => onChange({ roads: event.target.checked })}
+          />
+          <span>{t("plate.adj.roads")}</span>
+        </label>
         <label className="plate-switch">
           <input
             type="checkbox"

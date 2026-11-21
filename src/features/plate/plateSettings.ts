@@ -12,6 +12,7 @@ import {
 } from "./extras";
 import { RELIEF_PALETTE_IDS, type ReliefPalette } from "./palettes";
 import { MAX_MARKERS, isEncodedRoute, type PlateMarker } from "./routes";
+import { isPhotoId } from "./photos";
 
 export interface PlatePlace {
   name: string;
@@ -71,6 +72,16 @@ export interface PlateSettings extends PlatePlace {
   routeRaise: boolean;
   /** Lakes and rivers from OpenStreetMap, painted and carved into the print. */
   lakes: boolean;
+  /** The place's Khmer name, printed on the nameplate under the title. */
+  nameKm: string;
+  /** Time of day for the light, 6 (sunrise) to 18 (sunset); 0 keeps the studio light. */
+  sunHour: number;
+  /** Day of the daily satellite image, YYYY-MM-DD; "" means a recent day. */
+  imageryDate: string;
+  /** Buildings from OpenStreetMap, raised out of the terrain (plates of 6 km or less). */
+  buildings: boolean;
+  /** Main roads from OpenStreetMap, drawn on the surface. */
+  roads: boolean;
 }
 
 export type LabelRelief = "raised" | "engraved";
@@ -170,6 +181,11 @@ export const DEFAULT_PLATE: PlateSettings = {
   routeColor: "#e4572e",
   routeRaise: true,
   lakes: false,
+  nameKm: "ភ្នំឱរ៉ាល់",
+  sunHour: 0,
+  imageryDate: "",
+  buildings: false,
+  roads: false,
   name: "Phnom Aural",
   region: "Kampong Speu",
   country: "Cambodia",
@@ -191,6 +207,8 @@ const BOOLEAN_FIELDS = [
   "strata",
   "routeRaise",
   "lakes",
+  "buildings",
+  "roads",
 ] as const satisfies (keyof PlateSettings)[];
 
 /** Short query names used by share links. */
@@ -228,6 +246,11 @@ const LINK = {
   routeColor: "rc",
   routeRaise: "rr",
   lakes: "lakes",
+  nameKm: "nk",
+  sunHour: "sun",
+  imageryDate: "day",
+  buildings: "bld",
+  roads: "rd",
   name: "name",
   region: "region",
   country: "country",
@@ -278,6 +301,7 @@ export function sanitizePlate(
         lat: Number(m?.lat),
         lon: Number(m?.lon),
         label: typeof m?.label === "string" ? m.label.replace(/[|]/g, " ").slice(0, 40) : "",
+        ...(isPhotoId(m?.photo) ? { photo: m.photo } : {}),
       }))
       .filter((m) => Number.isFinite(m.lat) && Number.isFinite(m.lon) && Math.abs(m.lat) <= 85)
       .slice(0, MAX_MARKERS);
@@ -307,6 +331,12 @@ export function sanitizePlate(
     if (typeof value === "string") out[key] = value.slice(0, 80);
   }
   if (typeof input.note === "string") out.note = input.note.slice(0, 60);
+  if (typeof input.nameKm === "string") out.nameKm = input.nameKm.slice(0, 80);
+  const sunHour = num(input.sunHour);
+  if (Number.isFinite(sunHour)) out.sunHour = sunHour <= 0 ? 0 : clamp(sunHour, 6, 18);
+  if (typeof input.imageryDate === "string" && /^(\d{4}-\d{2}-\d{2})?$/.test(input.imageryDate)) {
+    out.imageryDate = input.imageryDate;
+  }
   if (typeof input.countryCode === "string" && /^[a-z]{2}$/i.test(input.countryCode)) {
     out.countryCode = input.countryCode.toUpperCase();
   }
@@ -322,9 +352,13 @@ export function buildPlateLink(plate: PlateSettings): string {
     if (typeof value === "boolean") value = value ? "1" : "0";
     if (value !== "" && value !== DEFAULT_PLATE[field]) params.set(param, String(value));
   }
-  // A link always carries its place, even when it is the default one.
+  // A link always carries its place, even when it is the default one: a
+  // shared link without a name would otherwise open as "Untitled place".
   params.set("lat", plate.lat.toFixed(5));
   params.set("lon", plate.lon.toFixed(5));
+  for (const field of ["name", "region", "country", "countryCode", "nameKm"] as const) {
+    if (plate[field]) params.set(LINK[field], plate[field]);
+  }
   return `${SITE_URL}/plate?${params}`;
 }
 
@@ -338,7 +372,7 @@ export function parsePlateLink(search: string): Partial<PlateSettings> | null {
   const plate = sanitizePlate(raw);
   if (plate.lat === undefined) return null;
   // A shared place without a name should not inherit the default's name.
-  return { name: "", region: "", country: "", countryCode: "", ...plate };
+  return { name: "", region: "", country: "", countryCode: "", nameKm: "", ...plate };
 }
 
 /** "lat,lon,name|lat,lon,name" for share links. */
@@ -394,7 +428,9 @@ export function plateLabel(
       ? `▲ ${Math.round(highestMetres).toLocaleString("en-US")} m`
       : "",
   ].filter(Boolean);
+  const khmer = plate.nameKm.trim();
   const lines = [
+    khmer && khmer !== plate.name.trim() ? khmer : "",
     [plate.region, plate.country].filter(Boolean).join(", "),
     plate.note.trim(),
     detail.join("   "),
@@ -406,4 +442,12 @@ export function plateLabel(
     compass: plate.labelCompass,
     scale: plate.labelScale ? scaleBar(plate.sizeKm, widthMm) : null,
   };
+}
+
+/**
+ * The plate's link without the track, pins and note: short enough for a QR
+ * code that still scans when engraved (a long route would make it too dense).
+ */
+export function shortPlateLink(plate: PlateSettings): string {
+  return buildPlateLink({ ...plate, route: "", markers: [], note: "" });
 }

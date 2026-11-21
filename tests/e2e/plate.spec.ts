@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import { auditTouchSizes, expect, settleAnimations, test } from "./fixtures";
 import sharp from "sharp";
 import { serveTiles, splitTile, SUMMIT_METRES } from "./plateTiles";
+import { serveBuilding } from "./vectorTiles";
 
 // CI machines have no GPU. The plate needs WebGL, so these tests (and only
 // these: the editor's map would render slowly in software and time out) get
@@ -443,6 +444,87 @@ test.describe("explore, classroom and offline", () => {
   });
 });
 
+test.describe("Khmer names and the review page", () => {
+  test("a Cambodian place shows and prints its Khmer name", async ({ page }) => {
+    await openPlate(page);
+    await page.getByRole("button", { name: "Explore" }).click();
+    await page.getByRole("button", { name: /^Phnom Kulen/ }).click();
+    await expect(page.locator(".plate-place__khmer")).toHaveText("ភ្នំគូលែន");
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await expect(page.getByLabel("Khmer name (on the nameplate)")).toHaveValue("ភ្នំគូលែន");
+  });
+
+  test("the translation review page lists texts and exports corrections", async ({ page }) => {
+    await page.goto("/translations");
+    const rows = page.locator(".translations-table tbody tr");
+    await expect(rows.first()).toBeVisible();
+    expect(await rows.count()).toBeGreaterThan(100);
+    await page.getByLabel("Correction for plate.title").fill("ផ្ទាំងដីបីវិមាត្រ");
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: /Download 1 correction/ }).click(),
+    ]);
+    const chunks: Buffer[] = [];
+    for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer);
+    const csv = Buffer.concat(chunks).toString("utf8");
+    expect(csv).toContain('"plate.title","3D Plate"');
+    expect(csv).toContain("ផ្ទាំងដីបីវិមាត្រ");
+  });
+});
+
+test.describe("light and seasons", () => {
+  test("time of day, and a satellite picture from a chosen season", async ({ page }) => {
+    const requested: string[] = [];
+    await page.route(/gibs\.earthdata\.nasa\.gov/, (route) => {
+      requested.push(route.request().url());
+      return route.abort();
+    });
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&style=elevation&sun=7");
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await expect(page.locator("#plate-sun")).toHaveValue("7");
+    await expect(page.locator(".plate-field__value", { hasText: "07:00" })).toBeVisible();
+    await page.getByRole("button", { name: "Studio light" }).click();
+    await expect(page.locator(".plate-field__value", { hasText: "Studio light" })).toBeVisible();
+    await page.locator(".plate-sheet__header button").click();
+
+    await page.getByRole("button", { name: "Satellite" }).click();
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await page.getByRole("button", { name: /NASA by date/ }).click();
+    await page.getByRole("button", { name: "Dry season" }).click();
+    await expect.poll(() => requested.some((url) => /\/\d{4}-02-15\//.test(url))).toBe(true);
+  });
+});
+
+test.describe("buildings", () => {
+  test("OpenStreetMap buildings stand up out of the terrain and print", async ({ page }) => {
+    // A 100 m tower on the summit.
+    await serveBuilding(page, 12.0333, 104.1667, 100);
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&km=4&name=Phnom%20Aural&label=0");
+    const tallest = async () => {
+      await page.getByRole("button", { name: "Download", exact: true }).click();
+      const [download] = await Promise.all([
+        page.waitForEvent("download"),
+        page.locator(".plate-download[data-kind=stl]").click(),
+      ]);
+      const chunks: Buffer[] = [];
+      for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer);
+      await page.locator(".plate-sheet__header button").click();
+      const stl = Buffer.concat(chunks);
+      let top = 0;
+      for (let k = 0; k < stl.readUInt32LE(80); k++) {
+        for (let c = 0; c < 3; c++) top = Math.max(top, stl.readFloatLE(84 + k * 50 + 20 + c * 12));
+      }
+      return top;
+    };
+    const before = await tallest();
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await page.getByRole("checkbox", { name: "Buildings (OpenStreetMap)" }).check();
+    await page.locator(".plate-sheet__header button").click();
+    // 100 m at twice its height on a 4 km plate 100 mm wide: about 5 mm taller.
+    await expect.poll(tallest, { timeout: 20_000 }).toBeGreaterThan(before + 3);
+  });
+});
+
 test.describe("STL Studio print options", () => {
   test("hollow base, tiles and a lithophane", async ({ page }) => {
     await openPlate(page);
@@ -478,6 +560,170 @@ test.describe("STL Studio print options", () => {
     const triangles = litho.file.readUInt32LE(80);
     expect(triangles).toBeGreaterThan(100_000);
     expect(litho.file.length).toBe(84 + triangles * 50);
+  });
+});
+
+test.describe("STL Studio finishing", () => {
+  test("joining pins, an engraved underside and a colour-change guide", async ({ page }) => {
+    test.setTimeout(90_000);
+    await openPlate(page);
+    await page.getByRole("button", { name: "STL Studio" }).click();
+    await expect(page.locator(".studio-canvas")).toHaveAttribute("data-ready", "true", {
+      timeout: 20_000,
+    });
+    const save = async (name: string | RegExp) => {
+      const [download] = await Promise.all([
+        page.waitForEvent("download", { timeout: 60_000 }),
+        page.getByRole("button", { name }).click(),
+      ]);
+      const chunks: Buffer[] = [];
+      for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer);
+      return Buffer.concat(chunks);
+    };
+
+    const plain = (await save("Download STL")).readUInt32LE(80);
+    await page.getByText("Underneath").click();
+    await page.getByLabel("Message under the base").fill("From the summit");
+    await page.getByRole("checkbox", { name: "QR code to this plate" }).check();
+    const engraved = (await save("Download STL")).readUInt32LE(80);
+    // The letters and QR modules add many small faces.
+    expect(engraved).toBeGreaterThan(plain + 1_000);
+
+    await page.getByText("More ways to print").click();
+    await page.getByRole("button", { name: "2 × 2" }).click();
+    await expect(page.getByRole("checkbox", { name: "Joining pins" })).toBeChecked();
+    const zip = await save("Download tiles (ZIP)");
+    expect(zip.includes(Buffer.from("dowel-pin.stl"))).toBe(true);
+    expect(zip.includes(Buffer.from("Print dowel-pin.stl 8 times"))).toBe(true);
+
+    await page.getByRole("button", { name: "3", exact: true }).click();
+    const guide = (await save("Download colour-change guide")).toString("utf8");
+    expect(guide).toContain("layer");
+    expect(guide).toContain("M600");
+  });
+});
+
+test.describe("trips, photos and embedding", () => {
+  const gpx = (shift: number) =>
+    `<?xml version="1.0"?><gpx version="1.1"><trk><trkseg>${Array.from({ length: 40 }, (_, k) => {
+      const t = k / 39;
+      return `<trkpt lat="${(12.01 + shift + t * 0.02).toFixed(6)}" lon="${(104.15 + t * 0.02).toFixed(6)}"/>`;
+    }).join("")}</trkseg></trk></gpx>`;
+
+  test("a two-day trip, and a photo on a pin", async ({ page }) => {
+    await openPlate(page);
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    const file = page.locator(".plate-sheet input[type=file][accept^='.gpx']");
+    await file.setInputFiles({
+      name: "day1.gpx",
+      mimeType: "application/gpx+xml",
+      buffer: Buffer.from(gpx(0)),
+    });
+    await expect(page.locator(".plate-days li")).toHaveCount(1);
+    await page.getByRole("button", { name: "Add another day" }).click();
+    await file.setInputFiles({
+      name: "day2.gpx",
+      mimeType: "application/gpx+xml",
+      buffer: Buffer.from(gpx(0.01)),
+    });
+    await expect(page.locator(".plate-days li")).toHaveCount(2);
+    await page.getByRole("button", { name: "Day 2", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Day 2", exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.locator(".plate-profile svg")).toContainText("km");
+
+    await page.getByRole("button", { name: "Add a pin: tap the plate" }).click();
+    const box = (await page.locator(".plate-canvas").boundingBox())!;
+    await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.55);
+    await expect(page.locator(".plate-marker-row")).toHaveCount(1);
+    // A tiny PNG made on a canvas stands in for a phone photo.
+    const png = await page.evaluate(async () => {
+      const canvas = Object.assign(document.createElement("canvas"), { width: 64, height: 48 });
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = "#2f9e44";
+      ctx.fillRect(0, 0, 64, 48);
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), "image/png"),
+      );
+      return [...new Uint8Array(await blob.arrayBuffer())];
+    });
+    await page
+      .locator(".plate-marker-photo input[type=file]")
+      .setInputFiles({ name: "summit.png", mimeType: "image/png", buffer: Buffer.from(png) });
+    await expect(page.locator(".plate-marker-photo")).toHaveAttribute("data-has-photo", "true");
+  });
+
+  test("embed code opens the plate alone and leaves the visitor's draft alone", async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&name=Phnom%20Aural&style=print");
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await page.locator(".plate-download[data-kind=embed]").click();
+    await expect(page.locator(".app-toast--success")).toContainText("Embed code copied");
+    const snippet = await page.evaluate(() => navigator.clipboard.readText());
+    expect(snippet).toMatch(/^<iframe src="https:\/\/teetang\.art\/plate\/embed\?/);
+    const src = new URL(snippet.match(/src="([^"]+)"/)![1].replace(/&amp;/g, "&"));
+
+    const draft = await page.evaluate(() => localStorage.getItem("teetangart.plate.v1"));
+    await openPlate(page, `${src.pathname}${src.search}`);
+    await expect(page.locator(".plate-header")).toHaveCount(0);
+    await expect(page.locator(".plate-panel")).toHaveCount(0);
+    await expect(page.locator(".plate-embed-open")).toContainText("Phnom Aural");
+    await expect(page).toHaveURL(/\/plate\/embed\?/);
+    await page.waitForTimeout(800);
+    expect(await page.evaluate(() => localStorage.getItem("teetangart.plate.v1"))).toBe(draft);
+  });
+});
+
+test.describe("Khmer search and lessons", () => {
+  test("searching in Khmer finds the place and keeps its Khmer name", async ({ page }) => {
+    const queries: string[] = [];
+    await page.route(/nominatim\.openstreetmap\.org\/search/, (route) => {
+      queries.push(route.request().url());
+      return route.fulfill({
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": "*" },
+        body: JSON.stringify([
+          {
+            place_id: 1,
+            lat: "13.565",
+            lon: "104.1",
+            type: "mountain",
+            display_name: "Phnom Kulen, Siem Reap, Cambodia",
+            address: { state: "Siem Reap", country: "Cambodia", country_code: "kh" },
+            namedetails: { name: "Phnom Kulen", "name:km": "ភ្នំគូលែន" },
+          },
+        ]),
+      });
+    });
+    await openPlate(page);
+    await page.getByPlaceholder("Search any place on Earth").fill("ភ្នំគូលែន");
+    const result = page.locator(".plate-search__result").first();
+    await expect(result).toContainText("Phnom Kulen");
+    await expect(result.locator(".plate-search__khmer")).toContainText("ភ្នំគូលែន");
+    expect(queries[0]).toContain("namedetails=1");
+    await result.click();
+    await expect(page.locator(".plate-place__name")).toHaveText("Phnom Kulen");
+    await expect(page.locator(".plate-place__khmer")).toHaveText("ភ្នំគូលែន");
+  });
+
+  test("the flood lesson opens the Tonlé Sap and raises the water", async ({ page }) => {
+    await openPlate(page);
+    await page.getByRole("button", { name: "Explore" }).click();
+    await page.getByRole("button", { name: "The rainy-season flood" }).click();
+    await expect(page.locator(".plate-place__name")).toHaveText("Tonlé Sap");
+    const lesson = page.getByRole("dialog", { name: "The rainy-season flood" });
+    await expect(lesson).toContainText("1 / 3");
+    await lesson.getByRole("button", { name: "Next" }).click();
+    await expect(lesson).toContainText("flows backwards");
+    await lesson.getByRole("button", { name: "Next" }).click();
+    await lesson.getByRole("button", { name: "Finish" }).click();
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await expect(page.locator(".plate-field__value", { hasText: "+9 m" })).toBeVisible();
   });
 });
 
@@ -522,7 +768,7 @@ test.describe("3D plate on a computer", () => {
     await page.getByRole("button", { name: "Add a pin: tap the plate" }).click();
     const box = (await page.locator(".plate-canvas").boundingBox())!;
     await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.55);
-    await expect(page.locator(".plate-marker-row input")).toHaveValue("Pin 1");
+    await expect(page.locator(".plate-marker-row input[type=text]")).toHaveValue("Pin 1");
 
     await page.getByRole("button", { name: "Draw a line: tap two points" }).click();
     await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.5);

@@ -34,7 +34,7 @@ import { useWheelScrollsRows } from "@/hooks/useWheelScrollsRows";
 import type { SearchResult } from "@/services/location/types";
 import { plateBounds, plateToLonLat } from "@/features/plate/geo";
 import {
-  decodeRoute,
+  decodeTracks,
   drawOverlay,
   elevationProfile,
   routeMask,
@@ -62,13 +62,24 @@ import {
   type PlateSettings,
 } from "@/features/plate/plateSettings";
 import { pickSurprise } from "@/features/plate/surprisePlaces";
-import { loadMapDrape, loadTileDrape, loadWaterMask, maskToGrid } from "@/features/plate/drape";
-import { resolveBasemap, type Basemap } from "@/features/plate/basemaps";
+import {
+  BUILDING_MAX_METRES,
+  loadBuildingHeights,
+  loadMapDrape,
+  loadRoads,
+  loadTileDrape,
+  loadWaterMask,
+  maskToGrid,
+} from "@/features/plate/drape";
+import { recentDay, resolveBasemap, type Basemap } from "@/features/plate/basemaps";
 import { buildPlateExtras, type PlateExtras } from "@/features/plate/extras";
+import { loadPhoto } from "@/features/plate/photos";
 import type { PhotoInput } from "@/features/plate/photo";
 import type { ArMode } from "@/features/plate/ar";
 import { videoType } from "@/features/plate/flyover";
+import { lessonById } from "@/features/plate/lessons";
 import {
+  EXPLORE_ALL,
   cachePlateOffline,
   explorePlate,
   readSaved,
@@ -80,6 +91,8 @@ import PlateView, { type PlateViewHandle } from "@/features/plate/components/Pla
 import PlaceSearch from "@/features/plate/components/PlaceSearch";
 import type { AreaChange } from "@/features/plate/components/AreaPicker";
 import type { PlateDownload } from "@/features/plate/components/DownloadSheet";
+import { onSlowConnection } from "@/pages/plateLoader";
+import { reportProblem } from "@/utils/reportProblem";
 import "@/styles/plate.css";
 
 const AreaPicker = lazy(() => import("@/features/plate/components/AreaPicker"));
@@ -89,7 +102,8 @@ const PhotoView = lazy(() => import("@/features/plate/components/PhotoView"));
 const RouteSheet = lazy(() => import("@/features/plate/components/RouteSheet"));
 const ExploreSheet = lazy(() => import("@/features/plate/components/ExploreSheet"));
 
-const LOW_END = (navigator.hardwareConcurrency ?? 8) <= 4;
+// Low-end phones and slow or data-saver connections get a lighter terrain grid.
+const LOW_END = (navigator.hardwareConcurrency ?? 8) <= 4 || onSlowConnection();
 /** The quick first plate: few tiles to fetch, so it shows almost at once. */
 const PREVIEW_CELLS = 64;
 const GRID_CELLS = LOW_END ? 192 : 256;
@@ -128,10 +142,11 @@ function readPickerPrefs(): PickerPrefs {
 
 type Load<T> = { status: "loading" } | { status: "error" } | { status: "ready"; value: T };
 
-function initialPlate(): PlateSettings {
+function initialPlate(embed: boolean): PlateSettings {
   const fromLink = parsePlateLink(window.location.search);
   if (fromLink) {
-    window.history.replaceState(window.history.state, "", "/plate");
+    // An embedded plate keeps its link: reloading the frame shows the same plate.
+    if (!embed) window.history.replaceState(window.history.state, "", "/plate");
     return { ...DEFAULT_PLATE, ...fromLink };
   }
   return { ...DEFAULT_PLATE, ...readPlateDraft() };
@@ -182,17 +197,32 @@ function stageBackdrop(): string {
   return /^#[0-9a-f]{6}$/i.test(value) ? value : "#f1efe9";
 }
 
-/** Steps of the classroom lesson on contour lines. */
-const LESSON_STEPS = 4;
+/** Buildings show on plates up to this size, where they are big enough to see. */
+const BUILDINGS_MAX_KM = 6;
+/** Buildings stand at this many times their true height on the plate. */
+const BUILDING_SCALE = 2;
+
+/** A lesson's name; the contour lesson keeps its original keys. */
+function lessonTitle(t: (key: TranslationKey) => string, id: string) {
+  return id === "contours"
+    ? t("plate.lesson.start")
+    : t(`plate.lesson.${id}.title` as TranslationKey);
+}
+
+function lessonText(t: (key: TranslationKey) => string, id: string, step: number) {
+  return id === "contours"
+    ? t(`plate.lesson.${step + 1}` as TranslationKey)
+    : t(`plate.lesson.${id}.${step + 1}` as TranslationKey);
+}
 
 /** Rows that scroll sideways; the mouse wheel scrolls them too. */
 const SIDEWAYS_ROWS = ".plate-segmented, .plate-chips, .plate-theme-row";
 
 const formatMetres = (metres: number) => `${Math.round(metres).toLocaleString("en-US")} m`;
 
-function PlateApp() {
+function PlateApp({ embed = false }: { embed?: boolean }) {
   const { t, lang, toggleLang } = useI18n();
-  const [plate, setPlate] = useState<PlateSettings>(initialPlate);
+  const [plate, setPlate] = useState<PlateSettings>(() => initialPlate(embed));
   const [mode, setMode] = useState<"plate" | "move">("plate");
   const [area, setArea] = useState<AreaChange | null>(null);
   const [picker, setPicker] = useState<PickerPrefs>(readPickerPrefs);
@@ -201,8 +231,10 @@ function PlateApp() {
   /** A second place shown beside this one, at the same scale. */
   const [comparePlace, setComparePlace] = useState<ExplorePlace | null>(null);
   const [compareGrid, setCompareGrid] = useState<HeightGrid | null>(null);
-  /** Classroom lesson: which step is showing, and how raised the relief is. */
-  const [lesson, setLesson] = useState<number | null>(null);
+  /** Classroom lesson: which lesson and step is showing, and how raised the relief is. */
+  const [lesson, setLesson] = useState<{ id: string; step: number } | null>(null);
+  const lessonPlan = lesson ? lessonById(lesson.id) : undefined;
+  const lessonStep = lesson && lessonPlan ? lessonPlan.steps[lesson.step] : undefined;
   const [reliefScale, setReliefScale] = useState(1);
   /** Waiting for a tap on the plate: to drop a marker, or the two ends of a measuring line. */
   const [picking, setPicking] = useState<
@@ -264,7 +296,11 @@ function PlateApp() {
         setTerrain({ status: "ready", value });
         setFullDetail(true);
       },
-      () => !controller.signal.aborted && setTerrain({ status: "error" }),
+      () => {
+        if (controller.signal.aborted) return;
+        setTerrain({ status: "error" });
+        reportProblem("terrain");
+      },
     );
     return () => controller.abort();
   }, [bounds, attempt]);
@@ -272,6 +308,8 @@ function PlateApp() {
   // Map, imagery or topographic map over the terrain.
   const basemap = basemapFor(plate);
   const needsDrape = plate.style === "map" || basemap !== null;
+  // Only the daily imagery depends on the date; other maps ignore it.
+  const imageryDay = basemap?.daily ? plate.imageryDate : "";
   useEffect(() => {
     if (!needsDrape) {
       queueMicrotask(() => setDrape(null));
@@ -280,18 +318,19 @@ function PlateApp() {
     const controller = new AbortController();
     queueMicrotask(() => setDrape({ status: "loading" }));
     (basemap
-      ? loadTileDrape(bounds, basemap, controller.signal)
+      ? loadTileDrape(bounds, basemap, controller.signal, imageryDay)
       : loadMapDrape(bounds, plate.theme, controller.signal)
     ).then(
       (value) => setDrape({ status: "ready", value }),
       () => {
         if (controller.signal.aborted) return;
         setDrape({ status: "error" });
+        reportProblem("imagery");
         notify(t("plate.drapeError"), { tone: "error", id: "plate-drape" });
       },
     );
     return () => controller.abort();
-  }, [needsDrape, basemap, plate.theme, bounds, t]);
+  }, [needsDrape, basemap, plate.theme, bounds, t, imageryDay]);
 
   const deferred = useDeferredValue(plate);
   const grid = terrain.status === "ready" ? terrain.value : null;
@@ -312,6 +351,7 @@ function PlateApp() {
       () => {
         if (controller.signal.aborted) return;
         setWaterMask(null);
+        reportProblem("lakes");
         notify(t("plate.lakesError"), { tone: "error", id: "plate-lakes" });
       },
     );
@@ -319,11 +359,31 @@ function PlateApp() {
   }, [plate.lakes, bounds, t]);
   const waterReady = deferred.lakes ? waterMask : null;
 
-  const route = useMemo(
-    () => (deferred.route ? decodeRoute(deferred.route) : []),
+  // Buildings and roads from OpenStreetMap, when asked for. Buildings only on small plates.
+  const wantBuildings = plate.buildings && plate.sizeKm <= BUILDINGS_MAX_KM;
+  const [buildingMap, setBuildingMap] = useState<HTMLCanvasElement | null>(null);
+  const [roadMap, setRoadMap] = useState<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    const fail = () => {
+      if (controller.signal.aborted) return;
+      reportProblem("city");
+      notify(t("plate.cityError"), { tone: "error", id: "plate-city" });
+    };
+    if (wantBuildings) loadBuildingHeights(bounds, controller.signal).then(setBuildingMap, fail);
+    else queueMicrotask(() => setBuildingMap(null));
+    if (plate.roads) loadRoads(bounds, controller.signal).then(setRoadMap, fail);
+    else queueMicrotask(() => setRoadMap(null));
+    return () => controller.abort();
+  }, [wantBuildings, plate.roads, bounds, t]);
+
+  // Each day of a trip, and the whole trip joined, for the profile and fly-over.
+  const tracks = useMemo(
+    () => (deferred.route ? decodeTracks(deferred.route) : []),
     [deferred.route],
   );
-  const raiseRoute = deferred.routeRaise && route.length > 1;
+  const route = useMemo(() => tracks.flat(), [tracks]);
+  const raiseRoute = deferred.routeRaise && tracks.length > 0;
   const geometry = useMemo(
     () =>
       grid
@@ -337,7 +397,15 @@ function PlateApp() {
             // A ridge 0.8 mm high on a 10 cm print.
             reliefs: [
               raiseRoute
-                ? { mask: routeMask(bounds, route, grid.size), size: grid.size, height: 0.008 }
+                ? { mask: routeMask(bounds, tracks, grid.size), size: grid.size, height: 0.008 }
+                : null,
+              // Buildings at twice their true height, so a city reads at plate size.
+              buildingMap
+                ? {
+                    mask: maskToGrid(buildingMap, grid.size),
+                    size: grid.size,
+                    height: (BUILDING_MAX_METRES * BUILDING_SCALE) / bounds.sizeMeters,
+                  }
                 : null,
               // Lakes and rivers sink 0.6 mm into the print.
               waterReady
@@ -354,9 +422,10 @@ function PlateApp() {
       autoHeight,
       bounds,
       raiseRoute,
-      route,
+      tracks,
       waterReady,
       compareGrid,
+      buildingMap,
     ],
   );
 
@@ -401,17 +470,13 @@ function PlateApp() {
     t,
   ]);
 
-  // Lesson step 2 lifts the contour map into its real shape.
+  // A lesson step may flatten the relief, lift it, or change the plate.
+  const stepRelief = lessonStep?.relief;
   useEffect(() => {
-    if (lesson === null) {
-      queueMicrotask(() => setReliefScale(1));
+    if (stepRelief !== "rise") {
+      queueMicrotask(() => setReliefScale(stepRelief === "flat" ? 0.02 : 1));
       return;
     }
-    if (lesson === 0) {
-      queueMicrotask(() => setReliefScale(0.02));
-      return;
-    }
-    if (lesson !== 1) return;
     let frame = 0;
     const start = performance.now();
     const step = () => {
@@ -421,26 +486,48 @@ function PlateApp() {
     };
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
-  }, [lesson]);
+  }, [stepRelief]);
+  /** Moves the lesson to a step, applying that step's changes to the plate. */
+  const showLessonStep = (id: string, step: number | null) => {
+    if (step === null) {
+      setLesson(null);
+      return;
+    }
+    const patch = lessonById(id)?.steps[step]?.patch;
+    if (patch) update(patch);
+    setLesson({ id, step });
+  };
 
   // Route, markers and measuring line, drawn on the surface.
   const overlay = useMemo(
     () =>
-      route.length > 1 || deferred.markers.length || measure
+      tracks.length || deferred.markers.length || measure || roadMap
         ? drawOverlay(bounds, {
-            route,
+            tracks,
             markers: deferred.markers,
             color: deferred.routeColor,
             ink: deferred.ink,
             paper: deferred.paper,
             line: measure ?? undefined,
+            roads: roadMap,
           })
         : null,
-    [bounds, route, deferred.markers, deferred.routeColor, deferred.ink, deferred.paper, measure],
+    [
+      bounds,
+      tracks,
+      deferred.markers,
+      deferred.routeColor,
+      deferred.ink,
+      deferred.paper,
+      measure,
+      roadMap,
+    ],
   );
 
   // Elevation profile: of the measuring line if there is one, else of the route.
-  const profileLine = measure ?? (route.length > 1 ? route : null);
+  const [profileDay, setProfileDay] = useState(-1);
+  const dayTrack = profileDay >= 0 ? tracks[profileDay] : undefined;
+  const profileLine = measure ?? dayTrack ?? (route.length > 1 ? route : null);
   const profile = useMemo(
     () => (grid && profileLine ? elevationProfile(grid, bounds, profileLine) : null),
     [grid, bounds, profileLine],
@@ -469,6 +556,7 @@ function PlateApp() {
       }
     } catch {
       notify(t("plate.ar.failed"), { tone: "error" });
+      reportProblem("ar");
     }
   };
 
@@ -495,6 +583,7 @@ function PlateApp() {
     } catch (error) {
       if ((error as Error).name !== "AbortError") {
         notify(t("plate.downloadFailed"), { tone: "error" });
+        reportProblem("video");
       }
     } finally {
       setRecording(null);
@@ -542,6 +631,7 @@ function PlateApp() {
       strata: plate.strata,
       snow: plate.snow,
       flood: plate.flood,
+      sunHour: plate.sunHour,
     }),
     [
       needsDrape,
@@ -557,6 +647,7 @@ function PlateApp() {
       plate.strata,
       plate.snow,
       plate.flood,
+      plate.sunHour,
     ],
   );
 
@@ -570,10 +661,29 @@ function PlateApp() {
     () =>
       deferred.markers.map((marker) => {
         const [u, v] = toPlateUv(bounds, [marker.lat, marker.lon]);
-        return { u, v, label: marker.label };
+        return { u, v, label: marker.label, photo: marker.photo };
       }),
     [deferred.markers, bounds],
   );
+
+  // Pin photos from this device's storage.
+  const photoIds = deferred.markers
+    .flatMap((marker) => (marker.photo ? [marker.photo] : []))
+    .join(",");
+  const [markerPhotos, setMarkerPhotos] = useState<Map<string, ImageBitmap>>(new Map());
+  useEffect(() => {
+    let cancelled = false;
+    const ids = photoIds ? photoIds.split(",") : [];
+    Promise.all(ids.map(async (id) => [id, await loadPhoto(id)] as const)).then((entries) => {
+      if (cancelled) return;
+      setMarkerPhotos(
+        new Map(entries.filter((entry): entry is [string, ImageBitmap] => entry[1] !== null)),
+      );
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [photoIds]);
   useEffect(() => {
     if (!geometry) return;
     let cancelled = false;
@@ -606,9 +716,11 @@ function PlateApp() {
   }, [picker]);
 
   useEffect(() => {
+    // An embedded plate runs on this site's origin too: never overwrite the visitor's own draft.
+    if (embed) return;
     const timer = setTimeout(() => writePlateDraft(plate), DRAFT_DELAY_MS);
     return () => clearTimeout(timer);
-  }, [plate]);
+  }, [plate, embed]);
 
   const goTo = useCallback(
     (place: Partial<PlateSettings> & { lat: number; lon: number }) => {
@@ -627,6 +739,7 @@ function PlateApp() {
       region: result.city && result.city !== result.shortLabel ? result.city : "",
       country: result.country,
       countryCode: result.countryCode ?? "",
+      nameKm: result.nameKm ?? "",
     });
 
   const showPlate = async () => {
@@ -644,9 +757,10 @@ function PlateApp() {
         region: place.city && place.city !== place.shortLabel ? place.city : "",
         country: place.country,
         countryCode: place.countryCode ?? "",
+        nameKm: place.nameKm ?? "",
       });
     } catch {
-      update({ name: "", region: "", country: "", countryCode: "" });
+      update({ name: "", region: "", country: "", countryCode: "", nameKm: "" });
     }
   };
 
@@ -681,7 +795,20 @@ function PlateApp() {
         notify(t("plate.downloaded"), { tone: "success" });
       } catch {
         notify(t("plate.downloadFailed"), { tone: "error" });
+        reportProblem("download");
       }
+      return;
+    }
+    if (kind === "embed") {
+      const name = (plate.name || t("plate.untitled")).replace(/"/g, "&quot;");
+      const src = buildPlateLink(plate).replace("/plate?", "/plate/embed?");
+      const snippet =
+        `<iframe src="${src}" title="${name} · 3D plate" width="100%" height="480" ` +
+        `style="border:0;border-radius:16px" loading="lazy" allow="fullscreen; xr-spatial-tracking"></iframe>`;
+      const outcome = await copyText(snippet);
+      notify(outcome === "copied" ? t("plate.embedCopied") : t("plate.downloadFailed"), {
+        tone: outcome === "copied" ? "success" : "error",
+      });
       return;
     }
     if (kind === "link") {
@@ -724,6 +851,7 @@ function PlateApp() {
       notify(t("plate.downloaded"), { tone: "success" });
     } catch {
       notify(t("plate.downloadFailed"), { tone: "error" });
+      reportProblem("download");
     }
   };
 
@@ -740,31 +868,33 @@ function PlateApp() {
   const posterLink = `/create?lat=${plate.lat.toFixed(5)}&lon=${plate.lon.toFixed(5)}&city=${encodeURIComponent(plate.name)}&country=${encodeURIComponent(plate.country)}`;
 
   return (
-    <div className="plate-page">
-      <header className="plate-header">
-        <Link to="/" className="plate-brand" aria-label={t("plate.home")}>
-          <img src="/assets/logo.svg" alt="" width={28} height={28} />
-          <span>teetang.art</span>
-        </Link>
-        <span className="plate-header__title">{t("plate.title")}</span>
-        <button
-          type="button"
-          className="plate-icon-btn"
-          onClick={() => setSheet("explore")}
-          aria-label={t("plate.explore.title")}
-          title={t("plate.explore.title")}
-        >
-          <Compass size={22} />
-        </button>
-        <button
-          type="button"
-          className="plate-icon-btn plate-lang"
-          onClick={toggleLang}
-          aria-label={lang === "en" ? "Switch to Khmer" : "ប្ដូរទៅអង់គ្លេស"}
-        >
-          {lang === "en" ? "KH" : "EN"}
-        </button>
-      </header>
+    <div className="plate-page" data-embed={embed ? "true" : undefined}>
+      {!embed && (
+        <header className="plate-header">
+          <Link to="/" className="plate-brand" aria-label={t("plate.home")}>
+            <img src="/assets/logo.svg" alt="" width={28} height={28} />
+            <span>teetang.art</span>
+          </Link>
+          <span className="plate-header__title">{t("plate.title")}</span>
+          <button
+            type="button"
+            className="plate-icon-btn"
+            onClick={() => setSheet("explore")}
+            aria-label={t("plate.explore.title")}
+            title={t("plate.explore.title")}
+          >
+            <Compass size={22} />
+          </button>
+          <button
+            type="button"
+            className="plate-icon-btn plate-lang"
+            onClick={toggleLang}
+            aria-label={lang === "en" ? "Switch to Khmer" : "ប្ដូរទៅអង់គ្លេស"}
+          >
+            {lang === "en" ? "KH" : "EN"}
+          </button>
+        </header>
+      )}
 
       <main className="plate-main">
         <section className="plate-stage" data-mode={mode} aria-busy={terrain.status === "loading"}>
@@ -793,6 +923,7 @@ function PlateApp() {
                 onPick={picking ? handlePick : null}
                 extras={extras}
                 peakText={geometry && plate.pin ? `▲ ${highest}` : ""}
+                markerPhotos={markerPhotos}
                 label={geometry ? describePlate(t, title, geometry) : `${title} ${subtitle}`}
                 onInteract={() => setTouched(true)}
               />
@@ -820,15 +951,15 @@ function PlateApp() {
                   {t("plate.loadingImagery")}
                 </div>
               )}
-              {!touched && geometry && !photo && lesson === null && (
+              {!touched && geometry && !photo && !lesson && (
                 <p className="plate-stage__hint">{t("plate.dragHint")}</p>
               )}
-              {lesson !== null && (
-                <div className="plate-lesson" role="dialog" aria-label={t("plate.lesson.start")}>
+              {lesson && lessonPlan && (
+                <div className="plate-lesson" role="dialog" aria-label={lessonTitle(t, lesson.id)}>
                   <p className="plate-lesson__step">
-                    {lesson + 1} / {LESSON_STEPS}
+                    {lessonTitle(t, lesson.id)} · {lesson.step + 1} / {lessonPlan.steps.length}
                   </p>
-                  <p>{t(`plate.lesson.${lesson + 1}` as TranslationKey)}</p>
+                  <p>{lessonText(t, lesson.id, lesson.step)}</p>
                   <div className="plate-lesson__actions">
                     <button
                       type="button"
@@ -837,11 +968,11 @@ function PlateApp() {
                     >
                       {t("plate.close")}
                     </button>
-                    {lesson > 0 && (
+                    {lesson.step > 0 && (
                       <button
                         type="button"
                         className="plate-btn plate-btn--soft"
-                        onClick={() => setLesson(lesson - 1)}
+                        onClick={() => showLessonStep(lesson.id, lesson.step - 1)}
                       >
                         {t("updates.back")}
                       </button>
@@ -849,9 +980,16 @@ function PlateApp() {
                     <button
                       type="button"
                       className="plate-btn plate-btn--light"
-                      onClick={() => setLesson(lesson + 1 < LESSON_STEPS ? lesson + 1 : null)}
+                      onClick={() =>
+                        showLessonStep(
+                          lesson.id,
+                          lesson.step + 1 < lessonPlan.steps.length ? lesson.step + 1 : null,
+                        )
+                      }
                     >
-                      {lesson + 1 < LESSON_STEPS ? t("updates.next") : t("updates.finish")}
+                      {lesson.step + 1 < lessonPlan.steps.length
+                        ? t("updates.next")
+                        : t("updates.finish")}
                     </button>
                   </div>
                 </div>
@@ -928,180 +1066,202 @@ function PlateApp() {
               )}
             </>
           )}
+          {embed && (
+            <a
+              className="plate-embed-open"
+              href={buildPlateLink(plate)}
+              target="_blank"
+              rel="noopener"
+            >
+              {plate.name || t("plate.untitled")} · teetang.art ↗
+            </a>
+          )}
           <p className="plate-credit">
             Elevation: AWS Terrain Tiles
-            {mode === "plate" && basemap ? ` · ${basemap.credit}` : ""}
-            {mode === "plate" && (plate.style === "map" || plate.lakes)
+            {mode === "plate" && basemap
+              ? ` · ${basemap.credit}${basemap.daily ? `, ${plate.imageryDate || recentDay()}` : ""}`
+              : ""}
+            {mode === "plate" &&
+            (plate.style === "map" || plate.lakes || plate.buildings || plate.roads)
               ? " · © OpenStreetMap contributors"
               : ""}
           </p>
         </section>
 
-        <section className="plate-panel">
-          <div className="plate-place">
-            <h1
-              className="plate-place__name"
-              data-script={/[\u1780-\u17ff]/.test(title) ? "khmer" : undefined}
-            >
-              {title}
-            </h1>
-            <p className="plate-place__meta">
-              {plate.countryCode && <span aria-hidden="true">{flagEmoji(plate.countryCode)} </span>}
-              {subtitle}
-              {subtitle && highest ? " · " : ""}
-              {highest && (
-                <span title={t("plate.highest")}>
-                  {highest} <small>{t("plate.highest")}</small>
-                </span>
+        {!embed && (
+          <section className="plate-panel">
+            <div className="plate-place">
+              <h1
+                className="plate-place__name"
+                data-script={/[\u1780-\u17ff]/.test(title) ? "khmer" : undefined}
+              >
+                {title}
+              </h1>
+              {plate.nameKm && plate.nameKm !== title && (
+                <p className="plate-place__khmer" lang="km">
+                  {plate.nameKm}
+                </p>
               )}
-            </p>
-          </div>
+              <p className="plate-place__meta">
+                {plate.countryCode && (
+                  <span aria-hidden="true">{flagEmoji(plate.countryCode)} </span>
+                )}
+                {subtitle}
+                {subtitle && highest ? " · " : ""}
+                {highest && (
+                  <span title={t("plate.highest")}>
+                    {highest} <small>{t("plate.highest")}</small>
+                  </span>
+                )}
+              </p>
+            </div>
 
-          {mode === "move" ? (
-            <>
-              <div className="plate-bar">
-                <label className="plate-size">
-                  <span className="visually-hidden">{t("plate.areaSize")}</span>
+            {mode === "move" ? (
+              <>
+                <div className="plate-bar">
+                  <label className="plate-size">
+                    <span className="visually-hidden">{t("plate.areaSize")}</span>
+                    <input
+                      type="range"
+                      className="plate-range"
+                      min={0}
+                      max={100}
+                      step={0.5}
+                      value={sizeToSlider(pickerArea.sizeKm)}
+                      onChange={(event) =>
+                        setArea({ ...pickerArea, sizeKm: sliderToSize(Number(event.target.value)) })
+                      }
+                    />
+                    <output>{pickerArea.sizeKm} km</output>
+                  </label>
+                  <button type="button" className="plate-btn plate-btn--light" onClick={showPlate}>
+                    {t("plate.showPlate")}
+                  </button>
+                </div>
+                <div className="plate-chips" role="group" aria-label={t("plate.areaSize")}>
+                  {SIZE_PRESETS.map((km) => (
+                    <button
+                      key={km}
+                      type="button"
+                      className="plate-chip"
+                      aria-pressed={pickerArea.sizeKm === km}
+                      onClick={() => setArea({ ...pickerArea, sizeKm: km })}
+                    >
+                      {km} km
+                    </button>
+                  ))}
+                </div>
+                <label className="plate-dim">
+                  <span>{t("plate.dim")}</span>
                   <input
                     type="range"
                     className="plate-range"
                     min={0}
-                    max={100}
-                    step={0.5}
-                    value={sizeToSlider(pickerArea.sizeKm)}
+                    max={0.8}
+                    step={0.05}
+                    value={picker.dim}
                     onChange={(event) =>
-                      setArea({ ...pickerArea, sizeKm: sliderToSize(Number(event.target.value)) })
+                      setPicker((current) => ({ ...current, dim: Number(event.target.value) }))
                     }
                   />
-                  <output>{pickerArea.sizeKm} km</output>
+                  <output>{Math.round(picker.dim * 100)}%</output>
                 </label>
-                <button type="button" className="plate-btn plate-btn--light" onClick={showPlate}>
-                  {t("plate.showPlate")}
+              </>
+            ) : (
+              <div className="plate-bar" role="toolbar" aria-label={t("plate.styles")}>
+                <button type="button" className="plate-move" onClick={() => setMode("move")}>
+                  <Move size={20} aria-hidden="true" />
+                  <span>{t("plate.move")}</span>
                 </button>
+                <div
+                  ref={stylesRef}
+                  className="plate-segmented"
+                  role="group"
+                  aria-label={t("plate.styles")}
+                >
+                  {PLATE_STYLES.map((style) => (
+                    <button
+                      key={style}
+                      type="button"
+                      aria-pressed={plate.style === style}
+                      onClick={() => {
+                        tapFeedback();
+                        update({ style });
+                      }}
+                    >
+                      {t(`plate.style.${style}` as TranslationKey)}
+                    </button>
+                  ))}
+                </div>
               </div>
-              <div className="plate-chips" role="group" aria-label={t("plate.areaSize")}>
-                {SIZE_PRESETS.map((km) => (
-                  <button
-                    key={km}
-                    type="button"
-                    className="plate-chip"
-                    aria-pressed={pickerArea.sizeKm === km}
-                    onClick={() => setArea({ ...pickerArea, sizeKm: km })}
-                  >
-                    {km} km
-                  </button>
-                ))}
-              </div>
-              <label className="plate-dim">
-                <span>{t("plate.dim")}</span>
-                <input
-                  type="range"
-                  className="plate-range"
-                  min={0}
-                  max={0.8}
-                  step={0.05}
-                  value={picker.dim}
-                  onChange={(event) =>
-                    setPicker((current) => ({ ...current, dim: Number(event.target.value) }))
-                  }
-                />
-                <output>{Math.round(picker.dim * 100)}%</output>
-              </label>
-            </>
-          ) : (
-            <div className="plate-bar" role="toolbar" aria-label={t("plate.styles")}>
-              <button type="button" className="plate-move" onClick={() => setMode("move")}>
-                <Move size={20} aria-hidden="true" />
-                <span>{t("plate.move")}</span>
-              </button>
-              <div
-                ref={stylesRef}
-                className="plate-segmented"
-                role="group"
-                aria-label={t("plate.styles")}
+            )}
+
+            <PlaceSearch onSelect={handleSearch} />
+
+            <div className="plate-actions">
+              <button
+                type="button"
+                className="plate-btn plate-btn--soft"
+                onClick={() => {
+                  const { sizeKm, ...place } = pickSurprise(plate.name);
+                  goTo({ ...place, sizeKm });
+                }}
               >
-                {PLATE_STYLES.map((style) => (
-                  <button
-                    key={style}
-                    type="button"
-                    aria-pressed={plate.style === style}
-                    onClick={() => {
-                      tapFeedback();
-                      update({ style });
-                    }}
-                  >
-                    {t(`plate.style.${style}` as TranslationKey)}
-                  </button>
-                ))}
-              </div>
+                <Dices size={20} aria-hidden="true" />
+                {t("plate.surprise")}
+              </button>
+              <button
+                type="button"
+                className="plate-btn plate-btn--soft"
+                onClick={() => setSheet("adjust")}
+              >
+                <SlidersHorizontal size={20} aria-hidden="true" />
+                {t("plate.adjust")}
+              </button>
+              <button
+                type="button"
+                className="plate-btn plate-btn--soft"
+                onClick={() => setSheet("route")}
+              >
+                <Route size={20} aria-hidden="true" />
+                {t("plate.route.button")}
+              </button>
+              <button
+                type="button"
+                className="plate-btn plate-btn--soft"
+                onClick={() => download("studio")}
+              >
+                <Box size={20} aria-hidden="true" />
+                {t("plate.studio")}
+              </button>
             </div>
-          )}
 
-          <PlaceSearch onSelect={handleSearch} />
+            <div className="plate-cta">
+              <button
+                type="button"
+                className="plate-btn plate-btn--primary"
+                disabled={!geometry || !fullDetail || mode === "move"}
+                onClick={() => setSheet("download")}
+              >
+                <Download size={20} aria-hidden="true" />
+                {t("plate.download")}
+              </button>
+              <button
+                type="button"
+                className="plate-icon-btn plate-icon-btn--large"
+                onClick={share}
+                aria-label={t("plate.share")}
+              >
+                <Share2 size={22} />
+              </button>
+            </div>
 
-          <div className="plate-actions">
-            <button
-              type="button"
-              className="plate-btn plate-btn--soft"
-              onClick={() => {
-                const { sizeKm, ...place } = pickSurprise(plate.name);
-                goTo({ ...place, sizeKm });
-              }}
-            >
-              <Dices size={20} aria-hidden="true" />
-              {t("plate.surprise")}
-            </button>
-            <button
-              type="button"
-              className="plate-btn plate-btn--soft"
-              onClick={() => setSheet("adjust")}
-            >
-              <SlidersHorizontal size={20} aria-hidden="true" />
-              {t("plate.adjust")}
-            </button>
-            <button
-              type="button"
-              className="plate-btn plate-btn--soft"
-              onClick={() => setSheet("route")}
-            >
-              <Route size={20} aria-hidden="true" />
-              {t("plate.route.button")}
-            </button>
-            <button
-              type="button"
-              className="plate-btn plate-btn--soft"
-              onClick={() => download("studio")}
-            >
-              <Box size={20} aria-hidden="true" />
-              {t("plate.studio")}
-            </button>
-          </div>
-
-          <div className="plate-cta">
-            <button
-              type="button"
-              className="plate-btn plate-btn--primary"
-              disabled={!geometry || !fullDetail || mode === "move"}
-              onClick={() => setSheet("download")}
-            >
-              <Download size={20} aria-hidden="true" />
-              {t("plate.download")}
-            </button>
-            <button
-              type="button"
-              className="plate-icon-btn plate-icon-btn--large"
-              onClick={share}
-              aria-label={t("plate.share")}
-            >
-              <Share2 size={22} />
-            </button>
-          </div>
-
-          <Link to={posterLink} className="plate-poster-link">
-            <MapPinned size={18} aria-hidden="true" />
-            {t("plate.makePoster")}
-          </Link>
-        </section>
+            <Link to={posterLink} className="plate-poster-link">
+              <MapPinned size={18} aria-hidden="true" />
+              {t("plate.makePoster")}
+            </Link>
+          </section>
+        )}
       </main>
 
       <Suspense fallback={null}>
@@ -1127,10 +1287,15 @@ function PlateApp() {
               setComparePlace(place);
               if (place) setSheet(null);
             }}
-            onLesson={() => {
+            onLesson={(id) => {
               setSheet(null);
               setMode("plate");
-              setLesson(0);
+              const place = EXPLORE_ALL.find((p) => p.id === lessonById(id)?.place);
+              if (place) {
+                setComparePlace(null);
+                goTo(explorePlate(place) as PlateSettings);
+              }
+              showLessonStep(id, 0);
             }}
             onSaveOffline={async () => {
               try {
@@ -1139,6 +1304,8 @@ function PlateApp() {
                   [PREVIEW_CELLS, GRID_CELLS],
                   basemap,
                   window.innerWidth >= 900 ? 2048 : 1024,
+                  undefined,
+                  imageryDay,
                 );
                 const entry: SavedPlate = {
                   name: plate.name,
@@ -1157,6 +1324,7 @@ function PlateApp() {
                 notify(t("plate.explore.savedDone"), { tone: "success" });
               } catch {
                 notify(t("plate.downloadFailed"), { tone: "error" });
+                reportProblem("offline");
               }
             }}
             onOpenSaved={(entry) => {
@@ -1178,6 +1346,8 @@ function PlateApp() {
             profileTitle={
               measure ? t("plate.profile.line") : `${title} · ${t("plate.profile.route")}`
             }
+            profileDay={profileDay < tracks.length ? profileDay : -1}
+            onProfileDay={setProfileDay}
             onChange={update}
             onPick={(kind) => {
               setSheet(null);
@@ -1280,10 +1450,10 @@ async function composePoster(
   );
 }
 
-export default function PlatePage() {
+export default function PlatePage({ embed = false }: { embed?: boolean }) {
   return (
     <I18nProvider>
-      <PlateApp />
+      <PlateApp embed={embed} />
     </I18nProvider>
   );
 }

@@ -7,6 +7,7 @@ import type { HeightGrid } from "../plate/elevationCore";
 import { buildGridSolid } from "../plate/extras";
 import { buildPlateGeometry } from "../plate/geometry";
 import { modelParts, printSoups, writeStl, zip } from "../plate/printModel";
+import { cylinder, subtract } from "./cutouts";
 
 function sample(grid: HeightGrid, u: number, v: number): number {
   const last = grid.size - 1;
@@ -58,17 +59,23 @@ export interface TileOptions {
   /** Route ridge and water carve over the whole plate, as in the Studio. */
   reliefs: { mask: Float32Array; size: number; heightMm: number }[];
   hollow: boolean;
+  /** Dowel holes where tiles meet, and printable pins to join them. */
+  pins: boolean;
 }
+
+/** Dowel pin and hole sizes, in millimetres: a 3 mm pin in a 3.3 mm hole. */
+const PIN = { radius: 1.5, hole: 1.65, depth: 5.5, minBase: 4.6 };
 
 /**
  * Square tiles of the whole plate as a zip of STL files, named by row and
  * column from the north-west corner. Every tile shares the plate's base
  * level and vertical scale, so they line up edge to edge.
  */
-export function buildTilesZip(grid: HeightGrid, options: TileOptions): Blob {
+export async function buildTilesZip(grid: HeightGrid, options: TileOptions): Promise<Blob> {
   const { count, widthMm } = options;
   const tileMm = widthMm / count;
   const cells = Math.max(32, Math.round((grid.size - 1) / count));
+  const withPins = options.pins && count > 1 && options.baseMm >= PIN.minBase;
   const encoder = new TextEncoder();
   const files: { name: string; data: Uint8Array }[] = [];
   for (let row = 0; row < count; row++) {
@@ -96,16 +103,49 @@ export function buildTilesZip(grid: HeightGrid, options: TileOptions): Blob {
           ? { wall: 2.4 / tileMm, roof: 1.6 / tileMm, lip: 3 / tileMm, lipHeight: 1.2 / tileMm }
           : null,
       });
-      const soups = printSoups(modelParts(geometry, null), tileMm, geometry.baseDepth);
+      let soups = printSoups(modelParts(geometry, null), tileMm, geometry.baseDepth);
+      if (withPins) {
+        // Two holes in the middle of the base on every edge shared with a neighbour.
+        const half = tileMm / 2;
+        const z = options.baseMm / 2;
+        const holes: Float32Array[] = [];
+        const along = [-tileMm / 4, tileMm / 4];
+        const length = PIN.depth * 2;
+        if (col > 0)
+          along.forEach((y) => holes.push(cylinder("x", [-half, y, z], PIN.hole, length)));
+        if (col < count - 1)
+          along.forEach((y) => holes.push(cylinder("x", [half, y, z], PIN.hole, length)));
+        // Row 1 is the north edge, at +y.
+        if (row > 0)
+          along.forEach((x) => holes.push(cylinder("y", [x, half, z], PIN.hole, length)));
+        if (row < count - 1)
+          along.forEach((x) => holes.push(cylinder("y", [x, -half, z], PIN.hole, length)));
+        soups = [{ ...soups[0], soup: subtract(soups[0].soup, holes) }];
+      }
       const name = `tile-r${row + 1}-c${col + 1}.stl`;
       files.push({ name, data: new Uint8Array(writeStl(soups, `teetang.art ${name}`)) });
     }
+  }
+  const pinCount = withPins ? 2 * 2 * count * (count - 1) : 0;
+  if (withPins) {
+    // One pin to print as many times as needed: 3 mm across, a little shorter than two holes.
+    const pin = cylinder("z", [0, 0, (PIN.depth * 2 - 0.6) / 2], PIN.radius, PIN.depth * 2 - 0.6);
+    files.push({
+      name: "dowel-pin.stl",
+      data: new Uint8Array(writeStl([{ soup: pin }], "dowel pin")),
+    });
   }
   files.push({
     name: "README.txt",
     data: encoder.encode(
       `teetang.art plate in ${count * count} tiles, each ${tileMm.toFixed(1)} mm square.\n` +
-        `Row 1 is the north edge, column 1 the west edge. Print each tile flat and glue them edge to edge.\n`,
+        `Row 1 is the north edge, column 1 the west edge. Print each tile flat.\n` +
+        (withPins
+          ? `Print dowel-pin.stl ${pinCount} times, standing up. Push the pins into the holes in the ` +
+            `tiles' sides to line them up, with a drop of glue.\n`
+          : options.pins
+            ? `The base is too thin for joining pins (it needs ${PIN.minBase} mm), so glue the tiles edge to edge.\n`
+            : `Glue the tiles edge to edge.\n`),
     ),
   });
   return zip(files, "application/zip");
