@@ -28,6 +28,8 @@ export interface PhotoInput {
   camera: PerspectiveCamera;
   target: Vector3;
   baseDepth: number;
+  /** Sun direction for a time-of-day render; null keeps the default low north-west sun. */
+  sun?: Vector3 | null;
 }
 
 export interface PhotoSession {
@@ -81,7 +83,15 @@ export async function startPhoto(
   scene.environment = sky;
   scene.environmentIntensity = 0.9;
   const sun = new DirectionalLight(0xfff4e6, 2.4);
-  sun.position.set(-0.55, 0.75, -0.35).multiplyScalar(10);
+  if (input.sun) {
+    sun.position.copy(input.sun).multiplyScalar(10);
+    // Low sun: warmer light, and a little less sky so the shadows read.
+    const low = 1 - input.sun.y;
+    sun.color.setRGB(1, 1 - low * 0.18, 1 - low * 0.38);
+    scene.environmentIntensity = 0.9 - low * 0.4;
+  } else {
+    sun.position.set(-0.55, 0.75, -0.35).multiplyScalar(10);
+  }
   scene.add(sun);
 
   const camera = input.camera;

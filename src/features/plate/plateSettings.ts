@@ -73,6 +73,10 @@ export interface PlateSettings extends PlatePlace {
   lakes: boolean;
   /** The place's Khmer name, printed on the nameplate under the title. */
   nameKm: string;
+  /** Time of day for the light, 6 (sunrise) to 18 (sunset); 0 keeps the studio light. */
+  sunHour: number;
+  /** Day of the daily satellite image, YYYY-MM-DD; "" means a recent day. */
+  imageryDate: string;
 }
 
 export type LabelRelief = "raised" | "engraved";
@@ -173,6 +177,8 @@ export const DEFAULT_PLATE: PlateSettings = {
   routeRaise: true,
   lakes: false,
   nameKm: "ភ្នំឱរ៉ាល់",
+  sunHour: 0,
+  imageryDate: "",
   name: "Phnom Aural",
   region: "Kampong Speu",
   country: "Cambodia",
@@ -232,6 +238,8 @@ const LINK = {
   routeRaise: "rr",
   lakes: "lakes",
   nameKm: "nk",
+  sunHour: "sun",
+  imageryDate: "day",
   name: "name",
   region: "region",
   country: "country",
@@ -312,6 +320,11 @@ export function sanitizePlate(
   }
   if (typeof input.note === "string") out.note = input.note.slice(0, 60);
   if (typeof input.nameKm === "string") out.nameKm = input.nameKm.slice(0, 80);
+  const sunHour = num(input.sunHour);
+  if (Number.isFinite(sunHour)) out.sunHour = sunHour <= 0 ? 0 : clamp(sunHour, 6, 18);
+  if (typeof input.imageryDate === "string" && /^(\d{4}-\d{2}-\d{2})?$/.test(input.imageryDate)) {
+    out.imageryDate = input.imageryDate;
+  }
   if (typeof input.countryCode === "string" && /^[a-z]{2}$/i.test(input.countryCode)) {
     out.countryCode = input.countryCode.toUpperCase();
   }

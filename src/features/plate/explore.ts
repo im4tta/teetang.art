@@ -273,6 +273,7 @@ export async function cachePlateOffline(
   basemap: import("./basemaps").Basemap | null,
   drapeSize: number,
   onProgress?: (done: number, total: number) => void,
+  day = "",
 ): Promise<number> {
   const [{ coveringTiles, tileZoomFor, wrapTileX }, { tileUrl }, { tileUrlFor }] =
     await Promise.all([import("./geo"), import("./elevationCore"), import("./basemaps")]);
@@ -285,7 +286,7 @@ export async function cachePlateOffline(
   if (basemap) {
     const zoom = tileZoomFor(bounds, drapeSize, basemap.maxZoom);
     for (const [x, y] of coveringTiles(bounds, zoom)) {
-      urls.add(tileUrlFor(basemap, zoom, wrapTileX(x, zoom), y));
+      urls.add(tileUrlFor(basemap, zoom, wrapTileX(x, zoom), y, day));
     }
   }
   const cache = await caches.open(OFFLINE_CACHE);

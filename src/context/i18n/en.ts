@@ -578,4 +578,10 @@ export const en = {
   "plate.lesson.3": "Where the lines bunch up, the ground is steep; where they spread out, it is gentle. The smallest closed ring is the top.",
   "plate.lesson.4": "Your turn: drag to turn the plate, then find the steepest slope and the summit using only the lines.",
   "plate.adj.nameKm": "Khmer name (on the nameplate)",
+  "plate.adj.sun": "Time of day",
+  "plate.adj.studioLight": "Studio light",
+  "plate.adj.day": "Day of the picture",
+  "plate.adj.season.dry": "Dry season",
+  "plate.adj.season.rainy": "Rainy season",
+  "plate.adj.dayHint": "A new picture of the whole Earth every day since 2000, about 250 m per pixel. Some days are cloudy: try a day or two either side.",
 } satisfies Record<string, string>;

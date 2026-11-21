@@ -22,6 +22,8 @@ export interface Basemap {
   coverage?: [number, number, number, number];
   /** Short note shown under the name, e.g. the country it covers. */
   region?: string;
+  /** A picture of one chosen day: the URL has {time} for the date. */
+  daily?: boolean;
 }
 
 const ESRI = "https://server.arcgisonline.com/ArcGIS/rest/services";
@@ -64,6 +66,16 @@ export const BASEMAPS: Basemap[] = [
     maxZoom: 8,
     credit: "NASA Earth Observatory · Blue Marble via NASA GIBS",
     region: "Best for big areas",
+  },
+  {
+    id: "modis-daily",
+    kind: "imagery",
+    name: "NASA by date",
+    url: "https://gibs.earthdata.nasa.gov/wmts/epsg3857/best/MODIS_Terra_CorrectedReflectance_TrueColor/default/{time}/GoogleMapsCompatible_Level9/{z}/{y}/{x}.jpg",
+    maxZoom: 9,
+    credit: "NASA EOSDIS GIBS · MODIS Terra corrected reflectance",
+    region: "Any day since 2000 · best for 20 km and up",
+    daily: true,
   },
   {
     id: "usgs-imagery",
@@ -275,10 +287,16 @@ export function resolveBasemap(kind: BasemapKind, id: string, lat: number, lon: 
   return basemapById(DEFAULT_BASEMAP[kind])!;
 }
 
-export function tileUrlFor(map: Basemap, z: number, x: number, y: number): string {
+/** Three days ago, in UTC: recent enough to be interesting, old enough to be complete. */
+export function recentDay(): string {
+  return new Date(Date.now() - 3 * 86_400_000).toISOString().slice(0, 10);
+}
+
+export function tileUrlFor(map: Basemap, z: number, x: number, y: number, day = ""): string {
   const subdomain = map.subdomains ? map.subdomains[(x + y) % map.subdomains.length] : "";
   return map.url
     .replace("{s}", subdomain)
+    .replace("{time}", day || recentDay())
     .replace("{z}", String(z))
     .replace("{x}", String(x))
     .replace("{y}", String(y));

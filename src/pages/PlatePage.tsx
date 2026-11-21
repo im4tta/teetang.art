@@ -63,7 +63,7 @@ import {
 } from "@/features/plate/plateSettings";
 import { pickSurprise } from "@/features/plate/surprisePlaces";
 import { loadMapDrape, loadTileDrape, loadWaterMask, maskToGrid } from "@/features/plate/drape";
-import { resolveBasemap, type Basemap } from "@/features/plate/basemaps";
+import { recentDay, resolveBasemap, type Basemap } from "@/features/plate/basemaps";
 import { buildPlateExtras, type PlateExtras } from "@/features/plate/extras";
 import type { PhotoInput } from "@/features/plate/photo";
 import type { ArMode } from "@/features/plate/ar";
@@ -279,6 +279,8 @@ function PlateApp() {
   // Map, imagery or topographic map over the terrain.
   const basemap = basemapFor(plate);
   const needsDrape = plate.style === "map" || basemap !== null;
+  // Only the daily imagery depends on the date; other maps ignore it.
+  const imageryDay = basemap?.daily ? plate.imageryDate : "";
   useEffect(() => {
     if (!needsDrape) {
       queueMicrotask(() => setDrape(null));
@@ -287,7 +289,7 @@ function PlateApp() {
     const controller = new AbortController();
     queueMicrotask(() => setDrape({ status: "loading" }));
     (basemap
-      ? loadTileDrape(bounds, basemap, controller.signal)
+      ? loadTileDrape(bounds, basemap, controller.signal, imageryDay)
       : loadMapDrape(bounds, plate.theme, controller.signal)
     ).then(
       (value) => setDrape({ status: "ready", value }),
@@ -299,7 +301,7 @@ function PlateApp() {
       },
     );
     return () => controller.abort();
-  }, [needsDrape, basemap, plate.theme, bounds, t]);
+  }, [needsDrape, basemap, plate.theme, bounds, t, imageryDay]);
 
   const deferred = useDeferredValue(plate);
   const grid = terrain.status === "ready" ? terrain.value : null;
@@ -553,6 +555,7 @@ function PlateApp() {
       strata: plate.strata,
       snow: plate.snow,
       flood: plate.flood,
+      sunHour: plate.sunHour,
     }),
     [
       needsDrape,
@@ -568,6 +571,7 @@ function PlateApp() {
       plate.strata,
       plate.snow,
       plate.flood,
+      plate.sunHour,
     ],
   );
 
@@ -945,7 +949,9 @@ function PlateApp() {
           )}
           <p className="plate-credit">
             Elevation: AWS Terrain Tiles
-            {mode === "plate" && basemap ? ` · ${basemap.credit}` : ""}
+            {mode === "plate" && basemap
+              ? ` · ${basemap.credit}${basemap.daily ? `, ${plate.imageryDate || recentDay()}` : ""}`
+              : ""}
             {mode === "plate" && (plate.style === "map" || plate.lakes)
               ? " · © OpenStreetMap contributors"
               : ""}
@@ -1159,6 +1165,8 @@ function PlateApp() {
                   [PREVIEW_CELLS, GRID_CELLS],
                   basemap,
                   window.innerWidth >= 900 ? 2048 : 1024,
+                  undefined,
+                  imageryDay,
                 );
                 const entry: SavedPlate = {
                   name: plate.name,

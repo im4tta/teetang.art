@@ -17,14 +17,17 @@ export const STYLE_CODE = {
 export const surfaceVertex = /* glsl */ `
   attribute float elevation;
   attribute float ao;
+  attribute float sun;
   uniform bool uBake;
   varying float vElevation;
   varying float vAo;
+  varying float vSun;
   varying vec3 vNormal;
   varying vec2 vUv;
   void main() {
     vElevation = elevation;
     vAo = ao;
+    vSun = sun;
     vNormal = normal;
     vUv = uv;
     // Baking draws the surface flat in texture space, north at v = 0.
@@ -59,8 +62,12 @@ export const surfaceFragment = /* glsl */ `
   /** Routes and markers drawn on top, with alpha. */
   uniform sampler2D uOverlay;
   uniform bool uHasOverlay;
+  /** 0 for the studio light; otherwise how warm the low sun is (0 noon, 1 horizon). */
+  uniform float uWarmth;
+  uniform bool uSunMode;
   varying float vElevation;
   varying float vAo;
+  varying float vSun;
   varying vec3 vNormal;
   varying vec2 vUv;
 
@@ -80,6 +87,8 @@ export const surfaceFragment = /* glsl */ `
     vec3 n = normalize(vNormal);
     // A baked texture carries colour only; the renderer that uses it adds the light.
     float light = uBake ? 0.82 : clamp(dot(n, uLight), 0.0, 1.0);
+    // Time of day: terrain casts shadows on itself.
+    if (uSunMode && !uBake) light *= mix(0.22, 1.0, vSun);
     float h = clamp((vElevation - uMin) / (uMax - uMin), 0.0, 1.0);
     // Sea level (elevation data flattens the sea floor to 0 m), a flood, or a mapped lake or river.
     bool sea = uWater && vElevation < 0.5;
@@ -149,6 +158,12 @@ export const surfaceFragment = /* glsl */ `
       color = mix(color, overlay.rgb, overlay.a);
     }
     if (!uBake) color *= mix(1.0, smoothstep(0.35, 1.0, vAo), uAo);
+    if (uSunMode && !uBake) {
+      // Golden light near sunrise and sunset, cool blue in the shadows.
+      vec3 warm = mix(vec3(1.0), vec3(1.12, 0.92, 0.72), uWarmth);
+      vec3 cool = mix(vec3(1.0), vec3(0.78, 0.86, 1.05), uWarmth);
+      color *= mix(cool, warm, vSun);
+    }
     gl_FragColor = vec4(color, 1.0);
   }
 `;

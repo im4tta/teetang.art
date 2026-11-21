@@ -471,6 +471,29 @@ test.describe("Khmer names and the review page", () => {
   });
 });
 
+test.describe("light and seasons", () => {
+  test("time of day, and a satellite picture from a chosen season", async ({ page }) => {
+    const requested: string[] = [];
+    await page.route(/gibs\.earthdata\.nasa\.gov/, (route) => {
+      requested.push(route.request().url());
+      return route.abort();
+    });
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&style=elevation&sun=7");
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await expect(page.locator("#plate-sun")).toHaveValue("7");
+    await expect(page.locator(".plate-field__value", { hasText: "07:00" })).toBeVisible();
+    await page.getByRole("button", { name: "Studio light" }).click();
+    await expect(page.locator(".plate-field__value", { hasText: "Studio light" })).toBeVisible();
+    await page.locator(".plate-sheet__header button").click();
+
+    await page.getByRole("button", { name: "Satellite" }).click();
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await page.getByRole("button", { name: /NASA by date/ }).click();
+    await page.getByRole("button", { name: "Dry season" }).click();
+    await expect.poll(() => requested.some((url) => /\/\d{4}-02-15\//.test(url))).toBe(true);
+  });
+});
+
 test.describe("STL Studio print options", () => {
   test("hollow base, tiles and a lithophane", async ({ page }) => {
     await openPlate(page);

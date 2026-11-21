@@ -288,3 +288,60 @@ export function ambientOcclusion(surface: Float32Array, size: number): Float32Ar
   }
   return ao;
 }
+
+/**
+ * Where the sun is at a given hour (6 = sunrise in the east, 12 = high in the
+ * south, 18 = sunset in the west), as a unit vector in plate axes (x east,
+ * y up, z south), and how warm its light is (1 at the horizon, 0 at noon).
+ */
+export function sunAt(hour: number): { direction: [number, number, number]; warmth: number } {
+  const t = Math.min(1, Math.max(0, (hour - 6) / 12));
+  const azimuth = (90 + t * 180) * (Math.PI / 180);
+  const elevation = (4 + Math.sin(t * Math.PI) * 62) * (Math.PI / 180);
+  const direction: [number, number, number] = [
+    Math.cos(elevation) * Math.sin(azimuth),
+    Math.sin(elevation),
+    -Math.cos(elevation) * Math.cos(azimuth),
+  ];
+  return { direction, warmth: 1 - Math.sin(t * Math.PI) };
+}
+
+/**
+ * Cast shadows: for each surface vertex, whether the sun is hidden by the
+ * terrain, marching towards it across the grid (1 = lit, 0 = in shadow, with
+ * soft edges). About 2.5 million samples for a 256-cell plate.
+ */
+export function sunlight(
+  surface: Float32Array,
+  size: number,
+  direction: [number, number, number],
+): Float32Array {
+  const lit = new Float32Array(size * size).fill(1);
+  const [dx, dy, dz] = direction;
+  const flat = Math.hypot(dx, dz);
+  if (flat < 1e-4) return lit;
+  const cell = 1 / (size - 1);
+  // Rise of the sun's ray per grid step, in plate units.
+  const rise = (dy / flat) * cell;
+  const stepX = dx / flat;
+  const stepZ = dz / flat;
+  for (let j = 0; j < size; j++) {
+    for (let i = 0; i < size; i++) {
+      const k = j * size + i;
+      const height = surface[k * 3 + 1];
+      let clearance = Infinity;
+      for (let step = 1; step < size; step += step < 8 ? 1 : 2) {
+        const x = Math.round(i + stepX * step);
+        const y = Math.round(j + stepZ * step);
+        if (x < 0 || y < 0 || x >= size || y >= size) break;
+        const ray = height + rise * step;
+        const terrain = surface[(y * size + x) * 3 + 1];
+        clearance = Math.min(clearance, (ray - terrain) / (step * cell));
+        if (clearance < -0.05) break;
+      }
+      // Soft edge: fully lit with a little room above the skyline.
+      lit[k] = clearance === Infinity ? 1 : Math.min(1, Math.max(0, 0.5 + clearance * 6));
+    }
+  }
+  return lit;
+}

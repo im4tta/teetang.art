@@ -32,7 +32,7 @@ import {
   WebGLRenderer,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { contourInterval, type PlateGeometry } from "./geometry";
+import { contourInterval, sunAt, sunlight, type PlateGeometry } from "./geometry";
 import type { PlateExtras } from "./extras";
 import { paletteRamp, type ReliefPalette } from "./palettes";
 import {
@@ -61,6 +61,8 @@ export interface PlateLook {
   /** About how many contour lines run from the lowest to the highest point. */
   lines: number;
   palette: ReliefPalette;
+  /** Time of day from 6 (sunrise) to 18 (sunset); 0 keeps the studio light. */
+  sunHour: number;
   /** Draw the sea (0 m) as water. */
   water: boolean;
   /** Rock layers on the sides of the box. */
@@ -104,6 +106,10 @@ export class PlateScene {
   private readonly ramp = new DataTexture(new Uint8Array(256 * 4), 256, 1, RGBAFormat);
   private palette: ReliefPalette | null = null;
   private reach = 0.5;
+  /** The light on the plate: the studio light, or the sun at a chosen hour. */
+  private readonly light = LIGHT.clone();
+  private sunHour = 0;
+  private geometry: PlateGeometry | null = null;
   private extras: PlateExtras | null = null;
   /** A second plate beside the first, at the same scale. */
   private compare: { surface: Mesh; shell: Mesh; material: ShaderMaterial; tags: Sprite[] } | null =
@@ -140,7 +146,7 @@ export class PlateScene {
         uMin: { value: 0 },
         uMax: { value: 1 },
         uLineScale: { value: 1 },
-        uLight: { value: LIGHT },
+        uLight: { value: this.light },
         uDrape: { value: null },
         uHasDrape: { value: false },
         uRamp: { value: this.ramp },
@@ -153,6 +159,8 @@ export class PlateScene {
         uHasWaterMask: { value: false },
         uOverlay: { value: null },
         uHasOverlay: { value: false },
+        uWarmth: { value: 0 },
+        uSunMode: { value: false },
       },
     });
     this.ramp.colorSpace = NoColorSpace;
@@ -163,7 +171,7 @@ export class PlateScene {
         uMask: { value: null },
         uBase: { value: new Color() },
         uText: { value: new Color() },
-        uLight: { value: LIGHT },
+        uLight: { value: this.light },
       },
     });
     this.shellMaterial = new ShaderMaterial({
@@ -171,7 +179,7 @@ export class PlateScene {
       fragmentShader: shellFragment,
       uniforms: {
         uSide: { value: new Color() },
-        uLight: { value: LIGHT },
+        uLight: { value: this.light },
         uStrata: { value: false },
       },
     });
@@ -314,6 +322,10 @@ export class PlateScene {
     surface.setAttribute("uv", new BufferAttribute(geometry.uvs, 2));
     surface.setAttribute("elevation", new BufferAttribute(geometry.elevations, 1));
     surface.setAttribute("ao", new BufferAttribute(geometry.ao, 1));
+    surface.setAttribute(
+      "sun",
+      new BufferAttribute(new Float32Array(geometry.ao.length).fill(1), 1),
+    );
     surface.setIndex(new BufferAttribute(geometry.surfaceIndex, 1));
     surface.computeVertexNormals();
     this.surface.geometry.dispose();
@@ -352,6 +364,8 @@ export class PlateScene {
     this.shadow.position.set(reach, -geometry.baseDepth - 0.0005, reach * 0.8);
 
     this.elevationRange = [geometry.min, geometry.max];
+    this.geometry = geometry;
+    this.applySun();
     const u = this.surfaceMaterial.uniforms;
     u.uMin.value = geometry.min;
     u.uMax.value = Math.max(geometry.max, geometry.min + 1);
@@ -375,6 +389,10 @@ export class PlateScene {
       this.ramp.needsUpdate = true;
     }
     u.uWater.value = look.water;
+    if (look.sunHour !== this.sunHour) {
+      this.sunHour = look.sunHour;
+      this.applySun();
+    }
     u.uSnow.value = look.snow > 0 ? look.snow : 2;
     u.uFlood.value = look.flood > 0 ? this.elevationRange[0] + look.flood : -1e9;
     this.shellMaterial.uniforms.uSide.value.set(look.side);
@@ -386,6 +404,32 @@ export class PlateScene {
     this.rimMaterial.color.set(look.ink);
     this.shadow.visible = look.shadow;
     this.wake(0);
+  }
+
+  /** Points the light at the sun for the current hour and recomputes the terrain's cast shadows. */
+  private applySun() {
+    const u = this.surfaceMaterial.uniforms;
+    const attribute = this.surface.geometry.getAttribute("sun") as BufferAttribute | undefined;
+    if (!this.sunHour || !this.geometry || !attribute) {
+      this.light.copy(LIGHT);
+      u.uSunMode.value = false;
+      this.wake(0);
+      return;
+    }
+    const { direction, warmth } = sunAt(this.sunHour);
+    this.light.set(...direction);
+    u.uSunMode.value = true;
+    u.uWarmth.value = warmth;
+    (attribute.array as Float32Array).set(
+      sunlight(this.geometry.surface, this.geometry.size, direction),
+    );
+    attribute.needsUpdate = true;
+    this.wake(0);
+  }
+
+  /** The sun's direction for the photo render, or null for the studio light. */
+  get sunDirection(): Vector3 | null {
+    return this.sunHour ? this.light.clone() : null;
   }
 
   /** The nameplate and summit pin; null removes them. `peakText` labels the pin. */
@@ -532,6 +576,7 @@ export class PlateScene {
     camera: PerspectiveCamera;
     target: Vector3;
     baseDepth: number;
+    sun: Vector3 | null;
   } {
     const look = this.look;
     const linear = (hex: string) => new Color(hex).convertSRGBToLinear();
@@ -625,7 +670,13 @@ export class PlateScene {
       );
     }
     const camera = this.camera.clone();
-    return { group, camera, target: this.controls.target.clone(), baseDepth: this.baseDepth };
+    return {
+      group,
+      camera,
+      target: this.controls.target.clone(),
+      baseDepth: this.baseDepth,
+      sun: this.sunDirection,
+    };
   }
 
   /** Lakes and rivers, white on black over the plate's square; null clears it. */
@@ -771,6 +822,17 @@ export class PlateScene {
       surfaceGeometry.setAttribute("uv", new BufferAttribute(geometry.uvs, 2));
       surfaceGeometry.setAttribute("elevation", new BufferAttribute(geometry.elevations, 1));
       surfaceGeometry.setAttribute("ao", new BufferAttribute(geometry.ao, 1));
+      surfaceGeometry.setAttribute(
+        "sun",
+        new BufferAttribute(
+          sunlight(geometry.surface, geometry.size, [...this.light.toArray()] as [
+            number,
+            number,
+            number,
+          ]),
+          1,
+        ),
+      );
       surfaceGeometry.setIndex(new BufferAttribute(geometry.surfaceIndex, 1));
       surfaceGeometry.computeVertexNormals();
       const shellGeometry = new BufferGeometry();

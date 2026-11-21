@@ -28,12 +28,13 @@ export async function loadTileDrape(
   bounds: PlateBounds,
   map: Basemap,
   signal?: AbortSignal,
+  day = "",
 ): Promise<HTMLCanvasElement> {
   const size = drapeSize();
   const zoom = tileZoomFor(bounds, size, map.maxZoom);
   const tiles = coveringTiles(bounds, zoom);
   const images = await Promise.all(
-    tiles.map(([x, y]) => loadTile(tileUrlFor(map, zoom, wrapTileX(x, zoom), y), signal)),
+    tiles.map(([x, y]) => loadTile(tileUrlFor(map, zoom, wrapTileX(x, zoom), y, day), signal)),
   );
   if (images.every((image) => image === null)) {
     throw new Error(`${map.name} is not available right now.`);
