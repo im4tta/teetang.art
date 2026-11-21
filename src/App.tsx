@@ -41,6 +41,14 @@ export default function App() {
           }
         />
         <Route
+          path="/plate/embed"
+          element={
+            <Suspense fallback={<RouteLoadingFallback label="Opening the 3D plate…" />}>
+              <PlatePage embed />
+            </Suspense>
+          }
+        />
+        <Route
           path="/plate/studio"
           element={
             <Suspense fallback={<RouteLoadingFallback label="Opening the STL Studio…" />}>

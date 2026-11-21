@@ -1552,3 +1552,67 @@
   font-weight: 400;
   color: var(--plate-muted);
 }
+
+.plate-days {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.plate-days li {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 15px;
+}
+
+.plate-days li i {
+  width: 22px;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.plate-days li span {
+  flex: 1;
+}
+
+.plate-marker-photo {
+  cursor: pointer;
+}
+
+.plate-marker-photo[data-has-photo] {
+  background: var(--plate-accent);
+  color: var(--plate-on-accent) !important;
+}
+
+/* ── Embedded on another site: the plate alone ── */
+
+.plate-page[data-embed] {
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.plate-page[data-embed] .plate-main,
+.plate-page[data-embed] .plate-stage {
+  flex: 1;
+  height: 100%;
+}
+
+.plate-embed-open {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  z-index: 1;
+  display: inline-flex;
+  align-items: center;
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--plate-raised) 90%, transparent);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+}

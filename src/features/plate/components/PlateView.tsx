@@ -29,6 +29,8 @@ interface PlateViewProps {
   extras: PlateExtras | null;
   /** Text on the summit pin's tag. */
   peakText: string;
+  /** Photos for pins, by photo id. */
+  markerPhotos?: Map<string, ImageBitmap>;
   label: string;
   onInteract?: () => void;
 }
@@ -46,6 +48,7 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
     onPick,
     extras,
     peakText,
+    markerPhotos,
     label,
     onInteract,
   },
@@ -86,8 +89,8 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
   }, [scene, drape]);
 
   useEffect(() => {
-    scene?.setExtras(extras, peakText);
-  }, [scene, extras, peakText]);
+    scene?.setExtras(extras, peakText, markerPhotos);
+  }, [scene, extras, peakText, markerPhotos]);
 
   useEffect(() => {
     scene?.setOverlay(overlay);

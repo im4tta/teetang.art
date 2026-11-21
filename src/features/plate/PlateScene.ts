@@ -433,7 +433,11 @@ export class PlateScene {
   }
 
   /** The nameplate and summit pin; null removes them. `peakText` labels the pin. */
-  setExtras(extras: PlateExtras | null, peakText = "") {
+  setExtras(
+    extras: PlateExtras | null,
+    peakText = "",
+    photos: Map<string, ImageBitmap> = new Map(),
+  ) {
     this.extras = extras;
     const label = extras?.label;
     this.labelTexture?.dispose();
@@ -498,14 +502,15 @@ export class PlateScene {
       for (const marker of markers) {
         soup.set(marker.soup, offset);
         offset += marker.soup.length;
-        if (!marker.label) continue;
-        const canvas = tagCanvas(marker.label);
+        const photo = marker.photo ? photos.get(marker.photo) : undefined;
+        if (!marker.label && !photo) continue;
+        const canvas = photo ? photoCard(photo, marker.label) : tagCanvas(marker.label);
         const map = new CanvasTexture(canvas);
         map.colorSpace = NoColorSpace;
         const tag = new Sprite(new SpriteMaterial({ map, depthTest: false, transparent: true }));
         tag.renderOrder = 10;
         tag.center.set(0.5, 0);
-        const height = 0.042;
+        const height = photo ? 0.16 : 0.042;
         tag.scale.set((height * canvas.width) / canvas.height, height, 1);
         tag.position.set(marker.tip[0], marker.tip[1] + 0.008, marker.tip[2]);
         this.markerTags.push(tag);
@@ -1007,5 +1012,50 @@ function tagCanvas(text: string): HTMLCanvasElement {
   ctx.textAlign = "center";
   ctx.textBaseline = "middle";
   ctx.fillText(text, width / 2, 12.5 * scale);
+  return canvas;
+}
+
+/** A photo with rounded corners and its pin's name underneath, for a pin's tag. */
+function photoCard(photo: ImageBitmap, label: string): HTMLCanvasElement {
+  const width = 360;
+  const imageHeight = Math.round((width * 3) / 4);
+  const strip = label ? 44 : 0;
+  const pad = 8;
+  const canvas = Object.assign(document.createElement("canvas"), {
+    width: width + pad * 2,
+    height: imageHeight + strip + pad * 2,
+  });
+  const ctx = canvas.getContext("2d")!;
+  ctx.fillStyle = "rgba(20, 19, 17, 0.9)";
+  ctx.beginPath();
+  ctx.roundRect(0, 0, canvas.width, canvas.height, 18);
+  ctx.fill();
+  // Cover the 4:3 frame with the middle of the photo.
+  const scale = Math.max(width / photo.width, imageHeight / photo.height);
+  const sw = width / scale;
+  const sh = imageHeight / scale;
+  ctx.save();
+  ctx.beginPath();
+  ctx.roundRect(pad, pad, width, imageHeight, 12);
+  ctx.clip();
+  ctx.drawImage(
+    photo,
+    (photo.width - sw) / 2,
+    (photo.height - sh) / 2,
+    sw,
+    sh,
+    pad,
+    pad,
+    width,
+    imageHeight,
+  );
+  ctx.restore();
+  if (label) {
+    ctx.fillStyle = "#fbfaf7";
+    ctx.font = `600 24px "Space Grotesk", "Kantumruy Pro", system-ui, sans-serif`;
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(label, canvas.width / 2, pad + imageHeight + strip / 2 + 2, width - 16);
+  }
   return canvas;
 }

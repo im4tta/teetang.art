@@ -603,6 +603,82 @@ test.describe("STL Studio finishing", () => {
   });
 });
 
+test.describe("trips, photos and embedding", () => {
+  const gpx = (shift: number) =>
+    `<?xml version="1.0"?><gpx version="1.1"><trk><trkseg>${Array.from({ length: 40 }, (_, k) => {
+      const t = k / 39;
+      return `<trkpt lat="${(12.01 + shift + t * 0.02).toFixed(6)}" lon="${(104.15 + t * 0.02).toFixed(6)}"/>`;
+    }).join("")}</trkseg></trk></gpx>`;
+
+  test("a two-day trip, and a photo on a pin", async ({ page }) => {
+    await openPlate(page);
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    const file = page.locator(".plate-sheet input[type=file][accept^='.gpx']");
+    await file.setInputFiles({
+      name: "day1.gpx",
+      mimeType: "application/gpx+xml",
+      buffer: Buffer.from(gpx(0)),
+    });
+    await expect(page.locator(".plate-days li")).toHaveCount(1);
+    await page.getByRole("button", { name: "Add another day" }).click();
+    await file.setInputFiles({
+      name: "day2.gpx",
+      mimeType: "application/gpx+xml",
+      buffer: Buffer.from(gpx(0.01)),
+    });
+    await expect(page.locator(".plate-days li")).toHaveCount(2);
+    await page.getByRole("button", { name: "Day 2", exact: true }).click();
+    await expect(page.getByRole("button", { name: "Day 2", exact: true })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.locator(".plate-profile svg")).toContainText("km");
+
+    await page.getByRole("button", { name: "Add a pin: tap the plate" }).click();
+    const box = (await page.locator(".plate-canvas").boundingBox())!;
+    await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.55);
+    await expect(page.locator(".plate-marker-row")).toHaveCount(1);
+    // A tiny PNG made on a canvas stands in for a phone photo.
+    const png = await page.evaluate(async () => {
+      const canvas = Object.assign(document.createElement("canvas"), { width: 64, height: 48 });
+      const ctx = canvas.getContext("2d")!;
+      ctx.fillStyle = "#2f9e44";
+      ctx.fillRect(0, 0, 64, 48);
+      const blob = await new Promise<Blob>((resolve) =>
+        canvas.toBlob((b) => resolve(b!), "image/png"),
+      );
+      return [...new Uint8Array(await blob.arrayBuffer())];
+    });
+    await page
+      .locator(".plate-marker-photo input[type=file]")
+      .setInputFiles({ name: "summit.png", mimeType: "image/png", buffer: Buffer.from(png) });
+    await expect(page.locator(".plate-marker-photo")).toHaveAttribute("data-has-photo", "true");
+  });
+
+  test("embed code opens the plate alone and leaves the visitor's draft alone", async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&name=Phnom%20Aural&style=print");
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await page.locator(".plate-download[data-kind=embed]").click();
+    await expect(page.locator(".app-toast--success")).toContainText("Embed code copied");
+    const snippet = await page.evaluate(() => navigator.clipboard.readText());
+    expect(snippet).toMatch(/^<iframe src="https:\/\/teetang\.art\/plate\/embed\?/);
+    const src = new URL(snippet.match(/src="([^"]+)"/)![1].replace(/&amp;/g, "&"));
+
+    const draft = await page.evaluate(() => localStorage.getItem("teetangart.plate.v1"));
+    await openPlate(page, `${src.pathname}${src.search}`);
+    await expect(page.locator(".plate-header")).toHaveCount(0);
+    await expect(page.locator(".plate-panel")).toHaveCount(0);
+    await expect(page.locator(".plate-embed-open")).toContainText("Phnom Aural");
+    await expect(page).toHaveURL(/\/plate\/embed\?/);
+    await page.waitForTimeout(800);
+    expect(await page.evaluate(() => localStorage.getItem("teetangart.plate.v1"))).toBe(draft);
+  });
+});
+
 test.describe("3D plate on a computer", () => {
   test.use({ viewport: { width: 1300, height: 820 }, isMobile: false, hasTouch: false });
 
@@ -644,7 +720,7 @@ test.describe("3D plate on a computer", () => {
     await page.getByRole("button", { name: "Add a pin: tap the plate" }).click();
     const box = (await page.locator(".plate-canvas").boundingBox())!;
     await page.mouse.click(box.x + box.width * 0.45, box.y + box.height * 0.55);
-    await expect(page.locator(".plate-marker-row input")).toHaveValue("Pin 1");
+    await expect(page.locator(".plate-marker-row input[type=text]")).toHaveValue("Pin 1");
 
     await page.getByRole("button", { name: "Draw a line: tap two points" }).click();
     await page.mouse.click(box.x + box.width * 0.3, box.y + box.height * 0.5);

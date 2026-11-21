@@ -26,7 +26,7 @@ import { triggerDownloadBlob } from "@/services/export/fileDownloader";
 import { tapFeedback } from "@/utils/haptics";
 import { useWheelScrollsRows } from "@/hooks/useWheelScrollsRows";
 import { plateBounds } from "@/features/plate/geo";
-import { decodeRoute, routeMask, toPlateUv } from "@/features/plate/routes";
+import { decodeTracks, routeMask, toPlateUv } from "@/features/plate/routes";
 import {
   BUILDING_MAX_METRES,
   loadBuildingHeights,
@@ -306,8 +306,8 @@ function StudioApp() {
     [waterMask, edited, deferredPlate.lakes],
   );
 
-  const route = useMemo(
-    () => (deferredPlate.route ? decodeRoute(deferredPlate.route) : []),
+  const tracks = useMemo(
+    () => (deferredPlate.route ? decodeTracks(deferredPlate.route) : []),
     [deferredPlate.route],
   );
   const raiseRoute = deferredPlate.routeRaise;
@@ -330,9 +330,9 @@ function StudioApp() {
               : null,
             reliefs: [
               // The same 0.8 mm ridge as on the plate page, whatever the print width.
-              raiseRoute && route.length > 1
+              raiseRoute && tracks.length > 0
                 ? {
-                    mask: routeMask(bounds, route, edited.size),
+                    mask: routeMask(bounds, tracks, edited.size),
                     size: edited.size,
                     height: 0.8 / deferredPrint.widthMm,
                   }
@@ -364,7 +364,7 @@ function StudioApp() {
       deferredPrint.widthMm,
       deferredPrint.hollow,
       raiseRoute,
-      route,
+      tracks,
       waterGrid,
       buildingGrid,
     ],
@@ -554,10 +554,10 @@ function StudioApp() {
                 hollow: print.hollow,
                 pins: print.pins,
                 reliefs: [
-                  ...(raiseRoute && route.length > 1
+                  ...(raiseRoute && tracks.length > 0
                     ? [
                         {
-                          mask: routeMask(bounds, route, edited.size),
+                          mask: routeMask(bounds, tracks, edited.size),
                           size: edited.size,
                           heightMm: 0.8,
                         },

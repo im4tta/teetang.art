@@ -12,6 +12,7 @@ import {
 } from "./extras";
 import { RELIEF_PALETTE_IDS, type ReliefPalette } from "./palettes";
 import { MAX_MARKERS, isEncodedRoute, type PlateMarker } from "./routes";
+import { isPhotoId } from "./photos";
 
 export interface PlatePlace {
   name: string;
@@ -300,6 +301,7 @@ export function sanitizePlate(
         lat: Number(m?.lat),
         lon: Number(m?.lon),
         label: typeof m?.label === "string" ? m.label.replace(/[|]/g, " ").slice(0, 40) : "",
+        ...(isPhotoId(m?.photo) ? { photo: m.photo } : {}),
       }))
       .filter((m) => Number.isFinite(m.lat) && Number.isFinite(m.lon) && Math.abs(m.lat) <= 85)
       .slice(0, MAX_MARKERS);
@@ -350,9 +352,13 @@ export function buildPlateLink(plate: PlateSettings): string {
     if (typeof value === "boolean") value = value ? "1" : "0";
     if (value !== "" && value !== DEFAULT_PLATE[field]) params.set(param, String(value));
   }
-  // A link always carries its place, even when it is the default one.
+  // A link always carries its place, even when it is the default one: a
+  // shared link without a name would otherwise open as "Untitled place".
   params.set("lat", plate.lat.toFixed(5));
   params.set("lon", plate.lon.toFixed(5));
+  for (const field of ["name", "region", "country", "countryCode", "nameKm"] as const) {
+    if (plate[field]) params.set(LINK[field], plate[field]);
+  }
   return `${SITE_URL}/plate?${params}`;
 }
 

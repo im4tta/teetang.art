@@ -602,7 +602,20 @@ export const en = {
   "studio.message": "Message under the base",
   "studio.messagePlaceholder": "For Dara, from the summit · 2026",
   "studio.qr": "QR code to this plate",
-  "studio.undersideHint": "Engraved 0.6 mm into the bottom, mirrored so it reads when you turn the plate over. Fill it with paint or a marker to make it stand out.",
-  "studio.undersideHollow": "Not available with a hollow base: there is no solid bottom to engrave.",
+  "studio.undersideHint":
+    "Engraved 0.6 mm into the bottom, mirrored so it reads when you turn the plate over. Fill it with paint or a marker to make it stand out.",
+  "studio.undersideHollow":
+    "Not available with a hollow base: there is no solid bottom to engrave.",
   "studio.guide": "Download colour-change guide",
+  "plate.route.day": "Day",
+  "plate.route.removeDay": "Remove day",
+  "plate.route.addDay": "Add another day",
+  "plate.route.wholeTrip": "Whole trip",
+  "plate.markers.addPhoto": "Add a photo to this pin",
+  "plate.markers.changePhoto": "Change this pin's photo",
+  "plate.markers.photoFailed": "Couldn't read that photo.",
+  "plate.markers.photoNote": "Photos stay on this device; share links carry the pins without them.",
+  "plate.dl.embed": "Embed on a website",
+  "plate.dl.embedHint": "Copies code for a blog, school or tourism site",
+  "plate.embedCopied": "Embed code copied",
 } satisfies Record<string, string>;
