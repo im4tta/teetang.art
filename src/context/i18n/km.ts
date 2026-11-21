@@ -589,4 +589,13 @@ export const km: TranslationDict = {
   "plate.adj.buildingsSmall": "បង្ហាញលើផ្ទាំងទំហំ ៦ គីឡូម៉ែត្រ ឬតិចជាងនេះ",
   "plate.adj.roads": "ផ្លូវធំៗ",
   "plate.cityError": "មិនអាចផ្ទុកអគារ ឬផ្លូវនៅទីនេះបានទេ។",
+  "studio.pins": "ម្ជុលតភ្ជាប់",
+  "studio.pinsThin": "ត្រូវការបាតក្រាស់ ៤,៦ mm ឬលើស; ក្បឿងនឹងត្រូវបិទកាវជំនួសវិញ។",
+  "studio.underside": "ខាងក្រោម",
+  "studio.message": "សារនៅក្រោមបាត",
+  "studio.messagePlaceholder": "ជូនដារ៉ា ពីកំពូលភ្នំ · ២០២៦",
+  "studio.qr": "QR code ទៅផ្ទាំងនេះ",
+  "studio.undersideHint": "ឆ្លាក់ជ្រៅ 0,6 mm ក្នុងបាត ត្រឡប់ផ្ទុយ ដើម្បីអានបានពេលបង្វិលផ្ទាំងមកលើ។ បំពេញដោយថ្នាំ ឬប៊ិចសម្គាល់ ដើម្បីឲ្យលេចធ្លោ។",
+  "studio.undersideHollow": "មិនអាចប្រើជាមួយបាតប្រហោងបានទេ៖ គ្មានបាតរឹងសម្រាប់ឆ្លាក់។",
+  "studio.guide": "ទាញយកការណែនាំប្ដូរពណ៌",
 };

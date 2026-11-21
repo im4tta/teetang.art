@@ -596,4 +596,13 @@ export const en = {
   "plate.adj.buildingsSmall": "Shown on plates of 6 km or less",
   "plate.adj.roads": "Main roads",
   "plate.cityError": "Couldn't load buildings or roads here.",
+  "studio.pins": "Joining pins",
+  "studio.pinsThin": "Needs a base of 4.6 mm or more; the tiles will be glued instead.",
+  "studio.underside": "Underneath",
+  "studio.message": "Message under the base",
+  "studio.messagePlaceholder": "For Dara, from the summit · 2026",
+  "studio.qr": "QR code to this plate",
+  "studio.undersideHint": "Engraved 0.6 mm into the bottom, mirrored so it reads when you turn the plate over. Fill it with paint or a marker to make it stand out.",
+  "studio.undersideHollow": "Not available with a hollow base: there is no solid bottom to engrave.",
+  "studio.guide": "Download colour-change guide",
 } satisfies Record<string, string>;

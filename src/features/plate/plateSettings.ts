@@ -437,3 +437,11 @@ export function plateLabel(
     scale: plate.labelScale ? scaleBar(plate.sizeKm, widthMm) : null,
   };
 }
+
+/**
+ * The plate's link without the track, pins and note: short enough for a QR
+ * code that still scans when engraved (a long route would make it too dense).
+ */
+export function shortPlateLink(plate: PlateSettings): string {
+  return buildPlateLink({ ...plate, route: "", markers: [], note: "" });
+}

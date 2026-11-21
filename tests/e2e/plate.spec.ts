@@ -563,6 +563,46 @@ test.describe("STL Studio print options", () => {
   });
 });
 
+test.describe("STL Studio finishing", () => {
+  test("joining pins, an engraved underside and a colour-change guide", async ({ page }) => {
+    test.setTimeout(90_000);
+    await openPlate(page);
+    await page.getByRole("button", { name: "STL Studio" }).click();
+    await expect(page.locator(".studio-canvas")).toHaveAttribute("data-ready", "true", {
+      timeout: 20_000,
+    });
+    const save = async (name: string | RegExp) => {
+      const [download] = await Promise.all([
+        page.waitForEvent("download", { timeout: 60_000 }),
+        page.getByRole("button", { name }).click(),
+      ]);
+      const chunks: Buffer[] = [];
+      for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer);
+      return Buffer.concat(chunks);
+    };
+
+    const plain = (await save("Download STL")).readUInt32LE(80);
+    await page.getByText("Underneath").click();
+    await page.getByLabel("Message under the base").fill("From the summit");
+    await page.getByRole("checkbox", { name: "QR code to this plate" }).check();
+    const engraved = (await save("Download STL")).readUInt32LE(80);
+    // The letters and QR modules add many small faces.
+    expect(engraved).toBeGreaterThan(plain + 1_000);
+
+    await page.getByText("More ways to print").click();
+    await page.getByRole("button", { name: "2 × 2" }).click();
+    await expect(page.getByRole("checkbox", { name: "Joining pins" })).toBeChecked();
+    const zip = await save("Download tiles (ZIP)");
+    expect(zip.includes(Buffer.from("dowel-pin.stl"))).toBe(true);
+    expect(zip.includes(Buffer.from("Print dowel-pin.stl 8 times"))).toBe(true);
+
+    await page.getByRole("button", { name: "3", exact: true }).click();
+    const guide = (await save("Download colour-change guide")).toString("utf8");
+    expect(guide).toContain("layer");
+    expect(guide).toContain("M600");
+  });
+});
+
 test.describe("3D plate on a computer", () => {
   test.use({ viewport: { width: 1300, height: 820 }, isMobile: false, hasTouch: false });
 
