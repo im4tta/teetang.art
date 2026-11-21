@@ -86,7 +86,15 @@ export default function PlaceSearch({ onSelect }: PlaceSearchProps) {
               onPointerDown={(event) => event.preventDefault()}
               onClick={() => choose(place)}
             >
-              <strong>{place.shortLabel}</strong>
+              <strong>
+                {place.shortLabel}
+                {place.nameKm && place.nameKm !== place.shortLabel && (
+                  <span className="plate-search__khmer" lang="km">
+                    {" "}
+                    · {place.nameKm}
+                  </span>
+                )}
+              </strong>
               <span>{place.label.split(",").slice(1, 3).join(",").trim()}</span>
             </li>
           ))}

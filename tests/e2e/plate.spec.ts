@@ -679,6 +679,54 @@ test.describe("trips, photos and embedding", () => {
   });
 });
 
+test.describe("Khmer search and lessons", () => {
+  test("searching in Khmer finds the place and keeps its Khmer name", async ({ page }) => {
+    const queries: string[] = [];
+    await page.route(/nominatim\.openstreetmap\.org\/search/, (route) => {
+      queries.push(route.request().url());
+      return route.fulfill({
+        contentType: "application/json",
+        headers: { "access-control-allow-origin": "*" },
+        body: JSON.stringify([
+          {
+            place_id: 1,
+            lat: "13.565",
+            lon: "104.1",
+            type: "mountain",
+            display_name: "Phnom Kulen, Siem Reap, Cambodia",
+            address: { state: "Siem Reap", country: "Cambodia", country_code: "kh" },
+            namedetails: { name: "Phnom Kulen", "name:km": "ភ្នំគូលែន" },
+          },
+        ]),
+      });
+    });
+    await openPlate(page);
+    await page.getByPlaceholder("Search any place on Earth").fill("ភ្នំគូលែន");
+    const result = page.locator(".plate-search__result").first();
+    await expect(result).toContainText("Phnom Kulen");
+    await expect(result.locator(".plate-search__khmer")).toContainText("ភ្នំគូលែន");
+    expect(queries[0]).toContain("namedetails=1");
+    await result.click();
+    await expect(page.locator(".plate-place__name")).toHaveText("Phnom Kulen");
+    await expect(page.locator(".plate-place__khmer")).toHaveText("ភ្នំគូលែន");
+  });
+
+  test("the flood lesson opens the Tonlé Sap and raises the water", async ({ page }) => {
+    await openPlate(page);
+    await page.getByRole("button", { name: "Explore" }).click();
+    await page.getByRole("button", { name: "The rainy-season flood" }).click();
+    await expect(page.locator(".plate-place__name")).toHaveText("Tonlé Sap");
+    const lesson = page.getByRole("dialog", { name: "The rainy-season flood" });
+    await expect(lesson).toContainText("1 / 3");
+    await lesson.getByRole("button", { name: "Next" }).click();
+    await expect(lesson).toContainText("flows backwards");
+    await lesson.getByRole("button", { name: "Next" }).click();
+    await lesson.getByRole("button", { name: "Finish" }).click();
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await expect(page.locator(".plate-field__value", { hasText: "+9 m" })).toBeVisible();
+  });
+});
+
 test.describe("3D plate on a computer", () => {
   test.use({ viewport: { width: 1300, height: 820 }, isMobile: false, hasTouch: false });
 

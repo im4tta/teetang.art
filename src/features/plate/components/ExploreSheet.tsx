@@ -3,13 +3,15 @@ import { CloudDownload, Columns2, GraduationCap, Trash2, X } from "lucide-react"
 import { useI18n } from "@/context/i18n/context";
 import { EXPLORE_CAMBODIA, EXPLORE_WORLD, type ExplorePlace, type SavedPlate } from "../explore";
 import PlateSheet from "./PlateSheet";
+import { LESSONS } from "../lessons";
+import type { TranslationKey } from "@/context/i18n/types";
 
 interface ExploreSheetProps {
   saved: SavedPlate[];
   comparing: string | null;
   onOpen: (place: ExplorePlace) => void;
   onCompare: (place: ExplorePlace | null) => void;
-  onLesson: () => void;
+  onLesson: (id: string) => void;
   onSaveOffline: () => Promise<void>;
   onOpenSaved: (saved: SavedPlate) => void;
   onDeleteSaved: (saved: SavedPlate) => void;
@@ -53,10 +55,23 @@ export default function ExploreSheet({
 
   return (
     <PlateSheet title={t("plate.explore.title")} onClose={onClose}>
-      <button type="button" className="plate-btn plate-btn--soft" onClick={onLesson}>
-        <GraduationCap size={20} aria-hidden="true" />
-        {t("plate.lesson.start")}
-      </button>
+      <section className="plate-field plate-group" aria-label={t("plate.lesson.classroom")}>
+        <h3 className="plate-field__label">
+          <GraduationCap size={18} aria-hidden="true" /> {t("plate.lesson.classroom")}
+        </h3>
+        {LESSONS.map((lesson) => (
+          <button
+            key={lesson.id}
+            type="button"
+            className="plate-btn plate-btn--soft plate-lesson-btn"
+            onClick={() => onLesson(lesson.id)}
+          >
+            {lesson.id === "contours"
+              ? t("plate.lesson.start")
+              : t(`plate.lesson.${lesson.id}.title` as TranslationKey)}
+          </button>
+        ))}
+      </section>
 
       {comparing && (
         <div className="plate-explore-comparing">

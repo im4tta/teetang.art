@@ -77,7 +77,9 @@ import { loadPhoto } from "@/features/plate/photos";
 import type { PhotoInput } from "@/features/plate/photo";
 import type { ArMode } from "@/features/plate/ar";
 import { videoType } from "@/features/plate/flyover";
+import { lessonById } from "@/features/plate/lessons";
 import {
+  EXPLORE_ALL,
   cachePlateOffline,
   explorePlate,
   readSaved,
@@ -200,8 +202,18 @@ const BUILDINGS_MAX_KM = 6;
 /** Buildings stand at this many times their true height on the plate. */
 const BUILDING_SCALE = 2;
 
-/** Steps of the classroom lesson on contour lines. */
-const LESSON_STEPS = 4;
+/** A lesson's name; the contour lesson keeps its original keys. */
+function lessonTitle(t: (key: TranslationKey) => string, id: string) {
+  return id === "contours"
+    ? t("plate.lesson.start")
+    : t(`plate.lesson.${id}.title` as TranslationKey);
+}
+
+function lessonText(t: (key: TranslationKey) => string, id: string, step: number) {
+  return id === "contours"
+    ? t(`plate.lesson.${step + 1}` as TranslationKey)
+    : t(`plate.lesson.${id}.${step + 1}` as TranslationKey);
+}
 
 /** Rows that scroll sideways; the mouse wheel scrolls them too. */
 const SIDEWAYS_ROWS = ".plate-segmented, .plate-chips, .plate-theme-row";
@@ -219,8 +231,10 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
   /** A second place shown beside this one, at the same scale. */
   const [comparePlace, setComparePlace] = useState<ExplorePlace | null>(null);
   const [compareGrid, setCompareGrid] = useState<HeightGrid | null>(null);
-  /** Classroom lesson: which step is showing, and how raised the relief is. */
-  const [lesson, setLesson] = useState<number | null>(null);
+  /** Classroom lesson: which lesson and step is showing, and how raised the relief is. */
+  const [lesson, setLesson] = useState<{ id: string; step: number } | null>(null);
+  const lessonPlan = lesson ? lessonById(lesson.id) : undefined;
+  const lessonStep = lesson && lessonPlan ? lessonPlan.steps[lesson.step] : undefined;
   const [reliefScale, setReliefScale] = useState(1);
   /** Waiting for a tap on the plate: to drop a marker, or the two ends of a measuring line. */
   const [picking, setPicking] = useState<
@@ -456,17 +470,13 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
     t,
   ]);
 
-  // Lesson step 2 lifts the contour map into its real shape.
+  // A lesson step may flatten the relief, lift it, or change the plate.
+  const stepRelief = lessonStep?.relief;
   useEffect(() => {
-    if (lesson === null) {
-      queueMicrotask(() => setReliefScale(1));
+    if (stepRelief !== "rise") {
+      queueMicrotask(() => setReliefScale(stepRelief === "flat" ? 0.02 : 1));
       return;
     }
-    if (lesson === 0) {
-      queueMicrotask(() => setReliefScale(0.02));
-      return;
-    }
-    if (lesson !== 1) return;
     let frame = 0;
     const start = performance.now();
     const step = () => {
@@ -476,7 +486,17 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
     };
     frame = requestAnimationFrame(step);
     return () => cancelAnimationFrame(frame);
-  }, [lesson]);
+  }, [stepRelief]);
+  /** Moves the lesson to a step, applying that step's changes to the plate. */
+  const showLessonStep = (id: string, step: number | null) => {
+    if (step === null) {
+      setLesson(null);
+      return;
+    }
+    const patch = lessonById(id)?.steps[step]?.patch;
+    if (patch) update(patch);
+    setLesson({ id, step });
+  };
 
   // Route, markers and measuring line, drawn on the surface.
   const overlay = useMemo(
@@ -931,15 +951,15 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
                   {t("plate.loadingImagery")}
                 </div>
               )}
-              {!touched && geometry && !photo && lesson === null && (
+              {!touched && geometry && !photo && !lesson && (
                 <p className="plate-stage__hint">{t("plate.dragHint")}</p>
               )}
-              {lesson !== null && (
-                <div className="plate-lesson" role="dialog" aria-label={t("plate.lesson.start")}>
+              {lesson && lessonPlan && (
+                <div className="plate-lesson" role="dialog" aria-label={lessonTitle(t, lesson.id)}>
                   <p className="plate-lesson__step">
-                    {lesson + 1} / {LESSON_STEPS}
+                    {lessonTitle(t, lesson.id)} · {lesson.step + 1} / {lessonPlan.steps.length}
                   </p>
-                  <p>{t(`plate.lesson.${lesson + 1}` as TranslationKey)}</p>
+                  <p>{lessonText(t, lesson.id, lesson.step)}</p>
                   <div className="plate-lesson__actions">
                     <button
                       type="button"
@@ -948,11 +968,11 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
                     >
                       {t("plate.close")}
                     </button>
-                    {lesson > 0 && (
+                    {lesson.step > 0 && (
                       <button
                         type="button"
                         className="plate-btn plate-btn--soft"
-                        onClick={() => setLesson(lesson - 1)}
+                        onClick={() => showLessonStep(lesson.id, lesson.step - 1)}
                       >
                         {t("updates.back")}
                       </button>
@@ -960,9 +980,16 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
                     <button
                       type="button"
                       className="plate-btn plate-btn--light"
-                      onClick={() => setLesson(lesson + 1 < LESSON_STEPS ? lesson + 1 : null)}
+                      onClick={() =>
+                        showLessonStep(
+                          lesson.id,
+                          lesson.step + 1 < lessonPlan.steps.length ? lesson.step + 1 : null,
+                        )
+                      }
                     >
-                      {lesson + 1 < LESSON_STEPS ? t("updates.next") : t("updates.finish")}
+                      {lesson.step + 1 < lessonPlan.steps.length
+                        ? t("updates.next")
+                        : t("updates.finish")}
                     </button>
                   </div>
                 </div>
@@ -1260,10 +1287,15 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
               setComparePlace(place);
               if (place) setSheet(null);
             }}
-            onLesson={() => {
+            onLesson={(id) => {
               setSheet(null);
               setMode("plate");
-              setLesson(0);
+              const place = EXPLORE_ALL.find((p) => p.id === lessonById(id)?.place);
+              if (place) {
+                setComparePlace(null);
+                goTo(explorePlate(place) as PlateSettings);
+              }
+              showLessonStep(id, 0);
             }}
             onSaveOffline={async () => {
               try {

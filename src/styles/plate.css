@@ -1616,3 +1616,8 @@
   font-weight: 600;
   text-decoration: none;
 }
+
+.plate-search__khmer {
+  font-family: "Kantumruy Pro", "Noto Sans Khmer", sans-serif;
+  font-weight: 500;
+}

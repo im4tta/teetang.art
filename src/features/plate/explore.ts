@@ -208,6 +208,8 @@ export const EXPLORE_WORLD: ExplorePlace[] = [
   },
 ];
 
+export const EXPLORE_ALL = [...EXPLORE_CAMBODIA, ...EXPLORE_WORLD];
+
 /** The settings a curated place opens with. */
 export function explorePlate(place: ExplorePlace): Partial<PlateSettings> {
   return {
