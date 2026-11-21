@@ -27,7 +27,12 @@ import { tapFeedback } from "@/utils/haptics";
 import { useWheelScrollsRows } from "@/hooks/useWheelScrollsRows";
 import { plateBounds } from "@/features/plate/geo";
 import { decodeRoute, routeMask, toPlateUv } from "@/features/plate/routes";
-import { loadWaterMask, maskToGrid } from "@/features/plate/drape";
+import {
+  BUILDING_MAX_METRES,
+  loadBuildingHeights,
+  loadWaterMask,
+  maskToGrid,
+} from "@/features/plate/drape";
 import { loadHeightGrid } from "@/features/plate/elevation";
 import type { HeightGrid } from "@/features/plate/elevationCore";
 import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
@@ -276,6 +281,24 @@ function StudioApp() {
     });
     return () => controller.abort();
   }, [plate.lakes, bounds]);
+  // Buildings, as on the plate page: plates of 6 km or less, twice their true height.
+  const [buildingMap, setBuildingMap] = useState<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    if (!plate.buildings || plate.sizeKm > 6) {
+      queueMicrotask(() => setBuildingMap(null));
+      return;
+    }
+    const controller = new AbortController();
+    loadBuildingHeights(bounds, controller.signal).then(setBuildingMap, () => {
+      if (!controller.signal.aborted) setBuildingMap(null);
+    });
+    return () => controller.abort();
+  }, [plate.buildings, plate.sizeKm, bounds]);
+  const buildingGrid = useMemo(
+    () => (buildingMap && edited ? maskToGrid(buildingMap, edited.size) : null),
+    [buildingMap, edited],
+  );
+
   const waterGrid = useMemo(
     () => (waterMask && edited && deferredPlate.lakes ? maskToGrid(waterMask, edited.size) : null),
     [waterMask, edited, deferredPlate.lakes],
@@ -312,6 +335,13 @@ function StudioApp() {
                     height: 0.8 / deferredPrint.widthMm,
                   }
                 : null,
+              buildingGrid
+                ? {
+                    mask: buildingGrid,
+                    size: edited.size,
+                    height: (BUILDING_MAX_METRES * 2) / bounds.sizeMeters,
+                  }
+                : null,
               // Lakes and rivers carved 0.6 mm deep.
               waterGrid
                 ? {
@@ -334,6 +364,7 @@ function StudioApp() {
       raiseRoute,
       route,
       waterGrid,
+      buildingGrid,
     ],
   );
   const markerSpots = useMemo(

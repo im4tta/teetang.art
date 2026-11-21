@@ -10,6 +10,7 @@ export type ProblemKind =
   | "terrain"
   | "imagery"
   | "lakes"
+  | "city"
   | "photo"
   | "ar"
   | "video"

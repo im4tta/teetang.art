@@ -1545,3 +1545,10 @@
     border-bottom: 1px solid var(--plate-line);
   }
 }
+
+.plate-switch__note {
+  display: block;
+  font-size: 12px;
+  font-weight: 400;
+  color: var(--plate-muted);
+}

@@ -443,6 +443,27 @@ export default function AdjustSheet({
         <label className="plate-switch">
           <input
             type="checkbox"
+            checked={plate.buildings}
+            onChange={(event) => onChange({ buildings: event.target.checked })}
+          />
+          <span>
+            {t("plate.adj.buildings")}
+            {plate.buildings && plate.sizeKm > 6 && (
+              <small className="plate-switch__note">{t("plate.adj.buildingsSmall")}</small>
+            )}
+          </span>
+        </label>
+        <label className="plate-switch">
+          <input
+            type="checkbox"
+            checked={plate.roads}
+            onChange={(event) => onChange({ roads: event.target.checked })}
+          />
+          <span>{t("plate.adj.roads")}</span>
+        </label>
+        <label className="plate-switch">
+          <input
+            type="checkbox"
             checked={plate.lakes}
             onChange={(event) => onChange({ lakes: event.target.checked })}
           />

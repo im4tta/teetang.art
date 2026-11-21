@@ -217,6 +217,8 @@ export interface OverlayOptions {
   paper: string;
   /** A measuring line, drawn dashed. */
   line?: LatLon[];
+  /** Roads: white on black over the plate's square, drawn first in the ink colour. */
+  roads?: HTMLCanvasElement | null;
   size?: number;
 }
 
@@ -225,6 +227,11 @@ export function drawOverlay(bounds: PlateBounds, options: OverlayOptions): HTMLC
   const size = options.size ?? 2048;
   const canvas = Object.assign(document.createElement("canvas"), { width: size, height: size });
   const ctx = canvas.getContext("2d")!;
+  if (options.roads) {
+    ctx.globalAlpha = 0.7;
+    ctx.drawImage(tintMask(options.roads, options.ink), 0, 0, size, size);
+    ctx.globalAlpha = 1;
+  }
   const at = (point: LatLon) =>
     toPlateUv(bounds, point).map((value) => value * size) as [number, number];
   if (options.route.length > 1) {
@@ -450,3 +457,25 @@ export function profileSvg(
 
 /** Bounds of a plate from its settings; re-exported for callers that only import this module. */
 export { plateBounds };
+
+/** A white-on-black mask turned into `color` with the mask as transparency. */
+function tintMask(mask: HTMLCanvasElement, color: string): HTMLCanvasElement {
+  const canvas = Object.assign(document.createElement("canvas"), {
+    width: mask.width,
+    height: mask.height,
+  });
+  const ctx = canvas.getContext("2d", { willReadFrequently: true })!;
+  ctx.drawImage(mask, 0, 0);
+  const image = ctx.getImageData(0, 0, canvas.width, canvas.height);
+  const [r, g, b] = [1, 3, 5].map((k) => parseInt(color.slice(k, k + 2), 16));
+  const data = image.data;
+  for (let k = 0; k < data.length; k += 4) {
+    const alpha = data[k];
+    data[k] = r;
+    data[k + 1] = g;
+    data[k + 2] = b;
+    data[k + 3] = alpha;
+  }
+  ctx.putImageData(image, 0, 0);
+  return canvas;
+}

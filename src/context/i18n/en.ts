@@ -545,13 +545,16 @@ export const en = {
   "studio.part.water": "Water",
   "studio.ways": "More ways to print",
   "studio.hollow": "Hollow base with a hanging lip",
-  "studio.hollowHint": "Saves about half the filament. A 3 mm lip around the opening hooks over a nail, so the plate hangs on a wall.",
+  "studio.hollowHint":
+    "Saves about half the filament. A 3 mm lip around the opening hooks over a nail, so the plate hangs on a wall.",
   "studio.tiles": "Split into tiles",
   "studio.tilesOne": "One piece",
-  "studio.tilesHint": "Square tiles about {size} mm wide, as a ZIP of STL files. They share one base level, so they line up edge to edge. Square plates only; the nameplate and pins are left out.",
+  "studio.tilesHint":
+    "Square tiles about {size} mm wide, as a ZIP of STL files. They share one base level, so they line up edge to edge. Square plates only; the nameplate and pins are left out.",
   "studio.downloadTiles": "Download tiles (ZIP)",
   "studio.litho": "Lithophane",
-  "studio.lithoHint": "A thin panel of the shaded relief. Print it standing up in white, then hold it to a window or a lamp.",
+  "studio.lithoHint":
+    "A thin panel of the shaded relief. Print it standing up in white, then hold it to a window or a lamp.",
   "studio.lithoThin": "Thinnest (brightest)",
   "studio.lithoThick": "Thickest (darkest)",
   "studio.downloadLitho": "Download lithophane (STL)",
@@ -573,15 +576,24 @@ export const en = {
   "plate.explore.cambodia": "Cambodia",
   "plate.explore.world": "Around the world",
   "plate.lesson.start": "Classroom: how contour lines work",
-  "plate.lesson.1": "This is a contour map, seen flat. Each line joins points at the same height, like the shoreline a lake would leave if the water rose a little at a time.",
-  "plate.lesson.2": "Now each line is lifted to its real height. Watch the flat drawing become the mountain.",
-  "plate.lesson.3": "Where the lines bunch up, the ground is steep; where they spread out, it is gentle. The smallest closed ring is the top.",
-  "plate.lesson.4": "Your turn: drag to turn the plate, then find the steepest slope and the summit using only the lines.",
+  "plate.lesson.1":
+    "This is a contour map, seen flat. Each line joins points at the same height, like the shoreline a lake would leave if the water rose a little at a time.",
+  "plate.lesson.2":
+    "Now each line is lifted to its real height. Watch the flat drawing become the mountain.",
+  "plate.lesson.3":
+    "Where the lines bunch up, the ground is steep; where they spread out, it is gentle. The smallest closed ring is the top.",
+  "plate.lesson.4":
+    "Your turn: drag to turn the plate, then find the steepest slope and the summit using only the lines.",
   "plate.adj.nameKm": "Khmer name (on the nameplate)",
   "plate.adj.sun": "Time of day",
   "plate.adj.studioLight": "Studio light",
   "plate.adj.day": "Day of the picture",
   "plate.adj.season.dry": "Dry season",
   "plate.adj.season.rainy": "Rainy season",
-  "plate.adj.dayHint": "A new picture of the whole Earth every day since 2000, about 250 m per pixel. Some days are cloudy: try a day or two either side.",
+  "plate.adj.dayHint":
+    "A new picture of the whole Earth every day since 2000, about 250 m per pixel. Some days are cloudy: try a day or two either side.",
+  "plate.adj.buildings": "Buildings (OpenStreetMap)",
+  "plate.adj.buildingsSmall": "Shown on plates of 6 km or less",
+  "plate.adj.roads": "Main roads",
+  "plate.cityError": "Couldn't load buildings or roads here.",
 } satisfies Record<string, string>;

@@ -2,6 +2,7 @@ import type { Page } from "@playwright/test";
 import { auditTouchSizes, expect, settleAnimations, test } from "./fixtures";
 import sharp from "sharp";
 import { serveTiles, splitTile, SUMMIT_METRES } from "./plateTiles";
+import { serveBuilding } from "./vectorTiles";
 
 // CI machines have no GPU. The plate needs WebGL, so these tests (and only
 // these: the editor's map would render slowly in software and time out) get
@@ -491,6 +492,36 @@ test.describe("light and seasons", () => {
     await page.getByRole("button", { name: /NASA by date/ }).click();
     await page.getByRole("button", { name: "Dry season" }).click();
     await expect.poll(() => requested.some((url) => /\/\d{4}-02-15\//.test(url))).toBe(true);
+  });
+});
+
+test.describe("buildings", () => {
+  test("OpenStreetMap buildings stand up out of the terrain and print", async ({ page }) => {
+    // A 100 m tower on the summit.
+    await serveBuilding(page, 12.0333, 104.1667, 100);
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&km=4&name=Phnom%20Aural&label=0");
+    const tallest = async () => {
+      await page.getByRole("button", { name: "Download", exact: true }).click();
+      const [download] = await Promise.all([
+        page.waitForEvent("download"),
+        page.locator(".plate-download[data-kind=stl]").click(),
+      ]);
+      const chunks: Buffer[] = [];
+      for await (const chunk of await download.createReadStream()) chunks.push(chunk as Buffer);
+      await page.locator(".plate-sheet__header button").click();
+      const stl = Buffer.concat(chunks);
+      let top = 0;
+      for (let k = 0; k < stl.readUInt32LE(80); k++) {
+        for (let c = 0; c < 3; c++) top = Math.max(top, stl.readFloatLE(84 + k * 50 + 20 + c * 12));
+      }
+      return top;
+    };
+    const before = await tallest();
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await page.getByRole("checkbox", { name: "Buildings (OpenStreetMap)" }).check();
+    await page.locator(".plate-sheet__header button").click();
+    // 100 m at twice its height on a 4 km plate 100 mm wide: about 5 mm taller.
+    await expect.poll(tallest, { timeout: 20_000 }).toBeGreaterThan(before + 3);
   });
 });
 

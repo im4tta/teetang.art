@@ -99,22 +99,20 @@ export async function loadMapDrape(
 
 const WATER_SOURCE = "https://tiles.openfreemap.org/planet";
 
-/**
- * Lakes, reservoirs, wide rivers and river lines from OpenStreetMap (through
- * OpenFreeMap's vector tiles), white on black over the plate's square.
- * Streams are only drawn on small plates, where they are wide enough to see.
- */
-export async function loadWaterMask(
+type MaskLayer = Record<string, unknown> & { id: string; type: string };
+
+/** Draws OpenStreetMap vector layers (OpenFreeMap) over the plate's square, on black. */
+async function renderVectorMask(
   bounds: PlateBounds,
+  layers: MaskLayer[],
   signal?: AbortSignal,
+  size = 1024,
 ): Promise<HTMLCanvasElement> {
   const [{ default: maplibregl }, exportUtils] = await Promise.all([
     import("maplibre-gl"),
     import("@/services/export/exportUtils"),
   ]);
   signal?.throwIfAborted();
-  const size = 1024;
-  const lineClasses = bounds.sizeMeters <= 5000 ? ["river", "canal", "stream"] : ["river", "canal"];
   const container = exportUtils.createOffscreenContainer(size, size);
   document.body.appendChild(container);
   const map = new maplibregl.Map({
@@ -124,23 +122,7 @@ export async function loadWaterMask(
       sources: { osm: { type: "vector", url: WATER_SOURCE } },
       layers: [
         { id: "land", type: "background", paint: { "background-color": "#000000" } },
-        {
-          id: "water",
-          type: "fill",
-          source: "osm",
-          "source-layer": "water",
-          paint: { "fill-color": "#ffffff", "fill-antialias": true },
-        },
-        {
-          id: "waterway",
-          type: "line",
-          source: "osm",
-          "source-layer": "waterway",
-          filter: ["in", ["get", "class"], ["literal", lineClasses]],
-          // About 0.4% of the plate's width: visible, and deep enough to print.
-          paint: { "line-color": "#ffffff", "line-width": size * 0.004 },
-          layout: { "line-cap": "round", "line-join": "round" },
-        },
+        ...(layers as never[]),
       ],
     },
     bounds: [
@@ -164,6 +146,122 @@ export async function loadWaterMask(
     map.remove();
     container.remove();
   }
+}
+
+/**
+ * Lakes, reservoirs, wide rivers and river lines from OpenStreetMap (through
+ * OpenFreeMap's vector tiles), white on black over the plate's square.
+ * Streams are only drawn on small plates, where they are wide enough to see.
+ */
+export function loadWaterMask(
+  bounds: PlateBounds,
+  signal?: AbortSignal,
+): Promise<HTMLCanvasElement> {
+  const size = 1024;
+  const lineClasses = bounds.sizeMeters <= 5000 ? ["river", "canal", "stream"] : ["river", "canal"];
+  return renderVectorMask(
+    bounds,
+    [
+      {
+        id: "water",
+        type: "fill",
+        source: "osm",
+        "source-layer": "water",
+        paint: { "fill-color": "#ffffff", "fill-antialias": true },
+      },
+      {
+        id: "waterway",
+        type: "line",
+        source: "osm",
+        "source-layer": "waterway",
+        filter: ["in", ["get", "class"], ["literal", lineClasses]],
+        // About 0.4% of the plate's width: visible, and deep enough to print.
+        paint: { "line-color": "#ffffff", "line-width": size * 0.004 },
+        layout: { "line-cap": "round", "line-join": "round" },
+      },
+    ],
+    signal,
+    size,
+  );
+}
+
+/** Tallest building the height map can hold; taller ones are capped. */
+export const BUILDING_MAX_METRES = 255;
+
+/**
+ * Buildings as a height map: each footprint is filled with a grey whose
+ * brightness is its height (black = ground, white = 255 m or more).
+ * Only drawn on plates of 6 km or less, where buildings are big enough to see.
+ */
+export function loadBuildingHeights(
+  bounds: PlateBounds,
+  signal?: AbortSignal,
+): Promise<HTMLCanvasElement> {
+  return renderVectorMask(
+    bounds,
+    [
+      {
+        id: "buildings",
+        type: "fill",
+        source: "osm",
+        "source-layer": "building",
+        paint: {
+          // Buildings without a height are drawn as about three storeys.
+          "fill-color": [
+            "interpolate",
+            ["linear"],
+            ["coalesce", ["get", "render_height"], 10],
+            0,
+            "#000000",
+            BUILDING_MAX_METRES,
+            "#ffffff",
+          ],
+          "fill-antialias": false,
+        },
+      },
+    ],
+    signal,
+    2048,
+  );
+}
+
+/** Main roads as white lines on black, scaled to the plate, for drawing on the surface. */
+export function loadRoads(bounds: PlateBounds, signal?: AbortSignal): Promise<HTMLCanvasElement> {
+  const size = 2048;
+  // Thinner minor roads, and none on big plates where they would cover everything.
+  const classes =
+    bounds.sizeMeters <= 6000
+      ? ["motorway", "trunk", "primary", "secondary", "tertiary", "minor"]
+      : bounds.sizeMeters <= 25_000
+        ? ["motorway", "trunk", "primary", "secondary"]
+        : ["motorway", "trunk", "primary"];
+  return renderVectorMask(
+    bounds,
+    [
+      {
+        id: "roads",
+        type: "line",
+        source: "osm",
+        "source-layer": "transportation",
+        filter: ["in", ["get", "class"], ["literal", classes]],
+        paint: {
+          "line-color": "#ffffff",
+          "line-width": [
+            "match",
+            ["get", "class"],
+            ["motorway", "trunk"],
+            size * 0.0035,
+            ["primary", "secondary"],
+            size * 0.0025,
+            size * 0.0015,
+          ],
+        },
+        layout: { "line-cap": "round", "line-join": "round" },
+      },
+    ],
+    signal,
+    size,
+  );
 }
 
 /** A mask canvas resampled to a grid of `size × size` values in 0..1 (red channel). */

@@ -62,7 +62,15 @@ import {
   type PlateSettings,
 } from "@/features/plate/plateSettings";
 import { pickSurprise } from "@/features/plate/surprisePlaces";
-import { loadMapDrape, loadTileDrape, loadWaterMask, maskToGrid } from "@/features/plate/drape";
+import {
+  BUILDING_MAX_METRES,
+  loadBuildingHeights,
+  loadMapDrape,
+  loadRoads,
+  loadTileDrape,
+  loadWaterMask,
+  maskToGrid,
+} from "@/features/plate/drape";
 import { recentDay, resolveBasemap, type Basemap } from "@/features/plate/basemaps";
 import { buildPlateExtras, type PlateExtras } from "@/features/plate/extras";
 import type { PhotoInput } from "@/features/plate/photo";
@@ -184,6 +192,11 @@ function stageBackdrop(): string {
   const value = page ? getComputedStyle(page).getPropertyValue("--plate-bg").trim() : "";
   return /^#[0-9a-f]{6}$/i.test(value) ? value : "#f1efe9";
 }
+
+/** Buildings show on plates up to this size, where they are big enough to see. */
+const BUILDINGS_MAX_KM = 6;
+/** Buildings stand at this many times their true height on the plate. */
+const BUILDING_SCALE = 2;
 
 /** Steps of the classroom lesson on contour lines. */
 const LESSON_STEPS = 4;
@@ -330,6 +343,24 @@ function PlateApp() {
   }, [plate.lakes, bounds, t]);
   const waterReady = deferred.lakes ? waterMask : null;
 
+  // Buildings and roads from OpenStreetMap, when asked for. Buildings only on small plates.
+  const wantBuildings = plate.buildings && plate.sizeKm <= BUILDINGS_MAX_KM;
+  const [buildingMap, setBuildingMap] = useState<HTMLCanvasElement | null>(null);
+  const [roadMap, setRoadMap] = useState<HTMLCanvasElement | null>(null);
+  useEffect(() => {
+    const controller = new AbortController();
+    const fail = () => {
+      if (controller.signal.aborted) return;
+      reportProblem("city");
+      notify(t("plate.cityError"), { tone: "error", id: "plate-city" });
+    };
+    if (wantBuildings) loadBuildingHeights(bounds, controller.signal).then(setBuildingMap, fail);
+    else queueMicrotask(() => setBuildingMap(null));
+    if (plate.roads) loadRoads(bounds, controller.signal).then(setRoadMap, fail);
+    else queueMicrotask(() => setRoadMap(null));
+    return () => controller.abort();
+  }, [wantBuildings, plate.roads, bounds, t]);
+
   const route = useMemo(
     () => (deferred.route ? decodeRoute(deferred.route) : []),
     [deferred.route],
@@ -350,6 +381,14 @@ function PlateApp() {
               raiseRoute
                 ? { mask: routeMask(bounds, route, grid.size), size: grid.size, height: 0.008 }
                 : null,
+              // Buildings at twice their true height, so a city reads at plate size.
+              buildingMap
+                ? {
+                    mask: maskToGrid(buildingMap, grid.size),
+                    size: grid.size,
+                    height: (BUILDING_MAX_METRES * BUILDING_SCALE) / bounds.sizeMeters,
+                  }
+                : null,
               // Lakes and rivers sink 0.6 mm into the print.
               waterReady
                 ? { mask: maskToGrid(waterReady, grid.size), size: grid.size, height: -0.006 }
@@ -368,6 +407,7 @@ function PlateApp() {
       route,
       waterReady,
       compareGrid,
+      buildingMap,
     ],
   );
 
@@ -437,7 +477,7 @@ function PlateApp() {
   // Route, markers and measuring line, drawn on the surface.
   const overlay = useMemo(
     () =>
-      route.length > 1 || deferred.markers.length || measure
+      route.length > 1 || deferred.markers.length || measure || roadMap
         ? drawOverlay(bounds, {
             route,
             markers: deferred.markers,
@@ -445,9 +485,19 @@ function PlateApp() {
             ink: deferred.ink,
             paper: deferred.paper,
             line: measure ?? undefined,
+            roads: roadMap,
           })
         : null,
-    [bounds, route, deferred.markers, deferred.routeColor, deferred.ink, deferred.paper, measure],
+    [
+      bounds,
+      route,
+      deferred.markers,
+      deferred.routeColor,
+      deferred.ink,
+      deferred.paper,
+      measure,
+      roadMap,
+    ],
   );
 
   // Elevation profile: of the measuring line if there is one, else of the route.
@@ -952,7 +1002,8 @@ function PlateApp() {
             {mode === "plate" && basemap
               ? ` · ${basemap.credit}${basemap.daily ? `, ${plate.imageryDate || recentDay()}` : ""}`
               : ""}
-            {mode === "plate" && (plate.style === "map" || plate.lakes)
+            {mode === "plate" &&
+            (plate.style === "map" || plate.lakes || plate.buildings || plate.roads)
               ? " · © OpenStreetMap contributors"
               : ""}
           </p>

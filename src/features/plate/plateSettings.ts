@@ -77,6 +77,10 @@ export interface PlateSettings extends PlatePlace {
   sunHour: number;
   /** Day of the daily satellite image, YYYY-MM-DD; "" means a recent day. */
   imageryDate: string;
+  /** Buildings from OpenStreetMap, raised out of the terrain (plates of 6 km or less). */
+  buildings: boolean;
+  /** Main roads from OpenStreetMap, drawn on the surface. */
+  roads: boolean;
 }
 
 export type LabelRelief = "raised" | "engraved";
@@ -179,6 +183,8 @@ export const DEFAULT_PLATE: PlateSettings = {
   nameKm: "ភ្នំឱរ៉ាល់",
   sunHour: 0,
   imageryDate: "",
+  buildings: false,
+  roads: false,
   name: "Phnom Aural",
   region: "Kampong Speu",
   country: "Cambodia",
@@ -200,6 +206,8 @@ const BOOLEAN_FIELDS = [
   "strata",
   "routeRaise",
   "lakes",
+  "buildings",
+  "roads",
 ] as const satisfies (keyof PlateSettings)[];
 
 /** Short query names used by share links. */
@@ -240,6 +248,8 @@ const LINK = {
   nameKm: "nk",
   sunHour: "sun",
   imageryDate: "day",
+  buildings: "bld",
+  roads: "rd",
   name: "name",
   region: "region",
   country: "country",
