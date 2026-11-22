@@ -15,7 +15,12 @@ const escapeXml = (text: string) => text.replace(/[<>&"']/g, (c) => `&#${c.charC
 /** Top-down contour drawing, ready for a pen plotter, laser cutter or print shop. */
 export function buildContourSvg(
   geometry: PlateGeometry,
-  { ink, paper, caption }: { ink: string; paper: string; caption?: SvgCaption },
+  {
+    ink,
+    paper,
+    caption,
+    credit = "AWS Terrain Tiles",
+  }: { ink: string; paper: string; caption?: SvgCaption; credit?: string },
 ): string {
   const interval = contourInterval(geometry.min, geometry.max);
   const toPx = (value: number) => ((value + 0.5) * SVG_SIZE).toFixed(1);
@@ -55,7 +60,7 @@ export function buildContourSvg(
   return [
     `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">`,
     `<title>${escapeXml(caption?.title ?? "Contours")}</title>`,
-    `<desc>Contours every ${interval} m; heavier lines every ${interval * 5} m. Elevation: AWS Terrain Tiles.</desc>`,
+    `<desc>Contours every ${interval} m; heavier lines every ${interval * 5} m. Elevation: ${escapeXml(credit)}.</desc>`,
     `<rect width="100%" height="100%" fill="${paper}"/>`,
     `<g transform="translate(${SVG_MARGIN} ${SVG_MARGIN})" fill="none" stroke="${ink}" stroke-linecap="round" stroke-linejoin="round">`,
     `<g id="contours" stroke-width="0.9">${minor.map((d) => `<path d="${d}"/>`).join("")}</g>`,

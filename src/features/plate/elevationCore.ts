@@ -10,18 +10,35 @@ export const ELEVATION_TILE_URL =
 const ELEVATION_MAX_ZOOM = 15;
 const TILE = 256;
 
+/** Where a grid's heights came from, for the credit line and the Adjust sheet. */
+export interface ElevationMeta {
+  /** The data source the plate asked for ("" is the worldwide default). */
+  requested: string;
+  /** The data source that actually supplied the heights. */
+  used: string;
+  /** Plain-language name of the dataset(s) behind the heights. */
+  label: string;
+  /** Roughly how far apart the height samples are on the ground, in metres. */
+  resolutionM?: number;
+  /** Set when the requested source failed and the worldwide data stepped in. */
+  fellBack?: string;
+}
+
 export interface HeightGrid {
   /** Samples per side; the grid holds `size * size` heights in metres, row by row from the north. */
   size: number;
   heights: Float32Array;
   min: number;
   max: number;
+  meta?: ElevationMeta;
 }
 
 export interface RgbaTile {
   width: number;
   height: number;
   data: Uint8ClampedArray;
+  /** The tile's `x-amz-meta-x-imagery-sources` header: the files it was built from. */
+  sources?: string;
 }
 
 export type TileReader = (url: string, signal?: AbortSignal) => Promise<RgbaTile | null>;
@@ -94,14 +111,56 @@ export async function buildHeightGrid(
     }
   }
 
-  return smooth({ size, heights, min: 0, max: 0 });
+  const grid = smoothGrid({ size, heights, min: 0, max: 0 });
+  const described = describeTerrariumSources(
+    decoded.flatMap((tile) => (tile?.sources ? tile.sources.split(",") : [])),
+  );
+  return {
+    ...grid,
+    meta: { requested: "", used: "", label: described.label, resolutionM: described.resolutionM },
+  };
+}
+
+/**
+ * Terrarium tiles are a patchwork of national and global models, and say which
+ * in a header. The first match in this list names the file's dataset.
+ */
+const DATASETS: { match: RegExp; label: string; resolutionM: number }[] = [
+  { match: /^uk_lidar/, label: "England lidar (Environment Agency)", resolutionM: 2 },
+  { match: /^ned19|^ned_topo/, label: "USGS lidar 3DEP", resolutionM: 3 },
+  { match: /^ned13/, label: "USGS 3DEP 1/3″", resolutionM: 10 },
+  { match: /^ned/, label: "USGS 3DEP", resolutionM: 10 },
+  { match: /^nrcan|^cdem|^ca_/, label: "Natural Resources Canada CDEM", resolutionM: 20 },
+  { match: /^eudem/, label: "EU-DEM (Copernicus)", resolutionM: 25 },
+  { match: /^srtm/, label: "SRTM (NASA)", resolutionM: 30 },
+  { match: /^arctic/, label: "ArcticDEM", resolutionM: 10 },
+  { match: /^gmted/, label: "GMTED2010 (USGS)", resolutionM: 250 },
+  { match: /^etopo/, label: "ETOPO1 (NOAA)", resolutionM: 1800 },
+];
+
+export function describeTerrariumSources(files: string[]): { label: string; resolutionM?: number } {
+  const found = new Map<string, number>();
+  for (const file of files) {
+    const name = file.trim().split("/")[0];
+    if (!name) continue;
+    const dataset = DATASETS.find((d) => d.match.test(name));
+    if (dataset) found.set(dataset.label, dataset.resolutionM);
+    else found.set(name, NaN);
+  }
+  if (!found.size) return { label: "AWS Terrain Tiles" };
+  // Coarse backups (GMTED, ETOPO) only fill gaps; show them only when nothing finer is there.
+  const entries = [...found.entries()].sort((a, b) => (a[1] || 1e9) - (b[1] || 1e9));
+  const fine = entries.filter(([, res]) => !(res >= 250));
+  const used = fine.length ? fine : entries;
+  const resolution = used.map(([, res]) => res).find((res) => Number.isFinite(res));
+  return { label: used.map(([label]) => label).join(" + "), resolutionM: resolution };
 }
 
 /**
  * One pass of a 3×3 blur. Elevation models carry a little noise from radar
  * speckle; without this, contour lines come out ragged.
  */
-function smooth(grid: HeightGrid): HeightGrid {
+export function smoothGrid(grid: HeightGrid): HeightGrid {
   const { size, heights } = grid;
   const out = new Float32Array(heights.length);
   let min = Infinity;
@@ -127,5 +186,5 @@ function smooth(grid: HeightGrid): HeightGrid {
       if (h > max) max = h;
     }
   }
-  return { size, heights: out, min, max };
+  return { size, heights: out, min, max, meta: grid.meta };
 }

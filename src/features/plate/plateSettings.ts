@@ -3,6 +3,7 @@ import { SITE_URL } from "@/services/share/shareSheet";
 import { PLATE_SHAPES, type PlateShape } from "./shapes";
 import type { PlateStyle } from "./PlateScene";
 import { BASEMAPS } from "./basemaps";
+import { sanitizeSourceId } from "./elevationSources";
 import {
   LABEL_FONTS,
   formatCoordinates,
@@ -78,6 +79,8 @@ export interface PlateSettings extends PlatePlace {
   sunHour: number;
   /** Day of the daily satellite image, YYYY-MM-DD; "" means a recent day. */
   imageryDate: string;
+  /** Where the heights come from: "" is the worldwide tiles, else a source id. */
+  elevation: string;
   /** Buildings from OpenStreetMap, raised out of the terrain (plates of 6 km or less). */
   buildings: boolean;
   /** Main roads from OpenStreetMap, drawn on the surface. */
@@ -184,6 +187,7 @@ export const DEFAULT_PLATE: PlateSettings = {
   nameKm: "ភ្នំឱរ៉ាល់",
   sunHour: 0,
   imageryDate: "",
+  elevation: "",
   buildings: false,
   roads: false,
   name: "Phnom Aural",
@@ -249,6 +253,7 @@ const LINK = {
   nameKm: "nk",
   sunHour: "sun",
   imageryDate: "day",
+  elevation: "dem",
   buildings: "bld",
   roads: "rd",
   name: "name",
@@ -334,6 +339,7 @@ export function sanitizePlate(
   if (typeof input.nameKm === "string") out.nameKm = input.nameKm.slice(0, 80);
   const sunHour = num(input.sunHour);
   if (Number.isFinite(sunHour)) out.sunHour = sunHour <= 0 ? 0 : clamp(sunHour, 6, 18);
+  if (input.elevation !== undefined) out.elevation = sanitizeSourceId(input.elevation);
   if (typeof input.imageryDate === "string" && /^(\d{4}-\d{2}-\d{2})?$/.test(input.imageryDate)) {
     out.imageryDate = input.imageryDate;
   }

@@ -42,6 +42,8 @@ import {
   type LatLon,
 } from "@/features/plate/routes";
 import { loadHeightGrid } from "@/features/plate/elevation";
+import { elevationCredit } from "@/features/plate/elevationBuild";
+import { readOpenTopoKey } from "@/features/plate/elevationSources";
 import type { HeightGrid } from "@/features/plate/elevationCore";
 import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
 import {
@@ -244,6 +246,8 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
   const [terrain, setTerrain] = useState<Load<HeightGrid>>({ status: "loading" });
   const [drape, setDrape] = useState<Load<HTMLCanvasElement> | null>(null);
   const [attempt, setAttempt] = useState(0);
+  // Kept on this device only; never part of a share link or a saved draft.
+  const [openTopoKey, setOpenTopoKey] = useState(readOpenTopoKey);
   const [touched, setTouched] = useState(false);
   const [extras, setExtras] = useState<PlateExtras | null>(null);
   const [fullDetail, setFullDetail] = useState(false);
@@ -285,14 +289,16 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
       setTerrain({ status: "loading" });
       setFullDetail(false);
     });
-    loadHeightGrid(bounds, PREVIEW_CELLS, controller.signal).then(
+    const request = { source: plate.elevation, key: openTopoKey };
+    loadHeightGrid(bounds, PREVIEW_CELLS, controller.signal, request).then(
       (value) =>
         !fullArrived && !controller.signal.aborted && setTerrain({ status: "ready", value }),
       () => undefined,
     );
-    loadHeightGrid(bounds, GRID_CELLS, controller.signal).then(
+    loadHeightGrid(bounds, GRID_CELLS, controller.signal, request).then(
       (value) => {
         fullArrived = true;
+        if (value.meta?.fellBack) reportProblem("elevation");
         setTerrain({ status: "ready", value });
         setFullDetail(true);
       },
@@ -303,7 +309,7 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
       },
     );
     return () => controller.abort();
-  }, [bounds, attempt]);
+  }, [bounds, attempt, plate.elevation, openTopoKey]);
 
   // Map, imagery or topographic map over the terrain.
   const basemap = basemapFor(plate);
@@ -838,7 +844,14 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
       } else if (kind === "svg") {
         const files = await import("@/features/plate/plateFiles");
         blob = new Blob(
-          [files.buildContourSvg(geometry, { ink: plate.ink, paper: plate.paper, caption })],
+          [
+            files.buildContourSvg(geometry, {
+              ink: plate.ink,
+              paper: plate.paper,
+              caption,
+              credit: elevationCredit(terrain.status === "ready" ? terrain.value.meta : undefined),
+            }),
+          ],
           { type: "image/svg+xml" },
         );
       } else {
@@ -1077,7 +1090,8 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
             </a>
           )}
           <p className="plate-credit">
-            Elevation: AWS Terrain Tiles
+            Elevation:{" "}
+            {elevationCredit(terrain.status === "ready" ? terrain.value.meta : undefined)}
             {mode === "plate" && basemap
               ? ` · ${basemap.credit}${basemap.daily ? `, ${plate.imageryDate || recentDay()}` : ""}`
               : ""}
@@ -1270,6 +1284,9 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
             plate={plate}
             autoExaggeration={autoHeight}
             relief={geometry ? geometry.max - geometry.min : 0}
+            elevationMeta={terrain.status === "ready" ? terrain.value.meta : undefined}
+            openTopoKey={openTopoKey}
+            onOpenTopoKey={setOpenTopoKey}
             onChange={update}
             onClose={() => setSheet(null)}
           />

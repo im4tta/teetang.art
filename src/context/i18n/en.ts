@@ -390,6 +390,24 @@ export const en = {
   "plate.dl.studio": "Open in STL Studio",
   "plate.dl.studioHint": "Set the print size, base, letters and filament colours first",
   "plate.adj.basemap": "Base map",
+  "plate.dem.title": "Elevation data",
+  "plate.dem.using": "Using",
+  "plate.dem.needsKey": "free key",
+  "plate.dem.tip":
+    "The worldwide set has only about 30 m data here. Copernicus GLO-30 is an independent 30 m model, worth comparing.",
+  "plate.dem.fell.failed": "That source didn't answer, so the worldwide data is shown.",
+  "plate.dem.fell.coverage":
+    "That source has no data for this place, so the worldwide data is shown.",
+  "plate.dem.fell.size": "This plate is too large for that source, so the worldwide data is shown.",
+  "plate.dem.fell.key":
+    "Add your OpenTopography key to use this source. Until then the worldwide data is shown.",
+  "plate.dem.key": "OpenTopography key",
+  "plate.dem.keySave": "Save key",
+  "plate.dem.keyRemove": "Remove key",
+  "plate.dem.keySaved": "Key saved on this device.",
+  "plate.dem.keyInvalid": "That doesn't look like an OpenTopography key.",
+  "plate.dem.keyHint":
+    "Free from OpenTopography. It stays on this device and is never put in links.",
   "plate.adj.notHere": "not here",
   "plate.adj.palette": "Colour ramp",
   "plate.palette.classic": "Classic",
@@ -620,15 +638,24 @@ export const en = {
   "plate.embedCopied": "Embed code copied",
   "plate.lesson.classroom": "Classroom",
   "plate.lesson.watershed.title": "Where rain flows",
-  "plate.lesson.watershed.1": "Rain falls on the Kulen plateau. Water always runs downhill, crossing the contour lines at right angles, from high ground to low.",
-  "plate.lesson.watershed.2": "The trickles gather into streams and rivers. Phnom Kulen's streams feed the Siem Reap River, which flows on past Angkor.",
-  "plate.lesson.watershed.3": "A ridge between two valleys is a watershed: rain on one side ends in one river, rain on the other side in another. Find a ridge on the plate.",
+  "plate.lesson.watershed.1":
+    "Rain falls on the Kulen plateau. Water always runs downhill, crossing the contour lines at right angles, from high ground to low.",
+  "plate.lesson.watershed.2":
+    "The trickles gather into streams and rivers. Phnom Kulen's streams feed the Siem Reap River, which flows on past Angkor.",
+  "plate.lesson.watershed.3":
+    "A ridge between two valleys is a watershed: rain on one side ends in one river, rain on the other side in another. Find a ridge on the plate.",
   "plate.lesson.volcano.title": "A crater lake",
-  "plate.lesson.volcano.1": "Yeak Laom is an old volcano. Look for the ring of high ground around a low centre.",
-  "plate.lesson.volcano.2": "The crater filled with rain and became an almost perfectly round lake.",
-  "plate.lesson.volcano.3": "On a contour map, a crater shows as closed rings around a hollow. Small tick marks on old maps point down into it.",
+  "plate.lesson.volcano.1":
+    "Yeak Laom is an old volcano. Look for the ring of high ground around a low centre.",
+  "plate.lesson.volcano.2":
+    "The crater filled with rain and became an almost perfectly round lake.",
+  "plate.lesson.volcano.3":
+    "On a contour map, a crater shows as closed rings around a hollow. Small tick marks on old maps point down into it.",
   "plate.lesson.flood.title": "The rainy-season flood",
-  "plate.lesson.flood.1": "In the dry season the Tonlé Sap is a wide, shallow lake on very flat land.",
-  "plate.lesson.flood.2": "In the rainy season the Mekong runs high and pushes water up the Tonlé Sap River, which flows backwards into the lake.",
-  "plate.lesson.flood.3": "The lake grows several times larger and floods the forests and fields around it. Villages on stilts and boats rise with the water.",
+  "plate.lesson.flood.1":
+    "In the dry season the Tonlé Sap is a wide, shallow lake on very flat land.",
+  "plate.lesson.flood.2":
+    "In the rainy season the Mekong runs high and pushes water up the Tonlé Sap River, which flows backwards into the lake.",
+  "plate.lesson.flood.3":
+    "The lake grows several times larger and floods the forests and fields around it. Villages on stilts and boats rise with the water.",
 } satisfies Record<string, string>;
