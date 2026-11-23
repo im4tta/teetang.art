@@ -243,6 +243,8 @@ export interface OverlayOptions {
   line?: LatLon[];
   /** Roads: white on black over the plate's square, drawn first in the ink colour. */
   roads?: HTMLCanvasElement | null;
+  /** Ground coloured by slope band (0 gentle … 4 extreme); `size × size`, row 0 north. */
+  slope?: { bands: Uint8Array; size: number } | null;
   /** Ground hidden from a viewpoint, dimmed; `visible` is `size × size`, row 0 north. */
   hidden?: { visible: Uint8Array; size: number } | null;
   size?: number;
@@ -253,6 +255,7 @@ export function drawOverlay(bounds: PlateBounds, options: OverlayOptions): HTMLC
   const size = options.size ?? 2048;
   const canvas = Object.assign(document.createElement("canvas"), { width: size, height: size });
   const ctx = canvas.getContext("2d")!;
+  if (options.slope) ctx.drawImage(paintSlope(options.slope), 0, 0, size, size);
   if (options.hidden) ctx.drawImage(dimHidden(options.hidden), 0, 0, size, size);
   if (options.roads) {
     ctx.globalAlpha = 0.7;
@@ -487,6 +490,24 @@ export function profileSvg(
 export { plateBounds };
 
 /** A white-on-black mask turned into `color` with the mask as transparency. */
+/** Slope bands as translucent colours; level ground stays clear. */
+const SLOPE_COLORS: [number, number, number, number][] = [
+  [0, 0, 0, 0],
+  [250, 204, 21, 95],
+  [249, 115, 22, 140],
+  [220, 38, 38, 165],
+  [126, 34, 206, 185],
+];
+
+function paintSlope({ bands, size }: { bands: Uint8Array; size: number }): HTMLCanvasElement {
+  const canvas = Object.assign(document.createElement("canvas"), { width: size, height: size });
+  const ctx = canvas.getContext("2d")!;
+  const image = ctx.createImageData(size, size);
+  for (let k = 0; k < bands.length; k++) image.data.set(SLOPE_COLORS[bands[k]], k * 4);
+  ctx.putImageData(image, 0, 0);
+  return canvas;
+}
+
 /**
  * A canvas the size of the height grid: hidden ground darkened, visible ground
  * given a warm glow, so the lit patches stand out even on dark terrain.

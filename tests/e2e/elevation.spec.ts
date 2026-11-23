@@ -231,3 +231,39 @@ test.describe("what can be seen from a pin", () => {
     await expect(page.getByTestId("view-panel")).toHaveCount(0);
   });
 });
+
+test.describe("steepness map", () => {
+  // The mock mountain is a smooth cone: 1,500 m high on a 200 m plain, 3 km wide.
+  // Its steepest ground is at 2.1 km from the summit, about 20° (atan of 0.37).
+  test("colours the ground by slope and reports the steepest angle", async ({ page }) => {
+    await openPlate(page);
+    await openAdjust(page);
+    await expect(page.getByTestId("slope-key")).toHaveCount(0);
+
+    await page.getByRole("checkbox", { name: "Steepness map" }).check();
+    await expect(page.getByTestId("slope-key")).toContainText("over 45°");
+    const note = page.getByTestId("slope-key").locator(".plate-note");
+    await expect(note).toContainText("Steepest");
+    const text = await note.innerText();
+    const steepest = Number(text.match(/Steepest (\d+)°/)![1]);
+    expect(steepest).toBeGreaterThanOrEqual(17);
+    expect(steepest).toBeLessThanOrEqual(23);
+    // Nothing on the cone reaches 30°.
+    expect(text).toContain("30° or more: 0%");
+
+    await page.getByRole("checkbox", { name: "Steepness map" }).uncheck();
+    await expect(page.getByTestId("slope-key")).toHaveCount(0);
+  });
+
+  test("is in the share link and reopens", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&slp=1");
+    await openAdjust(page);
+    await expect(page.getByRole("checkbox", { name: "Steepness map" })).toBeChecked();
+    await page.locator(".plate-sheet__header button").click();
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await page.locator(".plate-download[data-kind=link]").click();
+    const link = new URL(await page.evaluate(() => navigator.clipboard.readText()));
+    expect(link.searchParams.get("slp")).toBe("1");
+  });
+});

@@ -89,6 +89,8 @@ export interface PlateSettings extends PlatePlace {
   buildings: boolean;
   /** Main roads from OpenStreetMap, drawn on the surface. */
   roads: boolean;
+  /** Colour the ground by how steep it is. */
+  slope: boolean;
 }
 
 export type LabelRelief = "raised" | "engraved";
@@ -198,6 +200,7 @@ export const DEFAULT_PLATE: PlateSettings = {
   elevation: "",
   buildings: false,
   roads: false,
+  slope: false,
   name: "Phnom Aural",
   region: "Kampong Speu",
   country: "Cambodia",
@@ -221,6 +224,7 @@ const BOOLEAN_FIELDS = [
   "lakes",
   "buildings",
   "roads",
+  "slope",
 ] as const satisfies (keyof PlateSettings)[];
 
 /** Short query names used by share links. */
@@ -266,6 +270,7 @@ const LINK = {
   elevation: "dem",
   buildings: "bld",
   roads: "rd",
+  slope: "slp",
   name: "name",
   region: "region",
   country: "country",

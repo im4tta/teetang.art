@@ -400,6 +400,13 @@ export const en = {
   "plate.view.off": "This pin is off the plate, so there is no view to show.",
   "plate.view.note":
     "Dimmed ground is hidden from the pin. Hills, the curve of the Earth and trees in the data all block the view.",
+  "plate.adj.slope": "Steepness map",
+  "plate.slope.gentle": "5–15°  gentle",
+  "plate.slope.moderate": "15–30°  moderate",
+  "plate.slope.steep": "30–45°  steep",
+  "plate.slope.verySteep": "over 45°  very steep",
+  "plate.slope.steepest": "Steepest",
+  "plate.slope.share": "30° or more:",
   "plate.dem.title": "Elevation data",
   "plate.dem.using": "Using",
   "plate.dem.needsKey": "free key",

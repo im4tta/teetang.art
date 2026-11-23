@@ -44,6 +44,7 @@ import {
 import { loadHeightGrid } from "@/features/plate/elevation";
 import { elevationCredit } from "@/features/plate/elevationBuild";
 import { computeViewshed } from "@/features/plate/viewshed";
+import { computeSlope } from "@/features/plate/slope";
 import { readOpenTopoKey } from "@/features/plate/elevationSources";
 import type { HeightGrid } from "@/features/plate/elevationCore";
 import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
@@ -505,6 +506,12 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
     setLesson({ id, step });
   };
 
+  // How steep the ground is.
+  const slope = useMemo(
+    () => (grid && deferred.slope ? computeSlope(grid, bounds.sizeMeters) : null),
+    [grid, bounds.sizeMeters, deferred.slope],
+  );
+
   // What can be seen from the chosen pin.
   const viewPin = deferred.markers[deferred.viewFrom];
   const view = useMemo(() => {
@@ -517,9 +524,10 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
   // Route, markers and measuring line, drawn on the surface.
   const overlay = useMemo(
     () =>
-      tracks.length || deferred.markers.length || measure || roadMap || view
+      tracks.length || deferred.markers.length || measure || roadMap || view || slope
         ? drawOverlay(bounds, {
             hidden: view,
+            slope,
             tracks,
             markers: deferred.markers,
             color: deferred.routeColor,
@@ -539,6 +547,7 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
       measure,
       roadMap,
       view,
+      slope,
     ],
   );
 
@@ -1296,6 +1305,7 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
             plate={plate}
             autoExaggeration={autoHeight}
             relief={geometry ? geometry.max - geometry.min : 0}
+            slope={slope ? { maxDegrees: slope.maxDegrees, steepShare: slope.steepShare } : null}
             elevationMeta={terrain.status === "ready" ? terrain.value.meta : undefined}
             openTopoKey={openTopoKey}
             onOpenTopoKey={setOpenTopoKey}

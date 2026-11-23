@@ -26,6 +26,8 @@ interface AdjustSheetProps {
   autoExaggeration: number;
   /** Metres from the plate's lowest to its highest point, for the flood slider. */
   relief: number;
+  /** Steepest slope and share of steep ground, while the steepness map is on. */
+  slope?: { maxDegrees: number; steepShare: number } | null;
   /** What the loaded terrain was built from. */
   elevationMeta?: ElevationMeta;
   openTopoKey: string;
@@ -57,6 +59,7 @@ export default function AdjustSheet({
   plate,
   autoExaggeration,
   relief,
+  slope,
   elevationMeta,
   openTopoKey,
   onOpenTopoKey,
@@ -470,6 +473,32 @@ export default function AdjustSheet({
           />
           <span>{t("plate.adj.roads")}</span>
         </label>
+        <label className="plate-switch">
+          <input
+            type="checkbox"
+            checked={plate.slope}
+            onChange={(event) => onChange({ slope: event.target.checked })}
+          />
+          <span>{t("plate.adj.slope")}</span>
+        </label>
+        {plate.slope && (
+          <div className="plate-slope-key" data-testid="slope-key">
+            <ul aria-label={t("plate.adj.slope")}>
+              {(["gentle", "moderate", "steep", "verySteep"] as const).map((band, index) => (
+                <li key={band}>
+                  <i data-band={index + 1} aria-hidden="true" />
+                  {t(`plate.slope.${band}` as TranslationKey)}
+                </li>
+              ))}
+            </ul>
+            {slope && (
+              <p className="plate-note">
+                {t("plate.slope.steepest")} {Math.round(slope.maxDegrees)}° ·{" "}
+                {t("plate.slope.share")} {Math.round(slope.steepShare * 100)}%
+              </p>
+            )}
+          </div>
+        )}
         <label className="plate-switch">
           <input
             type="checkbox"
