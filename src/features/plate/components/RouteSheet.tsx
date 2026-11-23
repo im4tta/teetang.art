@@ -1,6 +1,17 @@
 import { useRef, useState } from "react";
-import { Crosshair, Download, ImagePlus, MapPin, Plus, Ruler, Trash2, Upload } from "lucide-react";
+import {
+  Crosshair,
+  Download,
+  Eye,
+  ImagePlus,
+  MapPin,
+  Plus,
+  Ruler,
+  Trash2,
+  Upload,
+} from "lucide-react";
 import { useI18n } from "@/context/i18n/context";
+import type { TranslationKey } from "@/context/i18n/types";
 import { notify } from "@/services/notify";
 import { reportProblem } from "@/utils/reportProblem";
 import { deletePhoto, savePhoto } from "../photos";
@@ -17,7 +28,7 @@ import {
   simplifyRoute,
   type Profile,
 } from "../routes";
-import type { PlateSettings } from "../plateSettings";
+import { VIEW_EYES, type PlateSettings } from "../plateSettings";
 import PlateSheet from "./PlateSheet";
 
 /** Days a trip can have; each shares the link's room for points. */
@@ -33,6 +44,8 @@ interface RouteSheetProps {
   /** Which day the profile shows; -1 for the whole trip. */
   profileDay: number;
   onProfileDay: (day: number) => void;
+  /** What the chosen pin can see, once worked out. */
+  view: { percent: number; farthestM: number } | null;
   onChange: (patch: Partial<PlateSettings>) => void;
   /** Close the sheet and wait for a tap on the plate. */
   onPick: (kind: "marker" | "line") => void;
@@ -45,6 +58,7 @@ export default function RouteSheet({
   profileTitle,
   profileDay,
   onProfileDay,
+  view,
   onChange,
   onPick,
   onClose,
@@ -209,6 +223,16 @@ export default function RouteSheet({
                 })
               }
             />
+            <button
+              type="button"
+              className="plate-icon-btn"
+              aria-pressed={plate.viewFrom === index}
+              aria-label={`${t("plate.view.from")} ${marker.label || index + 1}`}
+              title={t("plate.view.from")}
+              onClick={() => onChange({ viewFrom: plate.viewFrom === index ? -1 : index })}
+            >
+              <Eye size={18} aria-hidden="true" />
+            </button>
             <label
               className="plate-icon-btn plate-marker-photo"
               data-has-photo={marker.photo ? "true" : undefined}
@@ -244,13 +268,44 @@ export default function RouteSheet({
               aria-label={t("plate.markers.remove")}
               onClick={() => {
                 if (marker.photo) void deletePhoto(marker.photo);
-                onChange({ markers: plate.markers.filter((_, k) => k !== index) });
+                onChange({
+                  markers: plate.markers.filter((_, k) => k !== index),
+                  viewFrom:
+                    plate.viewFrom === index
+                      ? -1
+                      : plate.viewFrom > index
+                        ? plate.viewFrom - 1
+                        : plate.viewFrom,
+                });
               }}
             >
               <Trash2 size={18} />
             </button>
           </div>
         ))}
+        {plate.markers[plate.viewFrom] && (
+          <div className="plate-field" data-testid="view-panel">
+            <div className="plate-chips" role="group" aria-label={t("plate.view.eye")}>
+              {VIEW_EYES.map((metres) => (
+                <button
+                  key={metres}
+                  type="button"
+                  className="plate-chip"
+                  aria-pressed={plate.viewEye === metres}
+                  onClick={() => onChange({ viewEye: metres })}
+                >
+                  {t(`plate.view.eye${metres}` as TranslationKey)}
+                </button>
+              ))}
+            </div>
+            <p className="plate-note" role="status">
+              {view
+                ? `${t("plate.view.sees")} ${view.percent}% · ${t("plate.view.farthest")} ${(view.farthestM / 1000).toFixed(1)} km`
+                : t("plate.view.off")}
+            </p>
+            <p className="plate-note">{t("plate.view.note")}</p>
+          </div>
+        )}
         {plate.markers.some((marker) => marker.photo) && (
           <p className="plate-note">{t("plate.markers.photoNote")}</p>
         )}
