@@ -47,6 +47,10 @@ const baseConfig = {
   define: {
     "import.meta.env.VITE_APP_VERSION": JSON.stringify(appVersion),
   },
+  // Module workers can load code on demand. Without this the elevation worker
+  // is one file with geotiff.js inside, downloaded by everyone, even though
+  // only the opt-in elevation sources need it.
+  worker: { format: "es" },
   build: {
     // maplibre-gl is distributed as a large prebundled module and remains a
     // single chunk even with manual chunking.
@@ -113,8 +117,31 @@ function cartoProxy(apiKey) {
   };
 }
 
+/**
+ * Dev/preview stand-in for the `api/dem` edge function, which forwards byte
+ * ranges of the Copernicus elevation tiles from the same origin.
+ */
+function demProxy() {
+  return {
+    "/api/dem": {
+      target: "https://copernicus-dem-30m.s3.amazonaws.com",
+      changeOrigin: true,
+      rewrite: (requestPath) => {
+        const tile = new URL(requestPath, "http://localhost").searchParams.get("tile") ?? "";
+        const match = /^([NS]\d{2})([EW]\d{3})$/.exec(tile);
+        if (!match) return "/invalid";
+        const name = `Copernicus_DSM_COG_10_${match[1]}_00_${match[2]}_00_DEM`;
+        return `/${name}/${name}.tif`;
+      },
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
-  const proxy = cartoProxy(loadEnv(mode, process.cwd(), "").CARTO_API_KEY);
+  const proxy = {
+    ...cartoProxy(loadEnv(mode, process.cwd(), "").CARTO_API_KEY),
+    ...demProxy(),
+  };
 
   return {
     ...baseConfig,

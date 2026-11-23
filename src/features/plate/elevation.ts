@@ -1,4 +1,5 @@
-import { buildHeightGrid, type HeightGrid } from "./elevationCore";
+import { buildElevation, requestKey, type ElevationRequest } from "./elevationBuild";
+import type { HeightGrid } from "./elevationCore";
 import { readRgbaTile } from "./elevationTiles";
 import type { PlateBounds } from "./geo";
 
@@ -43,23 +44,30 @@ function getWorker(): Worker | null {
   return worker;
 }
 
-function inWorker(bounds: PlateBounds, cells: number, target: Worker): Promise<HeightGrid> {
+function inWorker(
+  bounds: PlateBounds,
+  cells: number,
+  request: ElevationRequest,
+  target: Worker,
+): Promise<HeightGrid> {
   return new Promise((resolve, reject) => {
     const id = ++nextId;
     pending.set(id, { resolve, reject });
-    target.postMessage({ id, bounds, cells });
+    target.postMessage({ id, bounds, cells, request });
   });
 }
 
-const keyFor = (bounds: PlateBounds, cells: number) =>
-  [bounds.x0, bounds.y0, bounds.x1, cells].map((n) => n.toFixed(7)).join(",");
+const keyFor = (bounds: PlateBounds, cells: number, request: ElevationRequest) =>
+  [bounds.x0, bounds.y0, bounds.x1, cells].map((n) => n.toFixed(7)).join(",") +
+  `|${requestKey(request)}`;
 
 export async function loadHeightGrid(
   bounds: PlateBounds,
   cells: number,
   signal?: AbortSignal,
+  request: ElevationRequest = { source: "" },
 ): Promise<HeightGrid> {
-  const key = keyFor(bounds, cells);
+  const key = keyFor(bounds, cells, request);
   const cached = cache.get(key);
   if (cached) return cached;
 
@@ -67,11 +75,11 @@ export async function loadHeightGrid(
   let grid: HeightGrid;
   try {
     grid = target
-      ? await inWorker(bounds, cells, target)
-      : await buildHeightGrid(bounds, cells, readRgbaTile, signal);
+      ? await inWorker(bounds, cells, request, target)
+      : await buildElevation(bounds, cells, request, readRgbaTile, signal);
   } catch (error) {
     if ((error as Error).message !== "worker-failed") throw error;
-    grid = await buildHeightGrid(bounds, cells, readRgbaTile, signal);
+    grid = await buildElevation(bounds, cells, request, readRgbaTile, signal);
   }
   signal?.throwIfAborted();
 

@@ -16,7 +16,8 @@ export type ProblemKind =
   | "video"
   | "download"
   | "offline"
-  | "track-import";
+  | "track-import"
+  | "elevation";
 
 export function reportProblem(kind: ProblemKind) {
   try {

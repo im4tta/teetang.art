@@ -92,7 +92,12 @@ export async function serveTiles(page: Page, { satellite = true } = {}) {
     return route.fulfill({
       body: elevationTile(z, x, y),
       contentType: "image/png",
-      headers: { "access-control-allow-origin": "*" },
+      headers: {
+        "access-control-allow-origin": "*",
+        // Like the real bucket: which source files the tile was cut from.
+        "access-control-expose-headers": "x-amz-meta-x-imagery-sources",
+        "x-amz-meta-x-imagery-sources": "srtm/N12E104.tif",
+      },
     });
   });
   if (satellite) {

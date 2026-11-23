@@ -17,6 +17,8 @@ import {
   RELIEF_PALETTE_IDS,
   type PlateSettings,
 } from "../plateSettings";
+import type { ElevationMeta } from "../elevationCore";
+import ElevationSourceField from "./ElevationSourceField";
 import PlateSheet from "./PlateSheet";
 
 interface AdjustSheetProps {
@@ -24,6 +26,10 @@ interface AdjustSheetProps {
   autoExaggeration: number;
   /** Metres from the plate's lowest to its highest point, for the flood slider. */
   relief: number;
+  /** What the loaded terrain was built from. */
+  elevationMeta?: ElevationMeta;
+  openTopoKey: string;
+  onOpenTopoKey: (key: string) => void;
   onChange: (patch: Partial<PlateSettings>) => void;
   onClose: () => void;
 }
@@ -51,6 +57,9 @@ export default function AdjustSheet({
   plate,
   autoExaggeration,
   relief,
+  elevationMeta,
+  openTopoKey,
+  onOpenTopoKey,
   onChange,
   onClose,
 }: AdjustSheetProps) {
@@ -538,6 +547,13 @@ export default function AdjustSheet({
         />
         <span>{t("plate.adj.shadow")}</span>
       </label>
+      <ElevationSourceField
+        plate={plate}
+        meta={elevationMeta}
+        openTopoKey={openTopoKey}
+        onKey={onOpenTopoKey}
+        onChange={onChange}
+      />
     </PlateSheet>
   );
 }

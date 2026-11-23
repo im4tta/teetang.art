@@ -1621,3 +1621,21 @@
   font-family: "Kantumruy Pro", "Noto Sans Khmer", sans-serif;
   font-weight: 500;
 }
+
+.plate-row {
+  display: flex;
+  gap: 8px;
+  align-items: stretch;
+}
+
+.plate-row .plate-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.plate-note--warn {
+  color: #8a3b12;
+  background: #fbeadb;
+  border-radius: 10px;
+  padding: 8px 10px;
+}

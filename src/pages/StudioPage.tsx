@@ -34,6 +34,7 @@ import {
   maskToGrid,
 } from "@/features/plate/drape";
 import { loadHeightGrid } from "@/features/plate/elevation";
+import { readOpenTopoKey } from "@/features/plate/elevationSources";
 import type { HeightGrid } from "@/features/plate/elevationCore";
 import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
 import { buildPlateExtras, type PlateExtras } from "@/features/plate/extras";
@@ -244,12 +245,15 @@ function StudioApp() {
   useEffect(() => {
     const controller = new AbortController();
     queueMicrotask(() => setTerrain({ status: "loading" }));
-    loadHeightGrid(bounds, print.resolution, controller.signal).then(
+    loadHeightGrid(bounds, print.resolution, controller.signal, {
+      source: plate.elevation,
+      key: readOpenTopoKey(),
+    }).then(
       (value) => setTerrain({ status: "ready", value }),
       () => !controller.signal.aborted && setTerrain({ status: "error" }),
     );
     return () => controller.abort();
-  }, [bounds, print.resolution, attempt]);
+  }, [bounds, print.resolution, attempt, plate.elevation]);
 
   const grid = terrain.status === "ready" ? terrain.value : null;
   const deferredPlate = useDeferredValue(plate);

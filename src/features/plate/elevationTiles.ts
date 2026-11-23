@@ -29,5 +29,10 @@ export async function readRgbaTile(url: string, signal?: AbortSignal): Promise<R
   ctx.drawImage(bitmap, 0, 0);
   bitmap.close();
   const { data } = ctx.getImageData(0, 0, width, height);
-  return { width, height, data };
+  return {
+    width,
+    height,
+    data,
+    sources: response.headers.get("x-amz-meta-x-imagery-sources") ?? undefined,
+  };
 }
