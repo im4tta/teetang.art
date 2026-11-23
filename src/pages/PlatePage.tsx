@@ -43,6 +43,7 @@ import {
 } from "@/features/plate/routes";
 import { loadHeightGrid } from "@/features/plate/elevation";
 import { elevationCredit } from "@/features/plate/elevationBuild";
+import { computeViewshed } from "@/features/plate/viewshed";
 import { readOpenTopoKey } from "@/features/plate/elevationSources";
 import type { HeightGrid } from "@/features/plate/elevationCore";
 import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
@@ -504,11 +505,21 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
     setLesson({ id, step });
   };
 
+  // What can be seen from the chosen pin.
+  const viewPin = deferred.markers[deferred.viewFrom];
+  const view = useMemo(() => {
+    if (!grid || !viewPin) return null;
+    const [u, v] = toPlateUv(bounds, [viewPin.lat, viewPin.lon]);
+    if (u < 0 || u > 1 || v < 0 || v > 1) return null;
+    return computeViewshed(grid, bounds.sizeMeters, u, v, deferred.viewEye);
+  }, [grid, bounds, viewPin, deferred.viewEye]);
+
   // Route, markers and measuring line, drawn on the surface.
   const overlay = useMemo(
     () =>
-      tracks.length || deferred.markers.length || measure || roadMap
+      tracks.length || deferred.markers.length || measure || roadMap || view
         ? drawOverlay(bounds, {
+            hidden: view,
             tracks,
             markers: deferred.markers,
             color: deferred.routeColor,
@@ -527,6 +538,7 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
       deferred.paper,
       measure,
       roadMap,
+      view,
     ],
   );
 
@@ -1365,6 +1377,9 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
             }
             profileDay={profileDay < tracks.length ? profileDay : -1}
             onProfileDay={setProfileDay}
+            view={
+              view ? { percent: Math.round(view.fraction * 100), farthestM: view.farthestM } : null
+            }
             onChange={update}
             onPick={(kind) => {
               setSheet(null);

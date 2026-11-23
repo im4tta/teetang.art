@@ -174,3 +174,60 @@ test.describe("elevation sources", () => {
     );
   });
 });
+
+test.describe("what can be seen from a pin", () => {
+  // The mock plate is one round mountain: 1,500 m at the centre, a plain at 200 m.
+  const foot = "12.0333,104.1222,Foot";
+  const top = "12.0333,104.1667,Summit";
+
+  const sees = async (page: Page) => {
+    const text = await page.getByTestId("view-panel").getByRole("status").innerText();
+    return Number(text.match(/Can see (\d+)%/)![1]);
+  };
+
+  test("a pin at the edge of the plate cannot see past the mountain", async ({ page }) => {
+    await openPlate(page, `/plate?lat=12.0333&lon=104.1667&km=10&mk=${foot}&vs=0`);
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await expect(page.getByTestId("view-panel")).toBeVisible();
+    const share = await sees(page);
+    // The mountain stands between the pin and the east side of the plate.
+    expect(share).toBeGreaterThan(2);
+    expect(share).toBeLessThan(50);
+    await expect(page.getByTestId("view-panel")).toContainText("km");
+  });
+
+  test("a taller eye sees more, and the view is in the share link", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openPlate(page, `/plate?lat=12.0333&lon=104.1667&km=10&mk=${foot}&vs=0`);
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    const onFoot = await sees(page);
+    await page.getByRole("button", { name: /Tower/ }).click();
+    await expect.poll(() => sees(page)).toBeGreaterThan(onFoot);
+
+    await page.locator(".plate-sheet__header button").click();
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await page.locator(".plate-download[data-kind=link]").click();
+    const link = new URL(await page.evaluate(() => navigator.clipboard.readText()));
+    expect(link.searchParams.get("vs")).toBe("0");
+    expect(link.searchParams.get("ve")).toBe("50");
+  });
+
+  test("the eye button turns the view on and off, and deleting the pin clears it", async ({
+    page,
+  }) => {
+    await openPlate(page, `/plate?lat=12.0333&lon=104.1667&km=10&mk=${top}|${foot}`);
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await expect(page.getByTestId("view-panel")).toHaveCount(0);
+
+    const eye = page.getByRole("button", { name: /What can I see from here\? Foot/ });
+    await eye.click();
+    await expect(eye).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("view-panel")).toBeVisible();
+    await eye.click();
+    await expect(page.getByTestId("view-panel")).toHaveCount(0);
+
+    await eye.click();
+    await page.getByRole("button", { name: "Remove pin" }).last().click();
+    await expect(page.getByTestId("view-panel")).toHaveCount(0);
+  });
+});

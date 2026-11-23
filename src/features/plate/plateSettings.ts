@@ -66,6 +66,10 @@ export interface PlateSettings extends PlatePlace {
   flood: number;
   /** Your own places on the plate. */
   markers: PlateMarker[];
+  /** Index of the pin whose view is shown on the plate; -1 for none. */
+  viewFrom: number;
+  /** Height of the eye above the ground at that pin, in metres. */
+  viewEye: number;
   /** An imported track, as an encoded polyline; "" means none. */
   route: string;
   routeColor: string;
@@ -127,6 +131,8 @@ export const sizeToSlider = (km: number) =>
   ((Math.log(km) - SIZE_LOG[0]) / (SIZE_LOG[1] - SIZE_LOG[0])) * 100;
 export const sliderToSize = (position: number) =>
   roundSize(Math.exp(SIZE_LOG[0] + (position / 100) * (SIZE_LOG[1] - SIZE_LOG[0])));
+/** Eye heights offered for a view: on foot, up a tree, from a tower. */
+export const VIEW_EYES = [2, 10, 50];
 export const EXAGGERATION_LIMITS = { min: 0.5, max: 30 };
 export const BOX_LIMITS = { min: 0.02, max: 0.2 };
 
@@ -180,6 +186,8 @@ export const DEFAULT_PLATE: PlateSettings = {
   snow: 0,
   flood: 0,
   markers: [],
+  viewFrom: -1,
+  viewEye: 2,
   route: "",
   routeColor: "#e4572e",
   routeRaise: true,
@@ -246,6 +254,8 @@ const LINK = {
   snow: "snow",
   flood: "flood",
   markers: "mk",
+  viewFrom: "vs",
+  viewEye: "ve",
   route: "rt",
   routeColor: "rc",
   routeRaise: "rr",
@@ -295,6 +305,10 @@ export function sanitizePlate(
     out.density = input.density as PlateDensity;
   }
   if (typeof input.theme === "string" && /^[\w-]{1,40}$/.test(input.theme)) out.theme = input.theme;
+  const viewFrom = num(input.viewFrom);
+  if (Number.isFinite(viewFrom)) out.viewFrom = Math.round(clamp(viewFrom, -1, MAX_MARKERS - 1));
+  const viewEye = num(input.viewEye);
+  if (Number.isFinite(viewEye)) out.viewEye = VIEW_EYES.includes(viewEye) ? viewEye : 2;
   const markers = Array.isArray(input.markers)
     ? input.markers
     : typeof input.markers === "string"

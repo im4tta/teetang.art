@@ -243,6 +243,8 @@ export interface OverlayOptions {
   line?: LatLon[];
   /** Roads: white on black over the plate's square, drawn first in the ink colour. */
   roads?: HTMLCanvasElement | null;
+  /** Ground hidden from a viewpoint, dimmed; `visible` is `size × size`, row 0 north. */
+  hidden?: { visible: Uint8Array; size: number } | null;
   size?: number;
 }
 
@@ -251,6 +253,7 @@ export function drawOverlay(bounds: PlateBounds, options: OverlayOptions): HTMLC
   const size = options.size ?? 2048;
   const canvas = Object.assign(document.createElement("canvas"), { width: size, height: size });
   const ctx = canvas.getContext("2d")!;
+  if (options.hidden) ctx.drawImage(dimHidden(options.hidden), 0, 0, size, size);
   if (options.roads) {
     ctx.globalAlpha = 0.7;
     ctx.drawImage(tintMask(options.roads, options.ink), 0, 0, size, size);
@@ -484,6 +487,25 @@ export function profileSvg(
 export { plateBounds };
 
 /** A white-on-black mask turned into `color` with the mask as transparency. */
+/**
+ * A canvas the size of the height grid: hidden ground darkened, visible ground
+ * given a warm glow, so the lit patches stand out even on dark terrain.
+ */
+function dimHidden({ visible, size }: { visible: Uint8Array; size: number }): HTMLCanvasElement {
+  const canvas = Object.assign(document.createElement("canvas"), { width: size, height: size });
+  const ctx = canvas.getContext("2d")!;
+  const image = ctx.createImageData(size, size);
+  for (let k = 0; k < visible.length; k++) {
+    const seen = visible[k] === 1;
+    image.data[k * 4] = seen ? 255 : 8;
+    image.data[k * 4 + 1] = seen ? 226 : 8;
+    image.data[k * 4 + 2] = seen ? 120 : 20;
+    image.data[k * 4 + 3] = seen ? 70 : 165;
+  }
+  ctx.putImageData(image, 0, 0);
+  return canvas;
+}
+
 function tintMask(mask: HTMLCanvasElement, color: string): HTMLCanvasElement {
   const canvas = Object.assign(document.createElement("canvas"), {
     width: mask.width,

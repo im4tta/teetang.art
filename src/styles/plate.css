@@ -1639,3 +1639,9 @@
   border-radius: 10px;
   padding: 8px 10px;
 }
+
+.plate-icon-btn[aria-pressed="true"] {
+  background: var(--plate-accent);
+  color: var(--plate-on-accent);
+  border-color: var(--plate-accent);
+}
