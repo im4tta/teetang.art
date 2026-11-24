@@ -70,6 +70,8 @@ export interface PlateSettings extends PlatePlace {
   viewFrom: number;
   /** Height of the eye above the ground at that pin, in metres. */
   viewEye: number;
+  /** Index of the pin whose rain path and catchment are shown; -1 for none. */
+  rainFrom: number;
   /** An imported track, as an encoded polyline; "" means none. */
   route: string;
   routeColor: string;
@@ -89,6 +91,8 @@ export interface PlateSettings extends PlatePlace {
   buildings: boolean;
   /** Main roads from OpenStreetMap, drawn on the surface. */
   roads: boolean;
+  /** Colour the ground by how steep it is. */
+  slope: boolean;
 }
 
 export type LabelRelief = "raised" | "engraved";
@@ -188,6 +192,7 @@ export const DEFAULT_PLATE: PlateSettings = {
   markers: [],
   viewFrom: -1,
   viewEye: 2,
+  rainFrom: -1,
   route: "",
   routeColor: "#e4572e",
   routeRaise: true,
@@ -198,6 +203,7 @@ export const DEFAULT_PLATE: PlateSettings = {
   elevation: "",
   buildings: false,
   roads: false,
+  slope: false,
   name: "Phnom Aural",
   region: "Kampong Speu",
   country: "Cambodia",
@@ -221,6 +227,7 @@ const BOOLEAN_FIELDS = [
   "lakes",
   "buildings",
   "roads",
+  "slope",
 ] as const satisfies (keyof PlateSettings)[];
 
 /** Short query names used by share links. */
@@ -256,6 +263,7 @@ const LINK = {
   markers: "mk",
   viewFrom: "vs",
   viewEye: "ve",
+  rainFrom: "rn",
   route: "rt",
   routeColor: "rc",
   routeRaise: "rr",
@@ -266,6 +274,7 @@ const LINK = {
   elevation: "dem",
   buildings: "bld",
   roads: "rd",
+  slope: "slp",
   name: "name",
   region: "region",
   country: "country",
@@ -307,6 +316,8 @@ export function sanitizePlate(
   if (typeof input.theme === "string" && /^[\w-]{1,40}$/.test(input.theme)) out.theme = input.theme;
   const viewFrom = num(input.viewFrom);
   if (Number.isFinite(viewFrom)) out.viewFrom = Math.round(clamp(viewFrom, -1, MAX_MARKERS - 1));
+  const rainFrom = num(input.rainFrom);
+  if (Number.isFinite(rainFrom)) out.rainFrom = Math.round(clamp(rainFrom, -1, MAX_MARKERS - 1));
   const viewEye = num(input.viewEye);
   if (Number.isFinite(viewEye)) out.viewEye = VIEW_EYES.includes(viewEye) ? viewEye : 2;
   const markers = Array.isArray(input.markers)
@@ -360,6 +371,10 @@ export function sanitizePlate(
   if (typeof input.countryCode === "string" && /^[a-z]{2}$/i.test(input.countryCode)) {
     out.countryCode = input.countryCode.toUpperCase();
   }
+  // A pin index only means something with pins behind it.
+  const pins = out.markers?.length ?? 0;
+  if (out.viewFrom !== undefined && out.viewFrom >= pins) out.viewFrom = -1;
+  if (out.rainFrom !== undefined && out.rainFrom >= pins) out.rainFrom = -1;
   return out;
 }
 

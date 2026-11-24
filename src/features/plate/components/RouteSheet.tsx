@@ -2,6 +2,7 @@ import { useRef, useState } from "react";
 import {
   Crosshair,
   Download,
+  Droplets,
   Eye,
   ImagePlus,
   MapPin,
@@ -31,6 +32,10 @@ import {
 import { VIEW_EYES, type PlateSettings } from "../plateSettings";
 import PlateSheet from "./PlateSheet";
 
+/** A pin index after pin `removed` is deleted: cleared if it was that pin, shifted if after it. */
+const afterRemoval = (current: number, removed: number) =>
+  current === removed ? -1 : current > removed ? current - 1 : current;
+
 /** Days a trip can have; each shares the link's room for points. */
 const MAX_DAYS = 5;
 
@@ -46,6 +51,14 @@ interface RouteSheetProps {
   onProfileDay: (day: number) => void;
   /** What the chosen pin can see, once worked out. */
   view: { percent: number; farthestM: number } | null;
+  /** Where rain from the chosen pin goes, once worked out. */
+  rain: {
+    lengthM: number;
+    dropM: number;
+    reachesSea: boolean;
+    catchmentKm2: number;
+    snapped: boolean;
+  } | null;
   onChange: (patch: Partial<PlateSettings>) => void;
   /** Close the sheet and wait for a tap on the plate. */
   onPick: (kind: "marker" | "line") => void;
@@ -59,6 +72,7 @@ export default function RouteSheet({
   profileDay,
   onProfileDay,
   view,
+  rain,
   onChange,
   onPick,
   onClose,
@@ -223,64 +237,72 @@ export default function RouteSheet({
                 })
               }
             />
-            <button
-              type="button"
-              className="plate-icon-btn"
-              aria-pressed={plate.viewFrom === index}
-              aria-label={`${t("plate.view.from")} ${marker.label || index + 1}`}
-              title={t("plate.view.from")}
-              onClick={() => onChange({ viewFrom: plate.viewFrom === index ? -1 : index })}
-            >
-              <Eye size={18} aria-hidden="true" />
-            </button>
-            <label
-              className="plate-icon-btn plate-marker-photo"
-              data-has-photo={marker.photo ? "true" : undefined}
-              aria-label={
-                marker.photo ? t("plate.markers.changePhoto") : t("plate.markers.addPhoto")
-              }
-              title={marker.photo ? t("plate.markers.changePhoto") : t("plate.markers.addPhoto")}
-            >
-              <ImagePlus size={18} aria-hidden="true" />
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  event.target.value = "";
-                  if (!file) return;
-                  try {
-                    const photo = await savePhoto(file);
-                    if (marker.photo) void deletePhoto(marker.photo);
-                    onChange({
-                      markers: plate.markers.map((m, k) => (k === index ? { ...m, photo } : m)),
-                    });
-                  } catch {
-                    notify(t("plate.markers.photoFailed"), { tone: "error" });
-                  }
+            <div className="plate-marker-actions">
+              <button
+                type="button"
+                className="plate-icon-btn"
+                aria-pressed={plate.viewFrom === index}
+                aria-label={`${t("plate.view.from")} ${marker.label || index + 1}`}
+                title={t("plate.view.from")}
+                onClick={() => onChange({ viewFrom: plate.viewFrom === index ? -1 : index })}
+              >
+                <Eye size={18} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="plate-icon-btn"
+                aria-pressed={plate.rainFrom === index}
+                aria-label={`${t("plate.rain.from")} ${marker.label || index + 1}`}
+                title={t("plate.rain.from")}
+                onClick={() => onChange({ rainFrom: plate.rainFrom === index ? -1 : index })}
+              >
+                <Droplets size={18} aria-hidden="true" />
+              </button>
+              <label
+                className="plate-icon-btn plate-marker-photo"
+                data-has-photo={marker.photo ? "true" : undefined}
+                aria-label={
+                  marker.photo ? t("plate.markers.changePhoto") : t("plate.markers.addPhoto")
+                }
+                title={marker.photo ? t("plate.markers.changePhoto") : t("plate.markers.addPhoto")}
+              >
+                <ImagePlus size={18} aria-hidden="true" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (!file) return;
+                    try {
+                      const photo = await savePhoto(file);
+                      if (marker.photo) void deletePhoto(marker.photo);
+                      onChange({
+                        markers: plate.markers.map((m, k) => (k === index ? { ...m, photo } : m)),
+                      });
+                    } catch {
+                      notify(t("plate.markers.photoFailed"), { tone: "error" });
+                    }
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                className="plate-icon-btn"
+                aria-label={t("plate.markers.remove")}
+                onClick={() => {
+                  if (marker.photo) void deletePhoto(marker.photo);
+                  onChange({
+                    markers: plate.markers.filter((_, k) => k !== index),
+                    viewFrom: afterRemoval(plate.viewFrom, index),
+                    rainFrom: afterRemoval(plate.rainFrom, index),
+                  });
                 }}
-              />
-            </label>
-            <button
-              type="button"
-              className="plate-icon-btn"
-              aria-label={t("plate.markers.remove")}
-              onClick={() => {
-                if (marker.photo) void deletePhoto(marker.photo);
-                onChange({
-                  markers: plate.markers.filter((_, k) => k !== index),
-                  viewFrom:
-                    plate.viewFrom === index
-                      ? -1
-                      : plate.viewFrom > index
-                        ? plate.viewFrom - 1
-                        : plate.viewFrom,
-                });
-              }}
-            >
-              <Trash2 size={18} />
-            </button>
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
           </div>
         ))}
         {plate.markers[plate.viewFrom] && (
@@ -304,6 +326,26 @@ export default function RouteSheet({
                 : t("plate.view.off")}
             </p>
             <p className="plate-note">{t("plate.view.note")}</p>
+          </div>
+        )}
+        {plate.markers[plate.rainFrom] && (
+          <div className="plate-field" data-testid="rain-panel">
+            <p className="plate-note" role="status">
+              {rain
+                ? `${t(rain.reachesSea ? "plate.rain.toSea" : "plate.rain.toEdge")} ${(rain.lengthM / 1000).toFixed(1)} km · ${t("plate.rain.drops")} ${Math.round(rain.dropM).toLocaleString("en-US")} m`
+                : t("plate.view.off")}
+            </p>
+            {rain && (
+              <p className="plate-note">
+                {t("plate.rain.catchment")}{" "}
+                {rain.catchmentKm2 < 10
+                  ? rain.catchmentKm2.toFixed(1)
+                  : Math.round(rain.catchmentKm2)}{" "}
+                km²
+              </p>
+            )}
+            {rain?.snapped && <p className="plate-note">{t("plate.rain.snapped")}</p>}
+            <p className="plate-note">{t("plate.rain.note")}</p>
           </div>
         )}
         {plate.markers.some((marker) => marker.photo) && (

@@ -83,7 +83,10 @@ export async function loadHeightGrid(
   }
   signal?.throwIfAborted();
 
-  cache.set(key, grid);
-  if (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value!);
+  // A source that failed may work next time; only settled answers are kept.
+  if (grid.meta?.fellBack !== "failed") {
+    cache.set(key, grid);
+    if (cache.size > CACHE_LIMIT) cache.delete(cache.keys().next().value!);
+  }
   return grid;
 }

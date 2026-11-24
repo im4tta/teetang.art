@@ -1320,13 +1320,22 @@
 
 .plate-marker-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
 
 .plate-marker-row .plate-input {
-  flex: 1;
+  flex: 1 1 120px;
   min-width: 0;
+}
+
+/* The pin's buttons share one row under its name, to the right on wide sheets. */
+.plate-marker-actions {
+  display: flex;
+  flex: 1 0 100%;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .plate-profile svg {
@@ -1644,4 +1653,42 @@
   background: var(--plate-accent);
   color: var(--plate-on-accent);
   border-color: var(--plate-accent);
+}
+
+.plate-slope-key ul {
+  display: grid;
+  gap: 4px;
+  margin: 4px 0 0 34px;
+  padding: 0;
+  list-style: none;
+  font-size: 13px;
+}
+
+.plate-slope-key li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plate-slope-key i {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+}
+
+.plate-slope-key i[data-band="1"] {
+  background: rgb(250 204 21);
+}
+.plate-slope-key i[data-band="2"] {
+  background: rgb(249 115 22);
+}
+.plate-slope-key i[data-band="3"] {
+  background: rgb(220 38 38);
+}
+.plate-slope-key i[data-band="4"] {
+  background: rgb(126 34 206);
+}
+
+.plate-slope-key .plate-note {
+  margin-left: 34px;
 }

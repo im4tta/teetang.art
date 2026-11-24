@@ -44,9 +44,11 @@ import {
 import { loadHeightGrid } from "@/features/plate/elevation";
 import { elevationCredit } from "@/features/plate/elevationBuild";
 import { computeViewshed } from "@/features/plate/viewshed";
-import { readOpenTopoKey } from "@/features/plate/elevationSources";
+import { computeSlope } from "@/features/plate/slope";
+import { computeDrainage } from "@/features/plate/drainage";
+import { readOpenTopoKey, sourceById } from "@/features/plate/elevationSources";
 import type { HeightGrid } from "@/features/plate/elevationCore";
-import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
+import { autoExaggeration, buildPlateGeometry, contourInterval } from "@/features/plate/geometry";
 import {
   DEFAULT_PLATE,
   DENSITY_LINES,
@@ -282,6 +284,9 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
     [plate.lat, plate.lon, plate.sizeKm],
   );
 
+  // Only a source that uses the visitor's key reloads when the key changes.
+  const sourceKey = sourceById(plate.elevation)?.needsKey ? openTopoKey : "";
+
   // Terrain for the current square: a quick low-detail plate first, then the full one.
   useEffect(() => {
     const controller = new AbortController();
@@ -290,7 +295,7 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
       setTerrain({ status: "loading" });
       setFullDetail(false);
     });
-    const request = { source: plate.elevation, key: openTopoKey };
+    const request = { source: plate.elevation, key: sourceKey };
     loadHeightGrid(bounds, PREVIEW_CELLS, controller.signal, request).then(
       (value) =>
         !fullArrived && !controller.signal.aborted && setTerrain({ status: "ready", value }),
@@ -299,7 +304,7 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
     loadHeightGrid(bounds, GRID_CELLS, controller.signal, request).then(
       (value) => {
         fullArrived = true;
-        if (value.meta?.fellBack) reportProblem("elevation");
+        if (value.meta?.fellBack === "failed") reportProblem("elevation");
         setTerrain({ status: "ready", value });
         setFullDetail(true);
       },
@@ -310,7 +315,7 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
       },
     );
     return () => controller.abort();
-  }, [bounds, attempt, plate.elevation, openTopoKey]);
+  }, [bounds, attempt, plate.elevation, sourceKey]);
 
   // Map, imagery or topographic map over the terrain.
   const basemap = basemapFor(plate);
@@ -505,6 +510,21 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
     setLesson({ id, step });
   };
 
+  // How steep the ground is.
+  const slope = useMemo(
+    () => (grid && deferred.slope ? computeSlope(grid, bounds.sizeMeters) : null),
+    [grid, bounds.sizeMeters, deferred.slope],
+  );
+
+  // Where rain goes from the chosen pin.
+  const rainPin = deferred.markers[deferred.rainFrom];
+  const rain = useMemo(() => {
+    if (!grid || !rainPin) return null;
+    const [u, v] = toPlateUv(bounds, [rainPin.lat, rainPin.lon]);
+    if (u < 0 || u > 1 || v < 0 || v > 1) return null;
+    return computeDrainage(grid, bounds.sizeMeters, u, v);
+  }, [grid, bounds, rainPin]);
+
   // What can be seen from the chosen pin.
   const viewPin = deferred.markers[deferred.viewFrom];
   const view = useMemo(() => {
@@ -517,9 +537,11 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
   // Route, markers and measuring line, drawn on the surface.
   const overlay = useMemo(
     () =>
-      tracks.length || deferred.markers.length || measure || roadMap || view
+      tracks.length || deferred.markers.length || measure || roadMap || view || slope || rain
         ? drawOverlay(bounds, {
+            rain,
             hidden: view,
+            slope,
             tracks,
             markers: deferred.markers,
             color: deferred.routeColor,
@@ -539,6 +561,8 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
       measure,
       roadMap,
       view,
+      slope,
+      rain,
     ],
   );
 
@@ -1296,6 +1320,12 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
             plate={plate}
             autoExaggeration={autoHeight}
             relief={geometry ? geometry.max - geometry.min : 0}
+            contourM={
+              geometry
+                ? contourInterval(geometry.min, geometry.max, DENSITY_LINES[plate.density])
+                : null
+            }
+            slope={slope ? { maxDegrees: slope.maxDegrees, steepShare: slope.steepShare } : null}
             elevationMeta={terrain.status === "ready" ? terrain.value.meta : undefined}
             openTopoKey={openTopoKey}
             onOpenTopoKey={setOpenTopoKey}
@@ -1379,6 +1409,17 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
             onProfileDay={setProfileDay}
             view={
               view ? { percent: Math.round(view.fraction * 100), farthestM: view.farthestM } : null
+            }
+            rain={
+              rain
+                ? {
+                    lengthM: rain.lengthM,
+                    dropM: rain.dropM,
+                    reachesSea: rain.reachesSea,
+                    catchmentKm2: rain.catchmentKm2,
+                    snapped: rain.snapped,
+                  }
+                : null
             }
             onChange={update}
             onPick={(kind) => {

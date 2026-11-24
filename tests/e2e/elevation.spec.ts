@@ -231,3 +231,181 @@ test.describe("what can be seen from a pin", () => {
     await expect(page.getByTestId("view-panel")).toHaveCount(0);
   });
 });
+
+test.describe("steepness map", () => {
+  // The mock mountain is a smooth cone: 1,500 m high on a 200 m plain, 3 km wide.
+  // Its steepest ground is at 2.1 km from the summit, about 20° (atan of 0.37).
+  test("colours the ground by slope and reports the steepest angle", async ({ page }) => {
+    await openPlate(page);
+    await openAdjust(page);
+    await expect(page.getByTestId("slope-key")).toHaveCount(0);
+
+    await page.getByRole("checkbox", { name: "Steepness map" }).check();
+    await expect(page.getByTestId("slope-key")).toContainText("over 45°");
+    const note = page.getByTestId("slope-key").locator(".plate-note");
+    await expect(note).toContainText("Steepest");
+    const text = await note.innerText();
+    const steepest = Number(text.match(/Steepest (\d+)°/)![1]);
+    expect(steepest).toBeGreaterThanOrEqual(17);
+    expect(steepest).toBeLessThanOrEqual(23);
+    // Nothing on the cone reaches 30°.
+    expect(text).toContain("30° or more: 0%");
+
+    await page.getByRole("checkbox", { name: "Steepness map" }).uncheck();
+    await expect(page.getByTestId("slope-key")).toHaveCount(0);
+  });
+
+  test("is in the share link and reopens", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&slp=1");
+    await openAdjust(page);
+    await expect(page.getByRole("checkbox", { name: "Steepness map" })).toBeChecked();
+    await page.locator(".plate-sheet__header button").click();
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await page.locator(".plate-download[data-kind=link]").click();
+    const link = new URL(await page.evaluate(() => navigator.clipboard.readText()));
+    expect(link.searchParams.get("slp")).toBe("1");
+  });
+});
+
+test.describe("where the rain goes", () => {
+  // The mock mountain: a 1,500 m summit on a 200 m plain, 3 km wide. A pin 2 km
+  // west of the summit sits on its flank, about 1,030 m up; rain there runs
+  // west, away from the summit, over the plain to the plate's edge (~3 km).
+  const flank = "12.0333,104.1486,Flank";
+
+  const text = (page: Page) => page.getByTestId("rain-panel").innerText();
+
+  test("traces the way downhill and the ground that drains through the pin", async ({ page }) => {
+    await openPlate(page, `/plate?lat=12.0333&lon=104.1667&km=10&mk=${flank}&rn=0`);
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await expect(page.getByTestId("rain-panel")).toContainText("runs off the plate");
+    const panel = await text(page);
+    const km = Number(panel.match(/plate: ([\d.]+) km/)![1]);
+    const falls = Number(panel.match(/falls ([\d,]+) m/)![1].replace(",", ""));
+    // Radially outward to the west edge, then over the flat plain.
+    expect(km).toBeGreaterThan(2.5);
+    expect(km).toBeLessThan(4.5);
+    expect(falls).toBeGreaterThan(700);
+    expect(falls).toBeLessThan(950);
+    await expect(page.getByTestId("rain-panel")).toContainText(
+      "Ground that drains through this pin",
+    );
+  });
+
+  test("the drop button turns it on and off, and is in the share link", async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openPlate(page, `/plate?lat=12.0333&lon=104.1667&km=10&mk=${flank}`);
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await expect(page.getByTestId("rain-panel")).toHaveCount(0);
+
+    const drop = page.getByRole("button", { name: /Where does the rain go\? Flank/ });
+    await drop.click();
+    await expect(drop).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("rain-panel")).toBeVisible();
+
+    await page.locator(".plate-sheet__header button").click();
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await page.locator(".plate-download[data-kind=link]").click();
+    const link = new URL(await page.evaluate(() => navigator.clipboard.readText()));
+    expect(link.searchParams.get("rn")).toBe("0");
+
+    await page.locator(".plate-sheet__header button").click();
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await drop.click();
+    await expect(page.getByTestId("rain-panel")).toHaveCount(0);
+  });
+
+  test("deleting an earlier pin keeps the rain on the same pin", async ({ page }) => {
+    await openPlate(
+      page,
+      `/plate?lat=12.0333&lon=104.1667&km=10&mk=12.0333,104.1667,Summit|${flank}&rn=1`,
+    );
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await page.getByRole("button", { name: "Remove pin" }).first().click();
+    // The Flank pin is now the only one, and still the one with the rain.
+    await expect(
+      page.getByRole("button", { name: /Where does the rain go\? Flank/ }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+});
+
+test.describe("fixes", () => {
+  test("a source that failed once works when chosen again", async ({ page }) => {
+    const proxy: { status?: number } = { status: 500 };
+    await serveCopernicus(page, proxy);
+    await openPlate(page);
+    await openAdjust(page);
+    await pick(page, /^Copernicus GLO-30/);
+    await expect(page.locator(".plate-note--warn")).toContainText("worldwide data is shown");
+
+    // The proxy comes back; choosing the source again must ask it again, not reuse the failure.
+    proxy.status = undefined;
+    await pick(page, /^Worldwide/);
+    await pick(page, /^Copernicus GLO-30/);
+    await expect
+      .poll(() => highest(page), { timeout: 20_000 })
+      .toBeGreaterThan(COPERNICUS_PEAK - 60);
+    await expect(page.locator(".plate-note--warn")).toHaveCount(0);
+  });
+
+  test("a link whose view or rain pin does not exist opens with neither", async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openPlate(
+      page,
+      "/plate?lat=12.0333&lon=104.1667&km=10&mk=12.0333,104.1667,Summit&vs=3&rn=2",
+    );
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await expect(page.getByTestId("view-panel")).toHaveCount(0);
+    await expect(page.getByTestId("rain-panel")).toHaveCount(0);
+    await page.locator(".plate-sheet__header button").click();
+
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await page.locator(".plate-download[data-kind=link]").click();
+    const link = new URL(await page.evaluate(() => navigator.clipboard.readText()));
+    // A pin added later must not pick up a stale index.
+    expect(link.searchParams.has("vs")).toBe(false);
+    expect(link.searchParams.has("rn")).toBe(false);
+  });
+
+  test("opening a place from Explore clears the pin views", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openPlate(
+      page,
+      "/plate?lat=12.0333&lon=104.1667&km=10&mk=12.0333,104.1667,Summit&vs=0&rn=0",
+    );
+    await page.getByRole("button", { name: "Explore" }).click();
+    await page.locator(".plate-explore-card__open").first().click();
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await expect(page.locator(".plate-marker-row")).toHaveCount(0);
+    await page.locator(".plate-sheet__header button").click();
+
+    // With no pins left, the old indexes are invisible, but they would switch the view on
+    // for the next pin the visitor adds. They must be gone from what is saved and shared.
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await page.locator(".plate-download[data-kind=link]").click();
+    const link = new URL(await page.evaluate(() => navigator.clipboard.readText()));
+    expect(link.searchParams.has("vs")).toBe(false);
+    expect(link.searchParams.has("rn")).toBe(false);
+  });
+});
+
+test.describe("contour interval", () => {
+  test("tells how far apart the lines are, and follows the line density", async ({ page }) => {
+    await openPlate(page);
+    await openAdjust(page);
+    // 1,296 m of relief at 30 lines → 43 m → a round 50 m, heavier every 250 m.
+    await expect(page.getByTestId("contour-interval")).toContainText("every 50 m");
+    await expect(page.getByTestId("contour-interval")).toContainText("every 250 m");
+    await page.getByRole("button", { name: "More" }).click();
+    await expect(page.getByTestId("contour-interval")).toContainText("every 25 m");
+    await page.getByRole("button", { name: "Fewer" }).click();
+    await expect(page.getByTestId("contour-interval")).toContainText("every 100 m");
+  });
+});
