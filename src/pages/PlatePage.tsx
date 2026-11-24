@@ -45,6 +45,7 @@ import { loadHeightGrid } from "@/features/plate/elevation";
 import { elevationCredit } from "@/features/plate/elevationBuild";
 import { computeViewshed } from "@/features/plate/viewshed";
 import { computeSlope } from "@/features/plate/slope";
+import { computeDrainage } from "@/features/plate/drainage";
 import { readOpenTopoKey } from "@/features/plate/elevationSources";
 import type { HeightGrid } from "@/features/plate/elevationCore";
 import { autoExaggeration, buildPlateGeometry } from "@/features/plate/geometry";
@@ -512,6 +513,15 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
     [grid, bounds.sizeMeters, deferred.slope],
   );
 
+  // Where rain goes from the chosen pin.
+  const rainPin = deferred.markers[deferred.rainFrom];
+  const rain = useMemo(() => {
+    if (!grid || !rainPin) return null;
+    const [u, v] = toPlateUv(bounds, [rainPin.lat, rainPin.lon]);
+    if (u < 0 || u > 1 || v < 0 || v > 1) return null;
+    return computeDrainage(grid, bounds.sizeMeters, u, v);
+  }, [grid, bounds, rainPin]);
+
   // What can be seen from the chosen pin.
   const viewPin = deferred.markers[deferred.viewFrom];
   const view = useMemo(() => {
@@ -524,8 +534,9 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
   // Route, markers and measuring line, drawn on the surface.
   const overlay = useMemo(
     () =>
-      tracks.length || deferred.markers.length || measure || roadMap || view || slope
+      tracks.length || deferred.markers.length || measure || roadMap || view || slope || rain
         ? drawOverlay(bounds, {
+            rain,
             hidden: view,
             slope,
             tracks,
@@ -548,6 +559,7 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
       roadMap,
       view,
       slope,
+      rain,
     ],
   );
 
@@ -1389,6 +1401,17 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
             onProfileDay={setProfileDay}
             view={
               view ? { percent: Math.round(view.fraction * 100), farthestM: view.farthestM } : null
+            }
+            rain={
+              rain
+                ? {
+                    lengthM: rain.lengthM,
+                    dropM: rain.dropM,
+                    reachesSea: rain.reachesSea,
+                    catchmentKm2: rain.catchmentKm2,
+                    snapped: rain.snapped,
+                  }
+                : null
             }
             onChange={update}
             onPick={(kind) => {

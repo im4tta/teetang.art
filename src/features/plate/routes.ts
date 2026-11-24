@@ -245,6 +245,14 @@ export interface OverlayOptions {
   roads?: HTMLCanvasElement | null;
   /** Ground coloured by slope band (0 gentle … 4 extreme); `size × size`, row 0 north. */
   slope?: { bands: Uint8Array; size: number } | null;
+  /** Where rain goes from a pin: its catchment tinted, its path drawn (positions 0..1). */
+  rain?: {
+    catchment: Uint8Array;
+    size: number;
+    path: [number, number][];
+    outlet: [number, number];
+    snapped: boolean;
+  } | null;
   /** Ground hidden from a viewpoint, dimmed; `visible` is `size × size`, row 0 north. */
   hidden?: { visible: Uint8Array; size: number } | null;
   size?: number;
@@ -256,6 +264,7 @@ export function drawOverlay(bounds: PlateBounds, options: OverlayOptions): HTMLC
   const canvas = Object.assign(document.createElement("canvas"), { width: size, height: size });
   const ctx = canvas.getContext("2d")!;
   if (options.slope) ctx.drawImage(paintSlope(options.slope), 0, 0, size, size);
+  if (options.rain) ctx.drawImage(paintCatchment(options.rain), 0, 0, size, size);
   if (options.hidden) ctx.drawImage(dimHidden(options.hidden), 0, 0, size, size);
   if (options.roads) {
     ctx.globalAlpha = 0.7;
@@ -310,6 +319,35 @@ export function drawOverlay(bounds: PlateBounds, options: OverlayOptions): HTMLC
       ctx.stroke();
     }
     ctx.setLineDash([]);
+  }
+  if (options.rain && options.rain.path.length > 1) {
+    const { path } = options.rain;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    for (const [color, width] of [
+      [options.paper, size * 0.0095],
+      ["#1d4ed8", size * 0.0058],
+    ] as const) {
+      ctx.strokeStyle = color;
+      ctx.lineWidth = width;
+      ctx.beginPath();
+      path.forEach(([u, v], k) =>
+        k ? ctx.lineTo(u * size, v * size) : ctx.moveTo(u * size, v * size),
+      );
+      ctx.stroke();
+    }
+  }
+  if (options.rain?.snapped) {
+    // Where the catchment is measured: the stream the pin was moved onto.
+    const [u, v] = options.rain.outlet;
+    ctx.fillStyle = options.paper;
+    ctx.beginPath();
+    ctx.arc(u * size, v * size, size * 0.0085, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = "#1d4ed8";
+    ctx.beginPath();
+    ctx.arc(u * size, v * size, size * 0.0055, 0, Math.PI * 2);
+    ctx.fill();
   }
   for (const marker of options.markers) {
     const [x, y] = at([marker.lat, marker.lon]);
@@ -490,6 +528,25 @@ export function profileSvg(
 export { plateBounds };
 
 /** A white-on-black mask turned into `color` with the mask as transparency. */
+/** Ground that drains through a pin, in translucent blue. */
+function paintCatchment({
+  catchment,
+  size,
+}: {
+  catchment: Uint8Array;
+  size: number;
+}): HTMLCanvasElement {
+  const canvas = Object.assign(document.createElement("canvas"), { width: size, height: size });
+  const ctx = canvas.getContext("2d")!;
+  const image = ctx.createImageData(size, size);
+  for (let k = 0; k < catchment.length; k++) {
+    if (!catchment[k]) continue;
+    image.data.set([37, 99, 235, 105], k * 4);
+  }
+  ctx.putImageData(image, 0, 0);
+  return canvas;
+}
+
 /** Slope bands as translucent colours; level ground stays clear. */
 const SLOPE_COLORS: [number, number, number, number][] = [
   [0, 0, 0, 0],

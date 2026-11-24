@@ -70,6 +70,8 @@ export interface PlateSettings extends PlatePlace {
   viewFrom: number;
   /** Height of the eye above the ground at that pin, in metres. */
   viewEye: number;
+  /** Index of the pin whose rain path and catchment are shown; -1 for none. */
+  rainFrom: number;
   /** An imported track, as an encoded polyline; "" means none. */
   route: string;
   routeColor: string;
@@ -190,6 +192,7 @@ export const DEFAULT_PLATE: PlateSettings = {
   markers: [],
   viewFrom: -1,
   viewEye: 2,
+  rainFrom: -1,
   route: "",
   routeColor: "#e4572e",
   routeRaise: true,
@@ -260,6 +263,7 @@ const LINK = {
   markers: "mk",
   viewFrom: "vs",
   viewEye: "ve",
+  rainFrom: "rn",
   route: "rt",
   routeColor: "rc",
   routeRaise: "rr",
@@ -312,6 +316,8 @@ export function sanitizePlate(
   if (typeof input.theme === "string" && /^[\w-]{1,40}$/.test(input.theme)) out.theme = input.theme;
   const viewFrom = num(input.viewFrom);
   if (Number.isFinite(viewFrom)) out.viewFrom = Math.round(clamp(viewFrom, -1, MAX_MARKERS - 1));
+  const rainFrom = num(input.rainFrom);
+  if (Number.isFinite(rainFrom)) out.rainFrom = Math.round(clamp(rainFrom, -1, MAX_MARKERS - 1));
   const viewEye = num(input.viewEye);
   if (Number.isFinite(viewEye)) out.viewEye = VIEW_EYES.includes(viewEye) ? viewEye : 2;
   const markers = Array.isArray(input.markers)

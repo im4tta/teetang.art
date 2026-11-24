@@ -1320,12 +1320,14 @@
 
 .plate-marker-row {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   gap: 8px;
 }
 
+/* The buttons drop under the name when the sheet is narrow. */
 .plate-marker-row .plate-input {
-  flex: 1;
+  flex: 1 1 120px;
   min-width: 0;
 }
 

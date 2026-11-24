@@ -407,6 +407,15 @@ export const en = {
   "plate.slope.verySteep": "over 45°  very steep",
   "plate.slope.steepest": "Steepest",
   "plate.slope.share": "30° or more:",
+  "plate.rain.from": "Where does the rain go?",
+  "plate.rain.toSea": "Rain here runs to the sea:",
+  "plate.rain.toEdge": "Rain here runs off the plate:",
+  "plate.rain.drops": "falls",
+  "plate.rain.catchment": "Ground that drains through this pin:",
+  "plate.rain.note":
+    "The blue line is the way water runs downhill; the blue area drains through the pin. Small dips in the data are filled in so water can always find its way out.",
+  "plate.rain.snapped":
+    "The pin was not on a stream, so the area is measured at the stream just beside it (the blue dot).",
   "plate.dem.title": "Elevation data",
   "plate.dem.using": "Using",
   "plate.dem.needsKey": "free key",

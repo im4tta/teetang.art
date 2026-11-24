@@ -267,3 +267,68 @@ test.describe("steepness map", () => {
     expect(link.searchParams.get("slp")).toBe("1");
   });
 });
+
+test.describe("where the rain goes", () => {
+  // The mock mountain: a 1,500 m summit on a 200 m plain, 3 km wide. A pin 2 km
+  // west of the summit sits on its flank, about 1,030 m up; rain there runs
+  // west, away from the summit, over the plain to the plate's edge (~3 km).
+  const flank = "12.0333,104.1486,Flank";
+
+  const text = (page: Page) => page.getByTestId("rain-panel").innerText();
+
+  test("traces the way downhill and the ground that drains through the pin", async ({ page }) => {
+    await openPlate(page, `/plate?lat=12.0333&lon=104.1667&km=10&mk=${flank}&rn=0`);
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await expect(page.getByTestId("rain-panel")).toContainText("runs off the plate");
+    const panel = await text(page);
+    const km = Number(panel.match(/plate: ([\d.]+) km/)![1]);
+    const falls = Number(panel.match(/falls ([\d,]+) m/)![1].replace(",", ""));
+    // Radially outward to the west edge, then over the flat plain.
+    expect(km).toBeGreaterThan(2.5);
+    expect(km).toBeLessThan(4.5);
+    expect(falls).toBeGreaterThan(700);
+    expect(falls).toBeLessThan(950);
+    await expect(page.getByTestId("rain-panel")).toContainText(
+      "Ground that drains through this pin",
+    );
+  });
+
+  test("the drop button turns it on and off, and is in the share link", async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openPlate(page, `/plate?lat=12.0333&lon=104.1667&km=10&mk=${flank}`);
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await expect(page.getByTestId("rain-panel")).toHaveCount(0);
+
+    const drop = page.getByRole("button", { name: /Where does the rain go\? Flank/ });
+    await drop.click();
+    await expect(drop).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByTestId("rain-panel")).toBeVisible();
+
+    await page.locator(".plate-sheet__header button").click();
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await page.locator(".plate-download[data-kind=link]").click();
+    const link = new URL(await page.evaluate(() => navigator.clipboard.readText()));
+    expect(link.searchParams.get("rn")).toBe("0");
+
+    await page.locator(".plate-sheet__header button").click();
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await drop.click();
+    await expect(page.getByTestId("rain-panel")).toHaveCount(0);
+  });
+
+  test("deleting an earlier pin keeps the rain on the same pin", async ({ page }) => {
+    await openPlate(
+      page,
+      `/plate?lat=12.0333&lon=104.1667&km=10&mk=12.0333,104.1667,Summit|${flank}&rn=1`,
+    );
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await page.getByRole("button", { name: "Remove pin" }).first().click();
+    // The Flank pin is now the only one, and still the one with the rain.
+    await expect(
+      page.getByRole("button", { name: /Where does the rain go\? Flank/ }),
+    ).toHaveAttribute("aria-pressed", "true");
+  });
+});
