@@ -59,14 +59,15 @@ export const COPERNICUS_PEAK = 2200;
 /** One-degree Copernicus tiles around the default plate, served with byte ranges. */
 export async function serveCopernicus(
   page: Page,
-  { status }: { status?: number } = {},
+  // Change `status` during a test to make the proxy fail, then recover.
+  control: { status?: number } = {},
 ): Promise<Request[]> {
   const seen: Request[] = [];
   const mountain = { ...SUMMIT, peak: COPERNICUS_PEAK };
   const cache = new Map<string, Buffer>();
   await page.route(/\/api\/dem\?/, (route) => {
     seen.push(route.request());
-    if (status) return route.fulfill({ status, body: "nope" });
+    if (control.status) return route.fulfill({ status: control.status, body: "nope" });
     const tile = new URL(route.request().url()).searchParams.get("tile") ?? "";
     const m = /^([NS])(\d{2})([EW])(\d{3})$/.exec(tile);
     if (!m) return route.fulfill({ status: 400 });

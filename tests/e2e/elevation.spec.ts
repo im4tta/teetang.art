@@ -332,3 +332,80 @@ test.describe("where the rain goes", () => {
     ).toHaveAttribute("aria-pressed", "true");
   });
 });
+
+test.describe("fixes", () => {
+  test("a source that failed once works when chosen again", async ({ page }) => {
+    const proxy: { status?: number } = { status: 500 };
+    await serveCopernicus(page, proxy);
+    await openPlate(page);
+    await openAdjust(page);
+    await pick(page, /^Copernicus GLO-30/);
+    await expect(page.locator(".plate-note--warn")).toContainText("worldwide data is shown");
+
+    // The proxy comes back; choosing the source again must ask it again, not reuse the failure.
+    proxy.status = undefined;
+    await pick(page, /^Worldwide/);
+    await pick(page, /^Copernicus GLO-30/);
+    await expect
+      .poll(() => highest(page), { timeout: 20_000 })
+      .toBeGreaterThan(COPERNICUS_PEAK - 60);
+    await expect(page.locator(".plate-note--warn")).toHaveCount(0);
+  });
+
+  test("a link whose view or rain pin does not exist opens with neither", async ({
+    page,
+    context,
+  }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openPlate(
+      page,
+      "/plate?lat=12.0333&lon=104.1667&km=10&mk=12.0333,104.1667,Summit&vs=3&rn=2",
+    );
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await expect(page.getByTestId("view-panel")).toHaveCount(0);
+    await expect(page.getByTestId("rain-panel")).toHaveCount(0);
+    await page.locator(".plate-sheet__header button").click();
+
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await page.locator(".plate-download[data-kind=link]").click();
+    const link = new URL(await page.evaluate(() => navigator.clipboard.readText()));
+    // A pin added later must not pick up a stale index.
+    expect(link.searchParams.has("vs")).toBe(false);
+    expect(link.searchParams.has("rn")).toBe(false);
+  });
+
+  test("opening a place from Explore clears the pin views", async ({ page, context }) => {
+    await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    await openPlate(
+      page,
+      "/plate?lat=12.0333&lon=104.1667&km=10&mk=12.0333,104.1667,Summit&vs=0&rn=0",
+    );
+    await page.getByRole("button", { name: "Explore" }).click();
+    await page.locator(".plate-explore-card__open").first().click();
+    await page.getByRole("button", { name: "Route & pins" }).click();
+    await expect(page.locator(".plate-marker-row")).toHaveCount(0);
+    await page.locator(".plate-sheet__header button").click();
+
+    // With no pins left, the old indexes are invisible, but they would switch the view on
+    // for the next pin the visitor adds. They must be gone from what is saved and shared.
+    await page.getByRole("button", { name: "Download", exact: true }).click();
+    await page.locator(".plate-download[data-kind=link]").click();
+    const link = new URL(await page.evaluate(() => navigator.clipboard.readText()));
+    expect(link.searchParams.has("vs")).toBe(false);
+    expect(link.searchParams.has("rn")).toBe(false);
+  });
+});
+
+test.describe("contour interval", () => {
+  test("tells how far apart the lines are, and follows the line density", async ({ page }) => {
+    await openPlate(page);
+    await openAdjust(page);
+    // 1,296 m of relief at 30 lines → 43 m → a round 50 m, heavier every 250 m.
+    await expect(page.getByTestId("contour-interval")).toContainText("every 50 m");
+    await expect(page.getByTestId("contour-interval")).toContainText("every 250 m");
+    await page.getByRole("button", { name: "More" }).click();
+    await expect(page.getByTestId("contour-interval")).toContainText("every 25 m");
+    await page.getByRole("button", { name: "Fewer" }).click();
+    await expect(page.getByTestId("contour-interval")).toContainText("every 100 m");
+  });
+});

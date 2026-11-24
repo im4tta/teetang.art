@@ -26,6 +26,8 @@ interface AdjustSheetProps {
   autoExaggeration: number;
   /** Metres from the plate's lowest to its highest point, for the flood slider. */
   relief: number;
+  /** Metres between contour lines at the current line density; null while loading. */
+  contourM?: number | null;
   /** Steepest slope and share of steep ground, while the steepness map is on. */
   slope?: { maxDegrees: number; steepShare: number } | null;
   /** What the loaded terrain was built from. */
@@ -59,6 +61,7 @@ export default function AdjustSheet({
   plate,
   autoExaggeration,
   relief,
+  contourM,
   slope,
   elevationMeta,
   openTopoKey,
@@ -373,6 +376,12 @@ export default function AdjustSheet({
             </button>
           ))}
         </div>
+        {contourM ? (
+          <p className="plate-note" data-testid="contour-interval">
+            {t("plate.adj.contourEvery")} {contourM} m · {t("plate.adj.contourIndex")}{" "}
+            {contourM * 5} m
+          </p>
+        ) : null}
       </fieldset>
 
       {plate.style === "map" && (

@@ -25,6 +25,16 @@ network, so these need a real phone and the live site. Tick each on one iPhone
 - [ ] Route & pins: import a GPX from Strava or Google My Maps; the plate fits the track.
 - [ ] Tap the plate to add a pin; draw a line; the profile chart shows.
 
+## Terrain tools
+
+- [ ] Adjust → Steepness map: the key shows the bands; slopes colour on the plate; the steepest angle is plausible.
+- [ ] Route & pins → eye on a pin: hidden ground darkens, visible ground glows; the 50 m tower sees more than 2 m.
+- [ ] Route & pins → drop on a pin: a blue path runs downhill and the catchment tints; a pin off a stream says so.
+- [ ] Adjust → Elevation data: "Using:" names a dataset. Choose Copernicus GLO-30; "Using:" changes to Copernicus.
+      If it falls back to the worldwide data, `/api/dem` is not reachable on this deployment.
+- [ ] In the US, choose USGS 3DEP lidar; with an OpenTopography key, choose ALOS World 3D. (Neither server could be
+      reached when these were built; both fall back safely.)
+
 ## Offline and sharing
 
 - [ ] Explore → Save this plate for offline use. Turn on airplane mode, reopen the site

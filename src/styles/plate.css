@@ -1325,10 +1325,17 @@
   gap: 8px;
 }
 
-/* The buttons drop under the name when the sheet is narrow. */
 .plate-marker-row .plate-input {
   flex: 1 1 120px;
   min-width: 0;
+}
+
+/* The pin's buttons share one row under its name, to the right on wide sheets. */
+.plate-marker-actions {
+  display: flex;
+  flex: 1 0 100%;
+  gap: 8px;
+  justify-content: flex-end;
 }
 
 .plate-profile svg {

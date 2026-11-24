@@ -416,6 +416,8 @@ export const en = {
     "The blue line is the way water runs downhill; the blue area drains through the pin. Small dips in the data are filled in so water can always find its way out.",
   "plate.rain.snapped":
     "The pin was not on a stream, so the area is measured at the stream just beside it (the blue dot).",
+  "plate.adj.contourEvery": "Contour lines every",
+  "plate.adj.contourIndex": "heavier lines every",
   "plate.dem.title": "Elevation data",
   "plate.dem.using": "Using",
   "plate.dem.needsKey": "free key",

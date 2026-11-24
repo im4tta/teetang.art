@@ -371,6 +371,10 @@ export function sanitizePlate(
   if (typeof input.countryCode === "string" && /^[a-z]{2}$/i.test(input.countryCode)) {
     out.countryCode = input.countryCode.toUpperCase();
   }
+  // A pin index only means something with pins behind it.
+  const pins = out.markers?.length ?? 0;
+  if (out.viewFrom !== undefined && out.viewFrom >= pins) out.viewFrom = -1;
+  if (out.rainFrom !== undefined && out.rainFrom >= pins) out.rainFrom = -1;
   return out;
 }
 

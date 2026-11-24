@@ -237,70 +237,72 @@ export default function RouteSheet({
                 })
               }
             />
-            <button
-              type="button"
-              className="plate-icon-btn"
-              aria-pressed={plate.viewFrom === index}
-              aria-label={`${t("plate.view.from")} ${marker.label || index + 1}`}
-              title={t("plate.view.from")}
-              onClick={() => onChange({ viewFrom: plate.viewFrom === index ? -1 : index })}
-            >
-              <Eye size={18} aria-hidden="true" />
-            </button>
-            <button
-              type="button"
-              className="plate-icon-btn"
-              aria-pressed={plate.rainFrom === index}
-              aria-label={`${t("plate.rain.from")} ${marker.label || index + 1}`}
-              title={t("plate.rain.from")}
-              onClick={() => onChange({ rainFrom: plate.rainFrom === index ? -1 : index })}
-            >
-              <Droplets size={18} aria-hidden="true" />
-            </button>
-            <label
-              className="plate-icon-btn plate-marker-photo"
-              data-has-photo={marker.photo ? "true" : undefined}
-              aria-label={
-                marker.photo ? t("plate.markers.changePhoto") : t("plate.markers.addPhoto")
-              }
-              title={marker.photo ? t("plate.markers.changePhoto") : t("plate.markers.addPhoto")}
-            >
-              <ImagePlus size={18} aria-hidden="true" />
-              <input
-                type="file"
-                accept="image/*"
-                hidden
-                onChange={async (event) => {
-                  const file = event.target.files?.[0];
-                  event.target.value = "";
-                  if (!file) return;
-                  try {
-                    const photo = await savePhoto(file);
-                    if (marker.photo) void deletePhoto(marker.photo);
-                    onChange({
-                      markers: plate.markers.map((m, k) => (k === index ? { ...m, photo } : m)),
-                    });
-                  } catch {
-                    notify(t("plate.markers.photoFailed"), { tone: "error" });
-                  }
+            <div className="plate-marker-actions">
+              <button
+                type="button"
+                className="plate-icon-btn"
+                aria-pressed={plate.viewFrom === index}
+                aria-label={`${t("plate.view.from")} ${marker.label || index + 1}`}
+                title={t("plate.view.from")}
+                onClick={() => onChange({ viewFrom: plate.viewFrom === index ? -1 : index })}
+              >
+                <Eye size={18} aria-hidden="true" />
+              </button>
+              <button
+                type="button"
+                className="plate-icon-btn"
+                aria-pressed={plate.rainFrom === index}
+                aria-label={`${t("plate.rain.from")} ${marker.label || index + 1}`}
+                title={t("plate.rain.from")}
+                onClick={() => onChange({ rainFrom: plate.rainFrom === index ? -1 : index })}
+              >
+                <Droplets size={18} aria-hidden="true" />
+              </button>
+              <label
+                className="plate-icon-btn plate-marker-photo"
+                data-has-photo={marker.photo ? "true" : undefined}
+                aria-label={
+                  marker.photo ? t("plate.markers.changePhoto") : t("plate.markers.addPhoto")
+                }
+                title={marker.photo ? t("plate.markers.changePhoto") : t("plate.markers.addPhoto")}
+              >
+                <ImagePlus size={18} aria-hidden="true" />
+                <input
+                  type="file"
+                  accept="image/*"
+                  hidden
+                  onChange={async (event) => {
+                    const file = event.target.files?.[0];
+                    event.target.value = "";
+                    if (!file) return;
+                    try {
+                      const photo = await savePhoto(file);
+                      if (marker.photo) void deletePhoto(marker.photo);
+                      onChange({
+                        markers: plate.markers.map((m, k) => (k === index ? { ...m, photo } : m)),
+                      });
+                    } catch {
+                      notify(t("plate.markers.photoFailed"), { tone: "error" });
+                    }
+                  }}
+                />
+              </label>
+              <button
+                type="button"
+                className="plate-icon-btn"
+                aria-label={t("plate.markers.remove")}
+                onClick={() => {
+                  if (marker.photo) void deletePhoto(marker.photo);
+                  onChange({
+                    markers: plate.markers.filter((_, k) => k !== index),
+                    viewFrom: afterRemoval(plate.viewFrom, index),
+                    rainFrom: afterRemoval(plate.rainFrom, index),
+                  });
                 }}
-              />
-            </label>
-            <button
-              type="button"
-              className="plate-icon-btn"
-              aria-label={t("plate.markers.remove")}
-              onClick={() => {
-                if (marker.photo) void deletePhoto(marker.photo);
-                onChange({
-                  markers: plate.markers.filter((_, k) => k !== index),
-                  viewFrom: afterRemoval(plate.viewFrom, index),
-                  rainFrom: afterRemoval(plate.rainFrom, index),
-                });
-              }}
-            >
-              <Trash2 size={18} />
-            </button>
+              >
+                <Trash2 size={18} />
+              </button>
+            </div>
           </div>
         ))}
         {plate.markers[plate.viewFrom] && (

@@ -227,6 +227,8 @@ export function explorePlate(place: ExplorePlace): Partial<PlateSettings> {
     flood: 0,
     route: "",
     markers: [],
+    viewFrom: -1,
+    rainFrom: -1,
     ...place.look,
   };
 }
