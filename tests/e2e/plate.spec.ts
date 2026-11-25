@@ -16,6 +16,12 @@ async function openPlate(page: Page, path = "/plate") {
   // only redraws when something changes, as it does on a phone after a touch.
   await page.emulateMedia({ reducedMotion: "reduce" });
   await serveTiles(page);
+  // SLOW_CPU=6 npx playwright test … makes a fast machine draw as slowly as a CI runner or an old phone.
+  const slow = Number(process.env.SLOW_CPU ?? 0);
+  if (slow > 1) {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Emulation.setCPUThrottlingRate", { rate: slow });
+  }
   await page.goto(path);
   await expect(page.locator(".plate-canvas")).toHaveAttribute("data-ready", "true", {
     timeout: 20_000,
@@ -730,6 +736,26 @@ test.describe("Khmer search and lessons", () => {
 test.describe("3D plate on a computer", () => {
   test.use({ viewport: { width: 1300, height: 820 }, isMobile: false, hasTouch: false });
 
+  test("the hint names the mouse gestures, and the keyboard moves the plate", async ({ page }) => {
+    await openPlate(page);
+    await expect(page.locator(".plate-stage__hint")).toHaveText(
+      "Drag to turn · scroll to zoom · right-drag to move",
+    );
+    await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
+
+    await page.locator(".plate-canvas").focus();
+    await page.keyboard.press("Shift+ArrowLeft");
+    await page.keyboard.press("Shift+ArrowLeft");
+    await expect(page.getByRole("button", { name: "Re-centre" })).toBeVisible();
+
+    await page.keyboard.press("0");
+    await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
+
+    // Plain arrows still only turn the plate.
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
+  });
+
   test("the mouse wheel scrolls the style row sideways", async ({ page }) => {
     await openPlate(page);
     const row = page.getByRole("group", { name: "Style" });
@@ -781,5 +807,163 @@ test.describe("3D plate on a computer", () => {
     );
     expect(draft.markers).toHaveLength(1);
     expect(draft.route.length).toBeGreaterThan(20);
+  });
+});
+
+test.describe("stage text and moving the plate", () => {
+  const rect = (page: Page, selector: string) =>
+    page.locator(selector).evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+    });
+
+  test("the drag hint never overlaps the data credits, however long they are", async ({ page }) => {
+    // Satellite and buildings give the longest credit: three lines on a phone.
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&style=satellite&bld=1&km=3");
+    await expect(page.locator(".plate-stage__hint")).toBeVisible();
+    await expect(page.locator(".plate-credit")).toContainText("OpenStreetMap");
+    const credit = await rect(page, ".plate-credit");
+    const hint = await rect(page, ".plate-stage__hint");
+    expect(credit.bottom - credit.top).toBeGreaterThan(30); // it does wrap
+    expect(hint.bottom).toBeLessThanOrEqual(credit.top);
+    // And the hint stays inside the stage.
+    const stage = await rect(page, ".plate-stage");
+    expect(hint.left).toBeGreaterThanOrEqual(stage.left);
+    expect(hint.right).toBeLessThanOrEqual(stage.right);
+  });
+
+  /** Two fingers on the canvas move together, keeping their distance, like a drag. */
+  async function twoFingerDrag(page: Page, dx: number, dy: number, steps = 3) {
+    const box = (await page.locator(".plate-canvas").boundingBox())!;
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    const client = await page.context().newCDPSession(page);
+    const points = (shiftX: number, shiftY: number) => [
+      { x: cx - 40 + shiftX, y: cy + shiftY, id: 1 },
+      { x: cx + 40 + shiftX, y: cy + shiftY, id: 2 },
+    ];
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: points(0, 0),
+    });
+    // Each move redraws the plate, which is slow in software; a few steps are enough.
+    for (let step = 1; step <= steps; step++) {
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: points((dx * step) / steps, (dy * step) / steps),
+      });
+    }
+    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  }
+
+  test("two fingers move the plate, and Re-centre brings it back", async ({ page }) => {
+    await openPlate(page);
+    await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
+
+    await twoFingerDrag(page, 90, -50);
+    await expect(page.getByRole("button", { name: "Re-centre" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Re-centre" }).click();
+    await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
+  });
+
+  test("one finger only turns the plate", async ({ page }) => {
+    await openPlate(page);
+    const box = (await page.locator(".plate-canvas").boundingBox())!;
+    const before = await page.locator(".plate-canvas").screenshot();
+    const client = await page.context().newCDPSession(page);
+    const at = (x: number) => [{ x, y: box.y + box.height / 2, id: 1 }];
+    const from = box.x + box.width / 2 - 60;
+    await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: at(from) });
+    // A few big moves: each one waits for a redraw, which is slow in software.
+    for (let step = 1; step <= 3; step++) {
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: at(from + step * 40),
+      });
+    }
+    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    // The plate was turned (the picture changed) but not moved.
+    await expect
+      .poll(async () => !before.equals(await page.locator(".plate-canvas").screenshot()), {
+        timeout: 20_000,
+        intervals: [500, 1000],
+      })
+      .toBe(true);
+    await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
+  });
+
+  /** Share of the canvas that is not the empty background (the plate, its box and shadow). */
+  async function paintedShare(page: Page) {
+    const { data, info } = await sharp(await page.locator(".plate-canvas").screenshot())
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const pixel = (k: number) => [data[k], data[k + 1], data[k + 2], data[k + 3]];
+    const background = pixel(0);
+    let painted = 0;
+    for (let k = 0; k < data.length; k += info.channels) {
+      const p = pixel(k);
+      if (p.some((value, c) => Math.abs(value - background[c]) > 12)) painted++;
+    }
+    return painted / (info.width * info.height);
+  }
+
+  test("a moved plate cannot be dragged out of reach", async ({ page }) => {
+    await openPlate(page);
+    const before = await paintedShare(page);
+    expect(before).toBeGreaterThan(0.03);
+    // One drag several times longer than the stage is wide: far past the limit.
+    // (Each touch event waits for a redraw, so a single drag keeps this light in software.)
+    await twoFingerDrag(page, 1500, 0, 3);
+    await expect(page.getByRole("button", { name: "Re-centre" })).toBeVisible();
+    // The plate is still in view: a good part of the canvas is still painted.
+    await expect
+      .poll(async () => (await paintedShare(page)) > before * 0.5, { timeout: 20_000 })
+      .toBe(true);
+  });
+});
+
+test.describe("the sun sweep", () => {
+  const clock = async (page: Page) => (await page.locator("#plate-sun").inputValue()) as string;
+
+  test("plays the sun across the day, and pausing or dragging stops it", async ({ page }) => {
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&km=10&sun=7");
+    await page.getByRole("button", { name: "Adjust" }).click();
+    const start = Number(await clock(page));
+    expect(start).toBe(7);
+
+    await page.getByRole("button", { name: "Play the sun across the day" }).click();
+    await expect
+      .poll(async () => Number(await clock(page)), { timeout: 15_000 })
+      .toBeGreaterThan(start + 0.5);
+
+    await page.getByRole("button", { name: "Pause the sun" }).click();
+    const paused = Number(await clock(page));
+    await page.waitForTimeout(1200);
+    expect(Number(await clock(page))).toBe(paused);
+
+    // Dragging the slider takes over from a playing sun.
+    await page.getByRole("button", { name: "Play the sun across the day" }).click();
+    await page.locator("#plate-sun").fill("9");
+    await page.waitForTimeout(1200);
+    expect(Number(await clock(page))).toBe(9);
+    await expect(page.getByRole("button", { name: "Play the sun across the day" })).toBeVisible();
+  });
+
+  test("starts at sunrise from studio light, and stops at sunset", async ({ page }) => {
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&km=10");
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await page.getByRole("button", { name: "Play the sun across the day" }).click();
+    await expect.poll(async () => Number(await clock(page))).toBeGreaterThanOrEqual(6);
+    expect(Number(await clock(page))).toBeLessThan(8);
+
+    // Near the end of the day it runs out and the button goes back to Play.
+    await page.getByRole("button", { name: "Pause the sun" }).click();
+    await page.locator("#plate-sun").fill("17.5");
+    await page.getByRole("button", { name: "Play the sun across the day" }).click();
+    await expect(page.getByRole("button", { name: "Play the sun across the day" })).toBeVisible({
+      timeout: 15_000,
+    });
+    expect(Number(await clock(page))).toBe(18);
   });
 });

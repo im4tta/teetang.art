@@ -24,6 +24,7 @@ import {
   SRGBColorSpace,
   Raycaster,
   Spherical,
+  TOUCH,
   Sprite,
   Vector2,
   SpriteMaterial,
@@ -32,7 +33,7 @@ import {
   WebGLRenderer,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { contourInterval, sunAt, sunlight, type PlateGeometry } from "./geometry";
+import { contourInterval, sunAt, sunlight, sunlightFast, type PlateGeometry } from "./geometry";
 import type { PlateExtras } from "./extras";
 import { paletteRamp, type ReliefPalette } from "./palettes";
 import {
@@ -75,7 +76,11 @@ export interface PlateLook {
 
 const LIGHT = new Vector3(-0.55, 0.75, -0.35).normalize();
 const FOV = 24;
+/** How long the sun must stand still before its shadows are redone in full detail. */
+const SUN_SETTLE_MS = 220;
 const IDLE_SPIN_MS = 1_200;
+/** Time constant of the glide back to the middle, in milliseconds. */
+const GLIDE_MS = 70;
 /** The opening spin stops on its own, so a plate left open does not drain the battery. */
 const SPIN_LIMIT_MS = 20_000;
 
@@ -109,6 +114,7 @@ export class PlateScene {
   /** The light on the plate: the studio light, or the sun at a chosen hour. */
   private readonly light = LIGHT.clone();
   private sunHour = 0;
+  private sunTimer = 0;
   private geometry: PlateGeometry | null = null;
   private extras: PlateExtras | null = null;
   /** A second plate beside the first, at the same scale. */
@@ -126,8 +132,17 @@ export class PlateScene {
   private resizeObserver: ResizeObserver;
   private disposed = false;
   private readonly createdAt = performance.now();
-  /** Called once the user turns or zooms the plate. */
+  /** Called once the user turns, zooms or moves the plate. */
   onInteract?: () => void;
+  /** Called when the view is moved away from the middle of the stage, or back to it. */
+  onPan?: (moved: boolean) => void;
+  /** Where the view is centred when it has not been moved. */
+  private readonly homeTarget = new Vector3();
+  /** How far the view may be moved from home, so the plate cannot be lost off screen. */
+  private panLimit = 1;
+  private moved = false;
+  private recentering = false;
+  private glideAt = 0;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -229,7 +244,9 @@ export class PlateScene {
     Object.assign(this.controls, {
       enableDamping: true,
       dampingFactor: 0.09,
-      enablePan: false,
+      enablePan: true,
+      screenSpacePanning: true,
+      panSpeed: 0.9,
       minDistance: 1.3,
       maxDistance: 7,
       minPolarAngle: (8 * Math.PI) / 180,
@@ -237,6 +254,8 @@ export class PlateScene {
       rotateSpeed: 0.7,
       autoRotateSpeed: 0.8,
     });
+    // One finger turns the plate; two fingers move it and pinch to zoom.
+    this.controls.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
     this.controls.autoRotate = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     this.controls.addEventListener("start", () => {
       if (this.controls.autoRotate) {
@@ -275,7 +294,9 @@ export class PlateScene {
     if (this.controls.autoRotate && performance.now() - this.createdAt > SPIN_LIMIT_MS) {
       this.controls.autoRotate = false;
     }
+    if (this.recentering) this.glideHome();
     this.controls.update();
+    this.limitPan();
     this.renderer.render(this.scene, this.camera);
     const spinning = this.controls.autoRotate && !document.hidden;
     // controls.update() may already have queued the next frame through wake().
@@ -283,6 +304,75 @@ export class PlateScene {
       this.frame = requestAnimationFrame(this.tick);
     }
   };
+
+  /** Keeps the moved view within reach of the plate, and tells the page when it is off centre. */
+  private limitPan() {
+    const away = this.controls.target.clone().sub(this.homeTarget);
+    const length = away.length();
+    if (length > this.panLimit) {
+      const back = away.setLength(length - this.panLimit).negate();
+      this.controls.target.add(back);
+      this.camera.position.add(back);
+    }
+    const moved = length > this.panLimit * 0.04;
+    if (moved !== this.moved) {
+      this.moved = moved;
+      this.onPan?.(moved);
+    }
+  }
+
+  /**
+   * One step of the glide back to the middle. It is timed, not counted in frames,
+   * so it takes about a quarter of a second on a slow phone as on a fast one.
+   */
+  private glideHome() {
+    const now = performance.now();
+    // The first step after a Re-centre, or a stalled frame, counts as a normal one.
+    const elapsed = this.glideAt ? Math.min(250, now - this.glideAt) : 16;
+    this.glideAt = now;
+    const shift = this.homeTarget.clone().sub(this.controls.target);
+    if (shift.length() < 1e-4) {
+      this.controls.target.add(shift);
+      this.camera.position.add(shift);
+      this.recentering = false;
+      this.glideAt = 0;
+      return;
+    }
+    shift.multiplyScalar(1 - Math.exp(-elapsed / GLIDE_MS));
+    this.controls.target.add(shift);
+    this.camera.position.add(shift);
+    this.wake(120);
+  }
+
+  /** Moves the view from the keyboard: fractions of the reach, right and up on the screen. */
+  panBy(right: number, up: number) {
+    const forward = new Vector3();
+    this.camera.getWorldDirection(forward);
+    const across = new Vector3().crossVectors(forward, this.camera.up).normalize();
+    const rise = new Vector3().crossVectors(across, forward).normalize();
+    const shift = across
+      .multiplyScalar(right * this.panLimit)
+      .add(rise.multiplyScalar(up * this.panLimit));
+    this.controls.target.add(shift);
+    this.camera.position.add(shift);
+    this.controls.autoRotate = false;
+    this.onInteract?.();
+    this.wake(IDLE_SPIN_MS);
+  }
+
+  /** Brings a moved view back to the middle, gliding unless `instant`. */
+  recenter(instant = false) {
+    if (instant) {
+      const shift = this.homeTarget.clone().sub(this.controls.target);
+      this.controls.target.add(shift);
+      this.camera.position.add(shift);
+      this.recentering = false;
+    } else {
+      this.recentering = true;
+      this.glideAt = 0;
+    }
+    this.wake(IDLE_SPIN_MS);
+  }
 
   private resize() {
     const { clientWidth, clientHeight } = this.canvas;
@@ -306,12 +396,16 @@ export class PlateScene {
     const distance = radius / Math.sin(Math.min(vertical, horizontal));
     const offset = this.camera.position.clone().sub(this.controls.target);
     offset.setLength(distance);
-    this.controls.target.set(
+    // A view that was moved stays moved when the stage resizes (a phone's address bar, say).
+    const moved = this.controls.target.clone().sub(this.homeTarget);
+    this.homeTarget.set(
       0.04 + this.compareShift / 2,
       (this.plateHeight - this.baseDepth) / 2,
       0.04 + Math.max(0, this.reach - 0.5) / 2,
     );
+    this.controls.target.copy(this.homeTarget).add(moved);
     this.camera.position.copy(this.controls.target).add(offset);
+    this.panLimit = radius;
     this.controls.maxDistance = distance * 2.2;
     this.camera.updateProjectionMatrix();
   }
@@ -391,7 +485,8 @@ export class PlateScene {
     u.uWater.value = look.water;
     if (look.sunHour !== this.sunHour) {
       this.sunHour = look.sunHour;
-      this.applySun();
+      // Quick shadows while the sun moves; the full ones once it has stopped.
+      this.applySun(true);
     }
     u.uSnow.value = look.snow > 0 ? look.snow : 2;
     u.uFlood.value = look.flood > 0 ? this.elevationRange[0] + look.flood : -1e9;
@@ -407,7 +502,11 @@ export class PlateScene {
   }
 
   /** Points the light at the sun for the current hour and recomputes the terrain's cast shadows. */
-  private applySun() {
+  private applySun(quick = false) {
+    if (this.sunTimer) {
+      clearTimeout(this.sunTimer);
+      this.sunTimer = 0;
+    }
     const u = this.surfaceMaterial.uniforms;
     const attribute = this.surface.geometry.getAttribute("sun") as BufferAttribute | undefined;
     if (!this.sunHour || !this.geometry || !attribute) {
@@ -420,11 +519,24 @@ export class PlateScene {
     this.light.set(...direction);
     u.uSunMode.value = true;
     u.uWarmth.value = warmth;
+    const shade = quick ? sunlightFast : sunlight;
     (attribute.array as Float32Array).set(
-      sunlight(this.geometry.surface, this.geometry.size, direction),
+      shade(this.geometry.surface, this.geometry.size, direction),
     );
     attribute.needsUpdate = true;
     this.wake(0);
+    if (quick && this.geometry.size >= 200) {
+      this.sunTimer = window.setTimeout(() => {
+        this.sunTimer = 0;
+        this.applySun();
+      }, SUN_SETTLE_MS);
+    }
+  }
+
+  /** Finishes the full-detail shadows now, if the sun has only had the quick ones. */
+  private settleSun() {
+    if (!this.sunTimer) return;
+    this.applySun();
   }
 
   /** The sun's direction for the photo render, or null for the studio light. */
@@ -583,6 +695,7 @@ export class PlateScene {
     baseDepth: number;
     sun: Vector3 | null;
   } {
+    this.settleSun();
     const look = this.look;
     const linear = (hex: string) => new Color(hex).convertSRGBToLinear();
     const texture = (canvas: HTMLCanvasElement) => {
@@ -908,6 +1021,7 @@ export class PlateScene {
 
   /** Renders a square image of the current view at `size` pixels, with a transparent background. */
   snapshot(size: number): HTMLCanvasElement {
+    this.settleSun();
     const max = Math.min(this.renderer.capabilities.maxTextureSize, 4096);
     const edge = Math.min(size, max);
     const target = new WebGLRenderTarget(edge, edge, { samples: 4 });
@@ -953,6 +1067,7 @@ export class PlateScene {
   }
 
   dispose() {
+    if (this.sunTimer) clearTimeout(this.sunTimer);
     this.disposed = true;
     cancelAnimationFrame(this.frame);
     this.resizeObserver.disconnect();

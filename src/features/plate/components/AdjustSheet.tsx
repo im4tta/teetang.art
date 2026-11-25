@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { Pause, Play } from "lucide-react";
 import { useI18n } from "@/context/i18n/context";
 import type { TranslationKey } from "@/context/i18n/types";
 import type { ThemeOption } from "@/services/theme/types";
@@ -44,6 +45,9 @@ const SEASONS = [
   { id: "rainy", month: "10", day: "10" },
 ] as const;
 
+/** How often the sun moves a quarter of an hour while it plays. */
+const SUN_STEP_MS = 350;
+
 /** 6.5 → "06:30". */
 const clock = (hour: number) =>
   `${String(Math.floor(hour)).padStart(2, "0")}:${String(Math.round((hour % 1) * 60)).padStart(2, "0")}`;
@@ -71,6 +75,21 @@ export default function AdjustSheet({
 }: AdjustSheetProps) {
   const { t } = useI18n();
   const [themes, setThemes] = useState<ThemeOption[]>([]);
+  // The sun sweeping from morning to evening, so the shadows crawl across the valleys.
+  const [playing, setPlaying] = useState(false);
+  const hourRef = useRef(plate.sunHour);
+  useEffect(() => {
+    hourRef.current = plate.sunHour;
+  }, [plate.sunHour]);
+  useEffect(() => {
+    if (!playing) return;
+    const timer = window.setInterval(() => {
+      const next = Math.min(18, (hourRef.current || 5.75) + 0.25);
+      onChange({ sunHour: next });
+      if (next >= 18) setPlaying(false);
+    }, SUN_STEP_MS);
+    return () => window.clearInterval(timer);
+  }, [playing, onChange]);
   const exaggeration = plate.exaggeration || autoExaggeration;
   const mapKind = plate.style === "satellite" ? "imagery" : plate.style === "topo" ? "topo" : null;
   const activeMap = mapKind ? resolveBasemap(mapKind, plate.basemap, plate.lat, plate.lon) : null;
@@ -189,9 +208,31 @@ export default function AdjustSheet({
             type="button"
             className="plate-chip"
             aria-pressed={plate.sunHour === 0}
-            onClick={() => onChange({ sunHour: 0 })}
+            onClick={() => {
+              setPlaying(false);
+              onChange({ sunHour: 0 });
+            }}
           >
             {t("plate.adj.studioLight")}
+          </button>
+          <button
+            type="button"
+            className="plate-chip plate-chip--icon"
+            aria-pressed={playing}
+            aria-label={playing ? t("plate.adj.sunPause") : t("plate.adj.sunPlay")}
+            title={playing ? t("plate.adj.sunPause") : t("plate.adj.sunPlay")}
+            onClick={() => {
+              if (!playing && (plate.sunHour === 0 || plate.sunHour >= 18)) {
+                onChange({ sunHour: 6 });
+              }
+              setPlaying(!playing);
+            }}
+          >
+            {playing ? (
+              <Pause size={16} aria-hidden="true" />
+            ) : (
+              <Play size={16} aria-hidden="true" />
+            )}
           </button>
         </div>
         <input
@@ -202,7 +243,10 @@ export default function AdjustSheet({
           max={18}
           step={0.25}
           value={plate.sunHour || 12}
-          onChange={(event) => onChange({ sunHour: Number(event.target.value) })}
+          onChange={(event) => {
+            setPlaying(false);
+            onChange({ sunHour: Number(event.target.value) });
+          }}
         />
       </div>
 
