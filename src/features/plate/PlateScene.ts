@@ -79,6 +79,8 @@ const FOV = 24;
 /** How long the sun must stand still before its shadows are redone in full detail. */
 const SUN_SETTLE_MS = 220;
 const IDLE_SPIN_MS = 1_200;
+/** Time constant of the glide back to the middle, in milliseconds. */
+const GLIDE_MS = 70;
 /** The opening spin stops on its own, so a plate left open does not drain the battery. */
 const SPIN_LIMIT_MS = 20_000;
 
@@ -140,6 +142,7 @@ export class PlateScene {
   private panLimit = 1;
   private moved = false;
   private recentering = false;
+  private glideAt = 0;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -318,15 +321,24 @@ export class PlateScene {
     }
   }
 
+  /**
+   * One step of the glide back to the middle. It is timed, not counted in frames,
+   * so it takes about a quarter of a second on a slow phone as on a fast one.
+   */
   private glideHome() {
+    const now = performance.now();
+    // The first step after a Re-centre, or a stalled frame, counts as a normal one.
+    const elapsed = this.glideAt ? Math.min(250, now - this.glideAt) : 16;
+    this.glideAt = now;
     const shift = this.homeTarget.clone().sub(this.controls.target);
     if (shift.length() < 1e-4) {
       this.controls.target.add(shift);
       this.camera.position.add(shift);
       this.recentering = false;
+      this.glideAt = 0;
       return;
     }
-    shift.multiplyScalar(0.22);
+    shift.multiplyScalar(1 - Math.exp(-elapsed / GLIDE_MS));
     this.controls.target.add(shift);
     this.camera.position.add(shift);
     this.wake(120);
@@ -357,6 +369,7 @@ export class PlateScene {
       this.recentering = false;
     } else {
       this.recentering = true;
+      this.glideAt = 0;
     }
     this.wake(IDLE_SPIN_MS);
   }

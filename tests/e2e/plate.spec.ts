@@ -16,6 +16,12 @@ async function openPlate(page: Page, path = "/plate") {
   // only redraws when something changes, as it does on a phone after a touch.
   await page.emulateMedia({ reducedMotion: "reduce" });
   await serveTiles(page);
+  // SLOW_CPU=6 npx playwright test … makes a fast machine draw as slowly as a CI runner or an old phone.
+  const slow = Number(process.env.SLOW_CPU ?? 0);
+  if (slow > 1) {
+    const cdp = await page.context().newCDPSession(page);
+    await cdp.send("Emulation.setCPUThrottlingRate", { rate: slow });
+  }
   await page.goto(path);
   await expect(page.locator(".plate-canvas")).toHaveAttribute("data-ready", "true", {
     timeout: 20_000,
@@ -827,7 +833,7 @@ test.describe("stage text and moving the plate", () => {
   });
 
   /** Two fingers on the canvas move together, keeping their distance, like a drag. */
-  async function twoFingerDrag(page: Page, dx: number, dy: number, steps = 5) {
+  async function twoFingerDrag(page: Page, dx: number, dy: number, steps = 3) {
     const box = (await page.locator(".plate-canvas").boundingBox())!;
     const cx = box.x + box.width / 2;
     const cy = box.y + box.height / 2;
@@ -867,20 +873,22 @@ test.describe("stage text and moving the plate", () => {
     const before = await page.locator(".plate-canvas").screenshot();
     const client = await page.context().newCDPSession(page);
     const at = (x: number) => [{ x, y: box.y + box.height / 2, id: 1 }];
-    await client.send("Input.dispatchTouchEvent", {
-      type: "touchStart",
-      touchPoints: at(box.x + box.width / 2 - 60),
-    });
-    for (let step = 1; step <= 10; step++) {
+    const from = box.x + box.width / 2 - 60;
+    await client.send("Input.dispatchTouchEvent", { type: "touchStart", touchPoints: at(from) });
+    // A few big moves: each one waits for a redraw, which is slow in software.
+    for (let step = 1; step <= 3; step++) {
       await client.send("Input.dispatchTouchEvent", {
         type: "touchMove",
-        touchPoints: at(box.x + box.width / 2 - 60 + step * 12),
+        touchPoints: at(from + step * 40),
       });
     }
     await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
     // The plate was turned (the picture changed) but not moved.
     await expect
-      .poll(async () => !before.equals(await page.locator(".plate-canvas").screenshot()))
+      .poll(async () => !before.equals(await page.locator(".plate-canvas").screenshot()), {
+        timeout: 20_000,
+        intervals: [500, 1000],
+      })
       .toBe(true);
     await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
   });
@@ -904,11 +912,14 @@ test.describe("stage text and moving the plate", () => {
     await openPlate(page);
     const before = await paintedShare(page);
     expect(before).toBeGreaterThan(0.03);
-    // Far more than the plate can be moved, in a few big drags.
-    for (let k = 0; k < 3; k++) await twoFingerDrag(page, 300, 0, 3);
+    // One drag several times longer than the stage is wide: far past the limit.
+    // (Each touch event waits for a redraw, so a single drag keeps this light in software.)
+    await twoFingerDrag(page, 1500, 0, 3);
     await expect(page.getByRole("button", { name: "Re-centre" })).toBeVisible();
     // The plate is still in view: a good part of the canvas is still painted.
-    expect(await paintedShare(page)).toBeGreaterThan(before * 0.5);
+    await expect
+      .poll(async () => (await paintedShare(page)) > before * 0.5, { timeout: 20_000 })
+      .toBe(true);
   });
 });
 
