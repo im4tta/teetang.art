@@ -264,6 +264,8 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
   const [recording, setRecording] = useState<{ progress: number; cancel: () => void } | null>(null);
   const viewRef = useRef<PlateViewHandle>(null);
   const creditRef = useRef<HTMLParagraphElement>(null);
+  // A finger, or a mouse: the hint says which gestures to use.
+  const coarsePointer = useMemo(() => window.matchMedia?.("(pointer: coarse)").matches ?? true, []);
 
   // The hint sits just above the credit, however many lines the credit runs to.
   useEffect(() => {
@@ -1023,7 +1025,9 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
                 </div>
               )}
               {!touched && geometry && !photo && !lesson && (
-                <p className="plate-stage__hint">{t("plate.dragHint")}</p>
+                <p className="plate-stage__hint">
+                  {t(coarsePointer ? "plate.dragHint" : "plate.dragHintMouse")}
+                </p>
               )}
               {panned && !photo && !picking && (
                 <button

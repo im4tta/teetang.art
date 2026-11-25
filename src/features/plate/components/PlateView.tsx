@@ -152,6 +152,24 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
           if (uv) onPick(uv);
         }}
         onKeyDown={(event) => {
+          if (!scene) return;
+          // Shift and the arrows move the plate; 0 or Home brings it back to the middle.
+          const steps: Record<string, [number, number]> = {
+            ArrowLeft: [-0.12, 0],
+            ArrowRight: [0.12, 0],
+            ArrowUp: [0, 0.12],
+            ArrowDown: [0, -0.12],
+          };
+          if (event.shiftKey && steps[event.key]) {
+            event.preventDefault();
+            scene.panBy(...steps[event.key]);
+            return;
+          }
+          if (event.key === "0" || event.key === "Home") {
+            event.preventDefault();
+            scene.recenter();
+            return;
+          }
           const moves: Record<string, [number, number, number]> = {
             ArrowLeft: [-12, 0, 1],
             ArrowRight: [12, 0, 1],

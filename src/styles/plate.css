@@ -798,6 +798,14 @@
   cursor: pointer;
 }
 
+.plate-chip--icon {
+  display: inline-grid;
+  flex: none;
+  place-items: center;
+  width: 44px;
+  padding: 0;
+}
+
 .plate-chip[aria-pressed="true"] {
   background: var(--plate-accent);
   border-color: var(--plate-accent);

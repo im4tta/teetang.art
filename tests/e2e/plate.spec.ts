@@ -730,6 +730,26 @@ test.describe("Khmer search and lessons", () => {
 test.describe("3D plate on a computer", () => {
   test.use({ viewport: { width: 1300, height: 820 }, isMobile: false, hasTouch: false });
 
+  test("the hint names the mouse gestures, and the keyboard moves the plate", async ({ page }) => {
+    await openPlate(page);
+    await expect(page.locator(".plate-stage__hint")).toHaveText(
+      "Drag to turn · scroll to zoom · right-drag to move",
+    );
+    await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
+
+    await page.locator(".plate-canvas").focus();
+    await page.keyboard.press("Shift+ArrowLeft");
+    await page.keyboard.press("Shift+ArrowLeft");
+    await expect(page.getByRole("button", { name: "Re-centre" })).toBeVisible();
+
+    await page.keyboard.press("0");
+    await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
+
+    // Plain arrows still only turn the plate.
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
+  });
+
   test("the mouse wheel scrolls the style row sideways", async ({ page }) => {
     await openPlate(page);
     const row = page.getByRole("group", { name: "Style" });
@@ -873,5 +893,50 @@ test.describe("stage text and moving the plate", () => {
     const shot = await page.locator(".plate-canvas").screenshot();
     const meta = await sharp(shot).stats();
     expect(meta.channels.some((c) => c.max > 0)).toBe(true);
+  });
+});
+
+test.describe("the sun sweep", () => {
+  const clock = async (page: Page) => (await page.locator("#plate-sun").inputValue()) as string;
+
+  test("plays the sun across the day, and pausing or dragging stops it", async ({ page }) => {
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&km=10&sun=7");
+    await page.getByRole("button", { name: "Adjust" }).click();
+    const start = Number(await clock(page));
+    expect(start).toBe(7);
+
+    await page.getByRole("button", { name: "Play the sun across the day" }).click();
+    await expect
+      .poll(async () => Number(await clock(page)), { timeout: 15_000 })
+      .toBeGreaterThan(start + 0.5);
+
+    await page.getByRole("button", { name: "Pause the sun" }).click();
+    const paused = Number(await clock(page));
+    await page.waitForTimeout(1200);
+    expect(Number(await clock(page))).toBe(paused);
+
+    // Dragging the slider takes over from a playing sun.
+    await page.getByRole("button", { name: "Play the sun across the day" }).click();
+    await page.locator("#plate-sun").fill("9");
+    await page.waitForTimeout(1200);
+    expect(Number(await clock(page))).toBe(9);
+    await expect(page.getByRole("button", { name: "Play the sun across the day" })).toBeVisible();
+  });
+
+  test("starts at sunrise from studio light, and stops at sunset", async ({ page }) => {
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&km=10");
+    await page.getByRole("button", { name: "Adjust" }).click();
+    await page.getByRole("button", { name: "Play the sun across the day" }).click();
+    await expect.poll(async () => Number(await clock(page))).toBeGreaterThanOrEqual(6);
+    expect(Number(await clock(page))).toBeLessThan(8);
+
+    // Near the end of the day it runs out and the button goes back to Play.
+    await page.getByRole("button", { name: "Pause the sun" }).click();
+    await page.locator("#plate-sun").fill("17.5");
+    await page.getByRole("button", { name: "Play the sun across the day" }).click();
+    await expect(page.getByRole("button", { name: "Play the sun across the day" })).toBeVisible({
+      timeout: 15_000,
+    });
+    expect(Number(await clock(page))).toBe(18);
   });
 });

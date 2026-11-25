@@ -250,6 +250,45 @@ export function contourInterval(min: number, max: number, lines = 36): number {
   return step * power;
 }
 
+/**
+ * A quick version of `sunlight` for moving the sun: shadows worked out on every
+ * second grid point and spread back over the full grid. About four times
+ * faster, with the same soft edges; the full version follows once the sun
+ * stops. Small grids are already quick and use the full version.
+ */
+export function sunlightFast(
+  surface: Float32Array,
+  size: number,
+  direction: [number, number, number],
+): Float32Array {
+  if (size < 200 || (size - 1) % 2 !== 0) return sunlight(surface, size, direction);
+  const half = (size - 1) / 2 + 1;
+  const coarse = new Float32Array(half * half * 3);
+  for (let j = 0; j < half; j++) {
+    for (let i = 0; i < half; i++) {
+      coarse[(j * half + i) * 3 + 1] = surface[(j * 2 * size + i * 2) * 3 + 1];
+    }
+  }
+  const lit = sunlight(coarse, half, direction);
+  const out = new Float32Array(size * size);
+  for (let j = 0; j < size; j++) {
+    const fj = j / 2;
+    const j0 = Math.min(half - 2, Math.floor(fj));
+    const tj = fj - j0;
+    for (let i = 0; i < size; i++) {
+      const fi = i / 2;
+      const i0 = Math.min(half - 2, Math.floor(fi));
+      const ti = fi - i0;
+      const a = lit[j0 * half + i0];
+      const b = lit[j0 * half + i0 + 1];
+      const c = lit[(j0 + 1) * half + i0];
+      const d = lit[(j0 + 1) * half + i0 + 1];
+      out[j * size + i] = (a * (1 - ti) + b * ti) * (1 - tj) + (c * (1 - ti) + d * ti) * tj;
+    }
+  }
+  return out;
+}
+
 const AO_DIRECTIONS = 8;
 const AO_STEPS = [1, 2, 4, 7, 11, 16, 24];
 

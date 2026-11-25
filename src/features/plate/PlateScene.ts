@@ -33,7 +33,7 @@ import {
   WebGLRenderer,
 } from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { contourInterval, sunAt, sunlight, type PlateGeometry } from "./geometry";
+import { contourInterval, sunAt, sunlight, sunlightFast, type PlateGeometry } from "./geometry";
 import type { PlateExtras } from "./extras";
 import { paletteRamp, type ReliefPalette } from "./palettes";
 import {
@@ -76,6 +76,8 @@ export interface PlateLook {
 
 const LIGHT = new Vector3(-0.55, 0.75, -0.35).normalize();
 const FOV = 24;
+/** How long the sun must stand still before its shadows are redone in full detail. */
+const SUN_SETTLE_MS = 220;
 const IDLE_SPIN_MS = 1_200;
 /** The opening spin stops on its own, so a plate left open does not drain the battery. */
 const SPIN_LIMIT_MS = 20_000;
@@ -110,6 +112,7 @@ export class PlateScene {
   /** The light on the plate: the studio light, or the sun at a chosen hour. */
   private readonly light = LIGHT.clone();
   private sunHour = 0;
+  private sunTimer = 0;
   private geometry: PlateGeometry | null = null;
   private extras: PlateExtras | null = null;
   /** A second plate beside the first, at the same scale. */
@@ -329,6 +332,22 @@ export class PlateScene {
     this.wake(120);
   }
 
+  /** Moves the view from the keyboard: fractions of the reach, right and up on the screen. */
+  panBy(right: number, up: number) {
+    const forward = new Vector3();
+    this.camera.getWorldDirection(forward);
+    const across = new Vector3().crossVectors(forward, this.camera.up).normalize();
+    const rise = new Vector3().crossVectors(across, forward).normalize();
+    const shift = across
+      .multiplyScalar(right * this.panLimit)
+      .add(rise.multiplyScalar(up * this.panLimit));
+    this.controls.target.add(shift);
+    this.camera.position.add(shift);
+    this.controls.autoRotate = false;
+    this.onInteract?.();
+    this.wake(IDLE_SPIN_MS);
+  }
+
   /** Brings a moved view back to the middle, gliding unless `instant`. */
   recenter(instant = false) {
     if (instant) {
@@ -453,7 +472,8 @@ export class PlateScene {
     u.uWater.value = look.water;
     if (look.sunHour !== this.sunHour) {
       this.sunHour = look.sunHour;
-      this.applySun();
+      // Quick shadows while the sun moves; the full ones once it has stopped.
+      this.applySun(true);
     }
     u.uSnow.value = look.snow > 0 ? look.snow : 2;
     u.uFlood.value = look.flood > 0 ? this.elevationRange[0] + look.flood : -1e9;
@@ -469,7 +489,11 @@ export class PlateScene {
   }
 
   /** Points the light at the sun for the current hour and recomputes the terrain's cast shadows. */
-  private applySun() {
+  private applySun(quick = false) {
+    if (this.sunTimer) {
+      clearTimeout(this.sunTimer);
+      this.sunTimer = 0;
+    }
     const u = this.surfaceMaterial.uniforms;
     const attribute = this.surface.geometry.getAttribute("sun") as BufferAttribute | undefined;
     if (!this.sunHour || !this.geometry || !attribute) {
@@ -482,11 +506,24 @@ export class PlateScene {
     this.light.set(...direction);
     u.uSunMode.value = true;
     u.uWarmth.value = warmth;
+    const shade = quick ? sunlightFast : sunlight;
     (attribute.array as Float32Array).set(
-      sunlight(this.geometry.surface, this.geometry.size, direction),
+      shade(this.geometry.surface, this.geometry.size, direction),
     );
     attribute.needsUpdate = true;
     this.wake(0);
+    if (quick && this.geometry.size >= 200) {
+      this.sunTimer = window.setTimeout(() => {
+        this.sunTimer = 0;
+        this.applySun();
+      }, SUN_SETTLE_MS);
+    }
+  }
+
+  /** Finishes the full-detail shadows now, if the sun has only had the quick ones. */
+  private settleSun() {
+    if (!this.sunTimer) return;
+    this.applySun();
   }
 
   /** The sun's direction for the photo render, or null for the studio light. */
@@ -645,6 +682,7 @@ export class PlateScene {
     baseDepth: number;
     sun: Vector3 | null;
   } {
+    this.settleSun();
     const look = this.look;
     const linear = (hex: string) => new Color(hex).convertSRGBToLinear();
     const texture = (canvas: HTMLCanvasElement) => {
@@ -970,6 +1008,7 @@ export class PlateScene {
 
   /** Renders a square image of the current view at `size` pixels, with a transparent background. */
   snapshot(size: number): HTMLCanvasElement {
+    this.settleSun();
     const max = Math.min(this.renderer.capabilities.maxTextureSize, 4096);
     const edge = Math.min(size, max);
     const target = new WebGLRenderTarget(edge, edge, { samples: 4 });
@@ -1015,6 +1054,7 @@ export class PlateScene {
   }
 
   dispose() {
+    if (this.sunTimer) clearTimeout(this.sunTimer);
     this.disposed = true;
     cancelAnimationFrame(this.frame);
     this.resizeObserver.disconnect();
