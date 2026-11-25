@@ -827,7 +827,7 @@ test.describe("stage text and moving the plate", () => {
   });
 
   /** Two fingers on the canvas move together, keeping their distance, like a drag. */
-  async function twoFingerDrag(page: Page, dx: number, dy: number) {
+  async function twoFingerDrag(page: Page, dx: number, dy: number, steps = 5) {
     const box = (await page.locator(".plate-canvas").boundingBox())!;
     const cx = box.x + box.width / 2;
     const cy = box.y + box.height / 2;
@@ -840,10 +840,11 @@ test.describe("stage text and moving the plate", () => {
       type: "touchStart",
       touchPoints: points(0, 0),
     });
-    for (let step = 1; step <= 10; step++) {
+    // Each move redraws the plate, which is slow in software; a few steps are enough.
+    for (let step = 1; step <= steps; step++) {
       await client.send("Input.dispatchTouchEvent", {
         type: "touchMove",
-        touchPoints: points((dx * step) / 10, (dy * step) / 10),
+        touchPoints: points((dx * step) / steps, (dy * step) / steps),
       });
     }
     await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
@@ -884,15 +885,30 @@ test.describe("stage text and moving the plate", () => {
     await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
   });
 
+  /** Share of the canvas that is not the empty background (the plate, its box and shadow). */
+  async function paintedShare(page: Page) {
+    const { data, info } = await sharp(await page.locator(".plate-canvas").screenshot())
+      .raw()
+      .toBuffer({ resolveWithObject: true });
+    const pixel = (k: number) => [data[k], data[k + 1], data[k + 2], data[k + 3]];
+    const background = pixel(0);
+    let painted = 0;
+    for (let k = 0; k < data.length; k += info.channels) {
+      const p = pixel(k);
+      if (p.some((value, c) => Math.abs(value - background[c]) > 12)) painted++;
+    }
+    return painted / (info.width * info.height);
+  }
+
   test("a moved plate cannot be dragged out of reach", async ({ page }) => {
     await openPlate(page);
-    // Far more than the stage is wide, several times over.
-    for (let k = 0; k < 4; k++) await twoFingerDrag(page, 300, 0);
+    const before = await paintedShare(page);
+    expect(before).toBeGreaterThan(0.03);
+    // Far more than the plate can be moved, in a few big drags.
+    for (let k = 0; k < 3; k++) await twoFingerDrag(page, 300, 0, 3);
     await expect(page.getByRole("button", { name: "Re-centre" })).toBeVisible();
-    // The plate is still drawn: its centre stays on the stage.
-    const shot = await page.locator(".plate-canvas").screenshot();
-    const meta = await sharp(shot).stats();
-    expect(meta.channels.some((c) => c.max > 0)).toBe(true);
+    // The plate is still in view: a good part of the canvas is still painted.
+    expect(await paintedShare(page)).toBeGreaterThan(before * 0.5);
   });
 });
 
