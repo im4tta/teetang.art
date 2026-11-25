@@ -33,6 +33,8 @@ interface PlateViewProps {
   markerPhotos?: Map<string, ImageBitmap>;
   label: string;
   onInteract?: () => void;
+  /** Called when the view is moved off centre, or brought back. */
+  onPan?: (moved: boolean) => void;
 }
 
 /** The interactive 3D plate. Owns the WebGL scene for as long as it is mounted. */
@@ -51,6 +53,7 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
     markerPhotos,
     label,
     onInteract,
+    onPan,
   },
   ref,
 ) {
@@ -75,6 +78,10 @@ const PlateView = forwardRef<PlateViewHandle, PlateViewProps>(function PlateView
   useEffect(() => {
     if (scene) scene.onInteract = onInteract;
   }, [scene, onInteract]);
+
+  useEffect(() => {
+    if (scene) scene.onPan = onPan;
+  }, [scene, onPan]);
 
   useEffect(() => {
     if (scene && geometry) scene.setGeometry(geometry);

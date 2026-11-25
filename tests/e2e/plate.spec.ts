@@ -783,3 +783,95 @@ test.describe("3D plate on a computer", () => {
     expect(draft.route.length).toBeGreaterThan(20);
   });
 });
+
+test.describe("stage text and moving the plate", () => {
+  const rect = (page: Page, selector: string) =>
+    page.locator(selector).evaluate((el) => {
+      const r = el.getBoundingClientRect();
+      return { top: r.top, bottom: r.bottom, left: r.left, right: r.right };
+    });
+
+  test("the drag hint never overlaps the data credits, however long they are", async ({ page }) => {
+    // Satellite and buildings give the longest credit: three lines on a phone.
+    await openPlate(page, "/plate?lat=12.0333&lon=104.1667&style=satellite&bld=1&km=3");
+    await expect(page.locator(".plate-stage__hint")).toBeVisible();
+    await expect(page.locator(".plate-credit")).toContainText("OpenStreetMap");
+    const credit = await rect(page, ".plate-credit");
+    const hint = await rect(page, ".plate-stage__hint");
+    expect(credit.bottom - credit.top).toBeGreaterThan(30); // it does wrap
+    expect(hint.bottom).toBeLessThanOrEqual(credit.top);
+    // And the hint stays inside the stage.
+    const stage = await rect(page, ".plate-stage");
+    expect(hint.left).toBeGreaterThanOrEqual(stage.left);
+    expect(hint.right).toBeLessThanOrEqual(stage.right);
+  });
+
+  /** Two fingers on the canvas move together, keeping their distance, like a drag. */
+  async function twoFingerDrag(page: Page, dx: number, dy: number) {
+    const box = (await page.locator(".plate-canvas").boundingBox())!;
+    const cx = box.x + box.width / 2;
+    const cy = box.y + box.height / 2;
+    const client = await page.context().newCDPSession(page);
+    const points = (shiftX: number, shiftY: number) => [
+      { x: cx - 40 + shiftX, y: cy + shiftY, id: 1 },
+      { x: cx + 40 + shiftX, y: cy + shiftY, id: 2 },
+    ];
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: points(0, 0),
+    });
+    for (let step = 1; step <= 10; step++) {
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: points((dx * step) / 10, (dy * step) / 10),
+      });
+    }
+    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+  }
+
+  test("two fingers move the plate, and Re-centre brings it back", async ({ page }) => {
+    await openPlate(page);
+    await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
+
+    await twoFingerDrag(page, 90, -50);
+    await expect(page.getByRole("button", { name: "Re-centre" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Re-centre" }).click();
+    await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
+  });
+
+  test("one finger only turns the plate", async ({ page }) => {
+    await openPlate(page);
+    const box = (await page.locator(".plate-canvas").boundingBox())!;
+    const before = await page.locator(".plate-canvas").screenshot();
+    const client = await page.context().newCDPSession(page);
+    const at = (x: number) => [{ x, y: box.y + box.height / 2, id: 1 }];
+    await client.send("Input.dispatchTouchEvent", {
+      type: "touchStart",
+      touchPoints: at(box.x + box.width / 2 - 60),
+    });
+    for (let step = 1; step <= 10; step++) {
+      await client.send("Input.dispatchTouchEvent", {
+        type: "touchMove",
+        touchPoints: at(box.x + box.width / 2 - 60 + step * 12),
+      });
+    }
+    await client.send("Input.dispatchTouchEvent", { type: "touchEnd", touchPoints: [] });
+    // The plate was turned (the picture changed) but not moved.
+    await expect
+      .poll(async () => !before.equals(await page.locator(".plate-canvas").screenshot()))
+      .toBe(true);
+    await expect(page.getByRole("button", { name: "Re-centre" })).toHaveCount(0);
+  });
+
+  test("a moved plate cannot be dragged out of reach", async ({ page }) => {
+    await openPlate(page);
+    // Far more than the stage is wide, several times over.
+    for (let k = 0; k < 4; k++) await twoFingerDrag(page, 300, 0);
+    await expect(page.getByRole("button", { name: "Re-centre" })).toBeVisible();
+    // The plate is still drawn: its centre stays on the stage.
+    const shot = await page.locator(".plate-canvas").screenshot();
+    const meta = await sharp(shot).stats();
+    expect(meta.channels.some((c) => c.max > 0)).toBe(true);
+  });
+});

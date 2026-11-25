@@ -16,6 +16,7 @@ import {
   Compass,
   Glasses,
   Dices,
+  LocateFixed,
   Download,
   Move,
   Route,
@@ -252,6 +253,8 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
   // Kept on this device only; never part of a share link or a saved draft.
   const [openTopoKey, setOpenTopoKey] = useState(readOpenTopoKey);
   const [touched, setTouched] = useState(false);
+  // Whether the plate has been moved off the middle of the stage (two-finger drag).
+  const [panned, setPanned] = useState(false);
   const [extras, setExtras] = useState<PlateExtras | null>(null);
   const [fullDetail, setFullDetail] = useState(false);
   const [photo, setPhoto] = useState<PhotoInput | null>(null);
@@ -260,6 +263,24 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
   const arOverlayRef = useRef<HTMLDivElement>(null);
   const [recording, setRecording] = useState<{ progress: number; cancel: () => void } | null>(null);
   const viewRef = useRef<PlateViewHandle>(null);
+  const creditRef = useRef<HTMLParagraphElement>(null);
+
+  // The hint sits just above the credit, however many lines the credit runs to.
+  useEffect(() => {
+    const credit = creditRef.current;
+    const stage = credit?.parentElement;
+    if (!credit || !stage) return;
+    const fit = () => stage.style.setProperty("--plate-credit-h", `${credit.offsetHeight}px`);
+    fit();
+    const observer = new ResizeObserver(fit);
+    observer.observe(credit);
+    return () => observer.disconnect();
+  }, []);
+
+  // A new place starts centred, whatever the last one was moved to.
+  useEffect(() => {
+    viewRef.current?.scene()?.recenter(true);
+  }, [plate.lat, plate.lon, plate.sizeKm]);
   const navigate = useNavigate();
   const stylesRef = useRef<HTMLDivElement>(null);
   useWheelScrollsRows(SIDEWAYS_ROWS);
@@ -975,6 +996,7 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
                 markerPhotos={markerPhotos}
                 label={geometry ? describePlate(t, title, geometry) : `${title} ${subtitle}`}
                 onInteract={() => setTouched(true)}
+                onPan={setPanned}
               />
               {terrain.status === "loading" && (
                 <div className="plate-stage__loading" role="status">
@@ -1002,6 +1024,16 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
               )}
               {!touched && geometry && !photo && !lesson && (
                 <p className="plate-stage__hint">{t("plate.dragHint")}</p>
+              )}
+              {panned && !photo && !picking && (
+                <button
+                  type="button"
+                  className="plate-stage__recenter"
+                  onClick={() => viewRef.current?.scene()?.recenter()}
+                >
+                  <LocateFixed size={16} aria-hidden="true" />
+                  {t("plate.recenter")}
+                </button>
               )}
               {lesson && lessonPlan && (
                 <div className="plate-lesson" role="dialog" aria-label={lessonTitle(t, lesson.id)}>
@@ -1125,7 +1157,7 @@ function PlateApp({ embed = false }: { embed?: boolean }) {
               {plate.name || t("plate.untitled")} · teetang.art ↗
             </a>
           )}
-          <p className="plate-credit">
+          <p className="plate-credit" ref={creditRef}>
             Elevation:{" "}
             {elevationCredit(terrain.status === "ready" ? terrain.value.meta : undefined)}
             {mode === "plate" && basemap

@@ -24,6 +24,7 @@ import {
   SRGBColorSpace,
   Raycaster,
   Spherical,
+  TOUCH,
   Sprite,
   Vector2,
   SpriteMaterial,
@@ -126,8 +127,16 @@ export class PlateScene {
   private resizeObserver: ResizeObserver;
   private disposed = false;
   private readonly createdAt = performance.now();
-  /** Called once the user turns or zooms the plate. */
+  /** Called once the user turns, zooms or moves the plate. */
   onInteract?: () => void;
+  /** Called when the view is moved away from the middle of the stage, or back to it. */
+  onPan?: (moved: boolean) => void;
+  /** Where the view is centred when it has not been moved. */
+  private readonly homeTarget = new Vector3();
+  /** How far the view may be moved from home, so the plate cannot be lost off screen. */
+  private panLimit = 1;
+  private moved = false;
+  private recentering = false;
 
   constructor(private readonly canvas: HTMLCanvasElement) {
     this.renderer = new WebGLRenderer({ canvas, antialias: true, alpha: true });
@@ -229,7 +238,9 @@ export class PlateScene {
     Object.assign(this.controls, {
       enableDamping: true,
       dampingFactor: 0.09,
-      enablePan: false,
+      enablePan: true,
+      screenSpacePanning: true,
+      panSpeed: 0.9,
       minDistance: 1.3,
       maxDistance: 7,
       minPolarAngle: (8 * Math.PI) / 180,
@@ -237,6 +248,8 @@ export class PlateScene {
       rotateSpeed: 0.7,
       autoRotateSpeed: 0.8,
     });
+    // One finger turns the plate; two fingers move it and pinch to zoom.
+    this.controls.touches = { ONE: TOUCH.ROTATE, TWO: TOUCH.DOLLY_PAN };
     this.controls.autoRotate = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
     this.controls.addEventListener("start", () => {
       if (this.controls.autoRotate) {
@@ -275,7 +288,9 @@ export class PlateScene {
     if (this.controls.autoRotate && performance.now() - this.createdAt > SPIN_LIMIT_MS) {
       this.controls.autoRotate = false;
     }
+    if (this.recentering) this.glideHome();
     this.controls.update();
+    this.limitPan();
     this.renderer.render(this.scene, this.camera);
     const spinning = this.controls.autoRotate && !document.hidden;
     // controls.update() may already have queued the next frame through wake().
@@ -283,6 +298,49 @@ export class PlateScene {
       this.frame = requestAnimationFrame(this.tick);
     }
   };
+
+  /** Keeps the moved view within reach of the plate, and tells the page when it is off centre. */
+  private limitPan() {
+    const away = this.controls.target.clone().sub(this.homeTarget);
+    const length = away.length();
+    if (length > this.panLimit) {
+      const back = away.setLength(length - this.panLimit).negate();
+      this.controls.target.add(back);
+      this.camera.position.add(back);
+    }
+    const moved = length > this.panLimit * 0.04;
+    if (moved !== this.moved) {
+      this.moved = moved;
+      this.onPan?.(moved);
+    }
+  }
+
+  private glideHome() {
+    const shift = this.homeTarget.clone().sub(this.controls.target);
+    if (shift.length() < 1e-4) {
+      this.controls.target.add(shift);
+      this.camera.position.add(shift);
+      this.recentering = false;
+      return;
+    }
+    shift.multiplyScalar(0.22);
+    this.controls.target.add(shift);
+    this.camera.position.add(shift);
+    this.wake(120);
+  }
+
+  /** Brings a moved view back to the middle, gliding unless `instant`. */
+  recenter(instant = false) {
+    if (instant) {
+      const shift = this.homeTarget.clone().sub(this.controls.target);
+      this.controls.target.add(shift);
+      this.camera.position.add(shift);
+      this.recentering = false;
+    } else {
+      this.recentering = true;
+    }
+    this.wake(IDLE_SPIN_MS);
+  }
 
   private resize() {
     const { clientWidth, clientHeight } = this.canvas;
@@ -306,12 +364,16 @@ export class PlateScene {
     const distance = radius / Math.sin(Math.min(vertical, horizontal));
     const offset = this.camera.position.clone().sub(this.controls.target);
     offset.setLength(distance);
-    this.controls.target.set(
+    // A view that was moved stays moved when the stage resizes (a phone's address bar, say).
+    const moved = this.controls.target.clone().sub(this.homeTarget);
+    this.homeTarget.set(
       0.04 + this.compareShift / 2,
       (this.plateHeight - this.baseDepth) / 2,
       0.04 + Math.max(0, this.reach - 0.5) / 2,
     );
+    this.controls.target.copy(this.homeTarget).add(moved);
     this.camera.position.copy(this.controls.target).add(offset);
+    this.panLimit = radius;
     this.controls.maxDistance = distance * 2.2;
     this.camera.updateProjectionMatrix();
   }

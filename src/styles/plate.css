@@ -173,8 +173,36 @@
 }
 
 .plate-stage__hint {
-  bottom: 30px;
+  /* Just above the credit, which sets --plate-credit-h to its own height. */
+  bottom: calc(var(--plate-credit-h, 20px) + 12px);
+  /* Centred across the whole stage, so a long hint wraps late, not at half the width. */
+  right: 0;
+  left: 0;
+  width: fit-content;
+  max-width: calc(100% - 24px);
+  margin: 0 auto;
+  transform: none;
+  border-radius: 18px;
   color: var(--plate-muted);
+  text-align: center;
+  white-space: normal;
+}
+
+.plate-stage__recenter {
+  position: absolute;
+  right: 12px;
+  bottom: calc(var(--plate-credit-h, 20px) + 12px);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 44px;
+  padding: 0 14px;
+  border: 1px solid var(--plate-line);
+  border-radius: 999px;
+  background: var(--plate-raised);
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
 }
 
 .plate-credit {
