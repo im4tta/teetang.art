@@ -1,6 +1,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Analytics } from "@vercel/analytics/react";
+import { DatabuddyProvider } from "@databuddy/sdk/react";
 import HomePage from "@/pages/HomePage";
 import { loadEditorPage } from "@/pages/editorLoader";
 import { loadPlatePage } from "@/pages/plateLoader";
@@ -66,6 +67,13 @@ export default function App() {
         />
       </Routes>
       <Analytics />
+      <DatabuddyProvider
+        clientId={
+          import.meta.env.VITE_DATABUDDY_CLIENT_ID ?? "c08da119-1222-44c4-9c30-4b7afa9cf157"
+        }
+        autocapture={{ webVitals: true, errors: true, outgoingLinks: true }}
+        replay
+      />
     </BrowserRouter>
   );
 }
