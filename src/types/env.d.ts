@@ -2,6 +2,7 @@
 
 interface ImportMetaEnv {
   readonly VITE_APP_VERSION?: string;
+  readonly VITE_DATABUDDY_CLIENT_ID?: string;
   readonly VITE_UPDATES_URL?: string;
   readonly VITE_REPO_URL?: string;
   readonly VITE_REPO_API_URL?: string;

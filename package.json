@@ -17,6 +17,7 @@
     "icons:markers": "node scripts/generate-marker-svgs.mjs"
   },
   "dependencies": {
+    "@databuddy/sdk": "^3.5.6",
     "@vercel/analytics": "^2.0.1",
     "geotiff": "^3.0.5",
     "lucide-react": "^1.16.0",
